@@ -7,6 +7,7 @@ public sealed class Sprite
     public int Height { get; private set; }
     public ColorMode Mode { get; private set; }
     public Palette Palette { get; set; } = new();
+    /// <summary>Layers in stacking order: index 0 is the bottom (drawn first), the last is on top. Group members point at their group through <see cref="Layer.Parent"/>.</summary>
     public List<Layer> Layers { get; } = new();
     public List<Frame> Frames { get; } = new();
     public List<Tag> Tags { get; } = new();
