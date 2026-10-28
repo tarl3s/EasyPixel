@@ -497,7 +497,7 @@ public class FormatTestsAseprite
         var sp = Load(original, warnings);
         Assert.Empty(warnings);
 
-        string dir = Path.Combine(Path.GetTempPath(), "EasyPixel.Tests", Guid.NewGuid().ToString("N"));
+        string dir = Path.Combine(Path.GetTempPath(), "EasyPixel.Tests-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
         try
         {
