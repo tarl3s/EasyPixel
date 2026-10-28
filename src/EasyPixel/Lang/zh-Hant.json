@@ -1,5 +1,11 @@
 {
   "_note": "zh-Hant translation of en.json (keys are the English texts).",
+  "Check for updates when EasyPixel starts": "啟動 EasyPixel 時檢查更新",
+  "Download": "下載",
+  "EasyPixel {0} is available (you have {1}). Download it now? It installs when you close EasyPixel.": "EasyPixel {0} 已推出（目前為 {1}）。現在下載嗎？關閉 EasyPixel 時會自動安裝。",
+  "Not now": "稍後再說",
+  "The update could not be downloaded. Try again later.": "無法下載更新，請稍後再試。",
+  "The update is ready. It installs when you close EasyPixel.": "更新已就緒，關閉 EasyPixel 時會自動安裝。",
   "A copy of your sprite was saved to {0}": "已將精靈的副本儲存到 {0}",
   "A group can't be drawn on: pick a layer.": "無法在群組上繪圖：請選擇一個圖層。",
   "A picture could not be read and was skipped": "有一張圖片無法讀取，已略過",

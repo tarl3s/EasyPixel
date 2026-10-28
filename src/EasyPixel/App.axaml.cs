@@ -54,6 +54,7 @@ public partial class App : Application
             var window = new MainWindow();
             var file = desktop.Args?.FirstOrDefault(a => !a.StartsWith('-'));
             if (file != null) window.Opened += async (_, _) => await window.OpenPathAsync(file);
+            window.Opened += (_, _) => _ = window.CheckForUpdatesAsync();
             desktop.MainWindow = window;
         }
         base.OnFrameworkInitializationCompleted();

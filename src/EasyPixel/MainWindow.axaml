@@ -4,7 +4,7 @@
         xmlns:canvas="using:EasyPixel.Canvas"
         xmlns:panels="using:EasyPixel.Panels"
         x:Class="EasyPixel.MainWindow"
-        Title="EasyPixel" Width="1280" Height="800" MinWidth="720" MinHeight="480">
+        Icon="avares://EasyPixel/Assets/EasyPixel.ico" Title="EasyPixel" Width="1280" Height="800" MinWidth="720" MinHeight="480">
   <!-- Aseprite's layout: menu and tool options on top, tools on the left, colour/palette/layers on the right,
        the timeline under the canvas. Tab hides everything but the menu and the canvas. -->
   <DockPanel>

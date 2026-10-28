@@ -154,10 +154,11 @@ internal sealed class OnionWindow : DialogWindow
     public OnionOptions Options => new((int)(_before.Value ?? 1), (int)(_after.Value ?? 1), (int)(_opacity.Value ?? 68), _tint.IsChecked == true);
 }
 
-/// <summary>Edit → Settings: language and theme (both apply after a restart).</summary>
+/// <summary>Edit → Settings: language, theme (both apply after a restart) and update checks.</summary>
 internal sealed class SettingsWindow : DialogWindow
 {
     private readonly ComboBox _language, _theme;
+    private readonly CheckBox _updates;
     private readonly List<string> _codes = new() { "auto" };
 
     public SettingsWindow(SettingsChoice current) : base(L.T("Settings"))
@@ -172,12 +173,14 @@ internal sealed class SettingsWindow : DialogWindow
         _theme = new ComboBox { ItemsSource = new[] { L.T("Dark"), L.T("Light") }, SelectedIndex = current.Theme == "light" ? 1 : 0, MinWidth = 220 };
         AddRow(L.T("Language"), _language);
         AddRow(L.T("Theme"), _theme);
+        _updates = new CheckBox { Content = L.T("Check for updates when EasyPixel starts"), IsChecked = current.CheckForUpdates };
+        AddControl(_updates);
         AddText(L.T("Changes apply the next time EasyPixel starts."));
         AddButton(L.T("OK"), isDefault: true);
         AddButton(L.T("Cancel"), isCancel: true);
     }
 
-    public SettingsChoice Choice => new(_codes[Math.Max(0, _language.SelectedIndex)], _theme.SelectedIndex == 1 ? "light" : "dark");
+    public SettingsChoice Choice => new(_codes[Math.Max(0, _language.SelectedIndex)], _theme.SelectedIndex == 1 ? "light" : "dark", _updates.IsChecked == true);
 }
 
 /// <summary>Help → Keyboard shortcuts.</summary>

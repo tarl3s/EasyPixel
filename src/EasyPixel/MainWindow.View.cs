@@ -90,15 +90,17 @@ public partial class MainWindow
 
     private void Settings_Click(object? sender, RoutedEventArgs e) => _ = SettingsAsync();
 
-    /// <summary>Edit → Settings: language and theme; both apply after a restart.</summary>
+    /// <summary>Edit → Settings: language, theme (both apply after a restart) and update checks.</summary>
     internal async Task SettingsAsync()
     {
         var s = App.Settings;
-        if (await Dialogs.AskSettings(new SettingsChoice(s.Language, s.Theme)) is not { } c) return;
-        if (c.Language == s.Language && c.Theme == s.Theme) return;
+        if (await Dialogs.AskSettings(new SettingsChoice(s.Language, s.Theme, s.CheckForUpdates)) is not { } c) return;
+        bool restart = c.Language != s.Language || c.Theme != s.Theme;
+        s.CheckForUpdates = c.CheckForUpdates;
         s.Language = c.Language;
         s.Theme = c.Theme;
         s.Save();
+        if (!restart) return;
         UpdateThemeMenu(c.Theme);
         await Dialogs.Tell(L.T("Changes apply the next time EasyPixel starts."));
     }

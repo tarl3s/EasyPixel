@@ -1,5 +1,11 @@
 {
   "_note": "pt-PT translation of en.json (keys are the English texts).",
+  "Check for updates when EasyPixel starts": "Procurar atualizações ao iniciar o EasyPixel",
+  "Download": "Transferir",
+  "EasyPixel {0} is available (you have {1}). Download it now? It installs when you close EasyPixel.": "O EasyPixel {0} está disponível (tem a {1}). Transferir agora? É instalado quando fechar o EasyPixel.",
+  "Not now": "Agora não",
+  "The update could not be downloaded. Try again later.": "Não foi possível transferir a atualização. Tente novamente mais tarde.",
+  "The update is ready. It installs when you close EasyPixel.": "A atualização está pronta. É instalada quando fechar o EasyPixel.",
   "A copy of your sprite was saved to {0}": "Uma cópia do seu sprite foi guardada em {0}",
   "A group can't be drawn on: pick a layer.": "Não é possível desenhar num grupo: escolha uma camada.",
   "A picture could not be read and was skipped": "Não foi possível ler uma imagem e foi ignorada",

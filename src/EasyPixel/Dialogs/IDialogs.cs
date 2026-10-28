@@ -16,8 +16,8 @@ public sealed record FileType(string Name, string[] Extensions);
 
 public sealed record CanvasSizeOptions(int Width, int Height, Anchor Anchor);
 
-/// <summary>Settings → language code ("auto" or one of <see cref="L.Languages"/>) and theme ("dark" / "light").</summary>
-public sealed record SettingsChoice(string Language, string Theme);
+/// <summary>Settings: language code ("auto" or one of <see cref="L.Languages"/>), theme ("dark" / "light") and whether to check for updates.</summary>
+public sealed record SettingsChoice(string Language, string Theme, bool CheckForUpdates = true);
 
 public sealed record OnionOptions(int Before, int After, int Opacity, bool Tint);
 

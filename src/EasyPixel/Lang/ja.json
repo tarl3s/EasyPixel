@@ -1,5 +1,11 @@
 {
   "_note": "ja translation of en.json (keys are the English texts).",
+  "Check for updates when EasyPixel starts": "EasyPixel の起動時に更新を確認する",
+  "Download": "ダウンロード",
+  "EasyPixel {0} is available (you have {1}). Download it now? It installs when you close EasyPixel.": "EasyPixel {0} が利用できます(現在は {1})。今すぐダウンロードしますか？ EasyPixel を閉じるときにインストールされます。",
+  "Not now": "あとで",
+  "The update could not be downloaded. Try again later.": "更新をダウンロードできませんでした。しばらくしてからもう一度お試しください。",
+  "The update is ready. It installs when you close EasyPixel.": "更新の準備ができました。EasyPixel を閉じるときにインストールされます。",
   "A copy of your sprite was saved to {0}": "スプライトのコピーを {0} に保存しました",
   "A group can't be drawn on: pick a layer.": "グループには描けません。レイヤーを選んでください。",
   "A picture could not be read and was skipped": "読み込めない画像があったためスキップしました",

@@ -25,6 +25,8 @@ public sealed class Settings
     public string Theme { get; set; } = "dark";
     /// <summary>A language code, or "auto" to follow the system.</summary>
     public string Language { get; set; } = "auto";
+    /// <summary>Ask GitHub for a newer release when EasyPixel starts (never in a source build).</summary>
+    public bool CheckForUpdates { get; set; } = true;
     public bool ShowGrid { get; set; } = true;
     /// <summary>The tile grid (View → Grid settings): shown or not, and its cell size.</summary>
     public bool ShowTileGrid { get; set; }

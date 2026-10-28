@@ -50,5 +50,25 @@ dotnet run --project src/EasyPixel
 | `src/EasyPixel/Panels` | one file per panel: `ColorPanel` + `ColorPicker` (HSV), `PalettePanel`, `LayersPanel`, `TimelinePanel` (frames, tags, playback buttons), `Playback` (which frame comes next), `PreviewWindow` (floating 1x-8x and full preview) |
 | `src/EasyPixel/Dialogs` | `IDialogs` (every question the window asks; tests script it) and the real windows |
 | `src/EasyPixel/Theme`, `Lang` | `Dark.axaml`/`Light.axaml` palettes (same keys); `Lang/en.json` written by `tools/Update-Strings.sh`, the other 8 languages translate its keys (run the script, then add the new keys to every `Lang/<code>.json`; `LangTests` fails under 97% or a lost `{0}`); `L.Keep(control)` marks the person's own content (layer/tag names) as not translated |
+| `src/EasyPixel.Core/Formats`, `Render`, `Raster`, `Select` | `ISpriteFormat` + `FormatRegistry` (`AsepriteFormat` lossless with warnings, `PiskelFormat`, `EpxFormat` = EasyPixel's own zip, `PngFormat`/`Png` decoder, `GifFormat`, `SpriteSheet` import/export), `Compositor` (+ blend modes, onion), brush/fill/shapes/dither/shading/symmetry/quantize, selection + floating pixels |
+| `src/EasyPixel.Core/Bridge`, `src/EasyPixel/MainWindow.Bridge.cs`, `WindowsInstallRegistry.cs` | the EasyEngine link: `AppDiscovery` finds the other app (registry `HKCU\Software\EasyPixel\InstallPath`, behind an interface), `EasyEngineBridge` reads `.eeproj` animations (read-only) and `ExportHandoff` writes what EasyEngine's "Import from EasyPixel" picks up |
+| `src/EasyPixel.Core/Update/ReleaseInfo.cs`, `src/EasyPixel/Update/Updater.cs`, `MainWindow.Update.cs` | updates: `UpdateLogic` (pure: parse GitHub's latest release, version compare, source-build detection = an `EasyPixel.sln` above the exe, manifest-based file removal) and `GitHubUpdater : IUpdateService` (download to `%TEMP%\EasyPixel_update`, hidden PowerShell swap after exit, only files listed in the old `easypixel-files.txt`). `MainWindow.CheckForUpdatesAsync` runs at startup unless `Settings.CheckForUpdates` is off; no network = silent |
+| `src/EasyPixel/Assets` | `EasyPixel.ico` (application + window icon), drawn by `tools/Make-Icon.ps1` |
+| `tools/` | `Update-Strings.sh` (rewrites `Lang/en.json`), `Make-Icon.ps1`, `Publish-Release.ps1` (self-contained single-file win-x64 → `EasyPixel-win-x64.zip` + `easypixel-files.txt` → `gh release create`; `-DryRun` builds and zips without `gh`) |
+| `docs/release-notes/vX.Y.Z.md` | player-facing release notes, passed to `Publish-Release.ps1 -NotesFile` |
 | `tests/EasyPixel.Tests` | portable tests of Core |
 | `tests/EasyPixel.UiTests` | headless UI tests (`InternalsVisibleTo` from the app) |
+
+## Releasing
+
+Every version is an annotated `vX.Y.Z` tag plus a GitHub release (the in-app updater and the README's download button read
+`releases/latest`, asset `EasyPixel-win-x64.zip` — never rename it). Bump `<Version>` in `Directory.Build.props`, write
+`docs/release-notes/vX.Y.Z.md`, commit `vX.Y.Z: …`, `git tag -a vX.Y.Z`, push with tags, then
+`powershell -ExecutionPolicy Bypass -File tools/Publish-Release.ps1 -NotesFile docs/release-notes/vX.Y.Z.md`.
+Only with the owner's word; try the packaging first with `-DryRun -OutDir <scratch>`.
+
+## Last known green (v0.1.0)
+
+`dotnet test`: EasyPixel.Tests 227/227, EasyPixel.UiTests 80/80 (includes the contrast audit, the 9-language check and
+the end-to-end draw-animate-export test). `Publish-Release.ps1 -DryRun` builds a 37.7 MB zip with `EasyPixel.exe` +
+`easypixel-files.txt`, and the published exe starts.
