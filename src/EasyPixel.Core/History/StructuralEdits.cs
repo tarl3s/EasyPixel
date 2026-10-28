@@ -3,17 +3,18 @@ using EasyPixel.Core.Model;
 namespace EasyPixel.Core.History;
 
 // Each Perform() applies the change to the sprite and returns the edit to push.
-// Not covered: tags (their frame ranges are not adjusted) and group children of a removed layer.
+// Frame edits keep Tags consistent. Not covered: group children of a removed layer.
 
 public sealed class AddLayerEdit : IEdit
 {
     private readonly Layer _layer;
     private readonly int _index;
+    private List<(int Frame, Cel Cel)> _cels = new(); // cels drawn on the layer, held while the add is undone
 
     private AddLayerEdit(Layer layer, int index) { _layer = layer; _index = index; }
 
     public string Name => "Add layer";
-    public long Bytes => 64;
+    public long Bytes => 64 + _cels.Sum(c => c.Cel.Image.Pixels.Length * 4L);
 
     public static AddLayerEdit Perform(Sprite s, Layer layer, int index)
     {
@@ -21,9 +22,21 @@ public sealed class AddLayerEdit : IEdit
         return new AddLayerEdit(layer, index);
     }
 
-    public void Undo(Sprite s) => s.Layers.Remove(_layer);
-    public void Redo(Sprite s) => s.Layers.Insert(_index, _layer);
+    public void Undo(Sprite s)
+    {
+        _cels = s.Cels.Where(kv => kv.Key.Item1 == _layer).Select(kv => (Frame: kv.Key.Item2, Cel: kv.Value)).ToList();
+        foreach (var c in _cels) s.Cels.Remove((_layer, c.Frame));
+        s.Layers.Remove(_layer);
+    }
+
+    public void Redo(Sprite s)
+    {
+        s.Layers.Insert(_index, _layer);
+        foreach (var c in _cels) s.Cels[(_layer, c.Frame)] = c.Cel;
+        _cels = new();
+    }
 }
+
 
 public sealed class RemoveLayerEdit : IEdit
 {
@@ -62,21 +75,47 @@ public sealed class AddFrameEdit : IEdit
 {
     private readonly Frame _frame;
     private readonly int _index;
+    private readonly TagSnapshot _tagsBefore, _tagsAfter;
+    private List<(Layer Layer, Cel Cel)> _cels = new(); // cels drawn on the new frame, held while the add is undone
 
-    private AddFrameEdit(Frame frame, int index) { _frame = frame; _index = index; }
+    private AddFrameEdit(Frame frame, int index, TagSnapshot before, TagSnapshot after)
+    {
+        _frame = frame; _index = index; _tagsBefore = before; _tagsAfter = after;
+    }
 
     public string Name => "Add frame";
-    public long Bytes => 64;
+    public long Bytes => 64 + _cels.Sum(c => c.Cel.Image.Pixels.Length * 4L);
 
     public static AddFrameEdit Perform(Sprite s, Frame frame, int index)
     {
+        var before = TagSnapshot.Take(s);
         FrameShift.Open(s, index);
         s.Frames.Insert(index, frame);
-        return new AddFrameEdit(frame, index);
+        foreach (var t in s.Tags)
+        {
+            if (t.From >= index) t.From++;
+            if (t.To >= index) t.To++;
+        }
+        return new AddFrameEdit(frame, index, before, TagSnapshot.Take(s));
     }
 
-    public void Undo(Sprite s) { s.Frames.RemoveAt(_index); FrameShift.Close(s, _index); }
-    public void Redo(Sprite s) { FrameShift.Open(s, _index); s.Frames.Insert(_index, _frame); }
+    public void Undo(Sprite s)
+    {
+        _cels = s.Cels.Where(kv => kv.Key.Item2 == _index).Select(kv => (Layer: kv.Key.Item1, Cel: kv.Value)).ToList();
+        foreach (var c in _cels) s.Cels.Remove((c.Layer, _index));
+        s.Frames.RemoveAt(_index);
+        FrameShift.Close(s, _index);
+        _tagsBefore.Restore(s);
+    }
+
+    public void Redo(Sprite s)
+    {
+        FrameShift.Open(s, _index);
+        s.Frames.Insert(_index, _frame);
+        foreach (var c in _cels) s.Cels[(c.Layer, _index)] = c.Cel;
+        _cels = new();
+        _tagsAfter.Restore(s);
+    }
 }
 
 public sealed class RemoveFrameEdit : IEdit
@@ -84,20 +123,32 @@ public sealed class RemoveFrameEdit : IEdit
     private readonly Frame _frame;
     private readonly int _index;
     private readonly List<(Layer Layer, Cel Cel)> _cels;
+    private readonly TagSnapshot _tagsBefore, _tagsAfter;
 
-    private RemoveFrameEdit(Frame frame, int index, List<(Layer Layer, Cel Cel)> cels) { _frame = frame; _index = index; _cels = cels; }
+    private RemoveFrameEdit(Frame frame, int index, List<(Layer Layer, Cel Cel)> cels, TagSnapshot before, TagSnapshot after)
+    {
+        _frame = frame; _index = index; _cels = cels; _tagsBefore = before; _tagsAfter = after;
+    }
 
     public string Name => "Remove frame";
     public long Bytes => 64 + _cels.Sum(c => c.Cel.Image.Pixels.Length * 4L);
 
     public static RemoveFrameEdit Perform(Sprite s, int index)
     {
+        var before = TagSnapshot.Take(s);
         var frame = s.Frames[index];
         var cels = s.Cels.Where(kv => kv.Key.Item2 == index).Select(kv => (Layer: kv.Key.Item1, Cel: kv.Value)).ToList();
         foreach (var c in cels) s.Cels.Remove((c.Layer, index));
         s.Frames.RemoveAt(index);
         FrameShift.Close(s, index);
-        return new RemoveFrameEdit(frame, index, cels);
+        for (int i = s.Tags.Count - 1; i >= 0; i--)
+        {
+            var t = s.Tags[i];
+            if (t.From == index && t.To == index) { s.Tags.RemoveAt(i); continue; }
+            if (t.From > index) t.From--;
+            if (t.To >= index) t.To--;
+        }
+        return new RemoveFrameEdit(frame, index, cels, before, TagSnapshot.Take(s));
     }
 
     public void Undo(Sprite s)
@@ -105,6 +156,7 @@ public sealed class RemoveFrameEdit : IEdit
         FrameShift.Open(s, _index);
         s.Frames.Insert(_index, _frame);
         foreach (var c in _cels) s.Cels[(c.Layer, _index)] = c.Cel;
+        _tagsBefore.Restore(s);
     }
 
     public void Redo(Sprite s)
@@ -112,8 +164,25 @@ public sealed class RemoveFrameEdit : IEdit
         foreach (var c in _cels) s.Cels.Remove((c.Layer, _index));
         s.Frames.RemoveAt(_index);
         FrameShift.Close(s, _index);
+        _tagsAfter.Restore(s);
     }
 }
+
+/// <summary>The tag list with each tag's frame range, so a frame edit can put tags back exactly.</summary>
+internal sealed class TagSnapshot
+{
+    private readonly List<(Tag Tag, int From, int To)> _tags;
+    private TagSnapshot(List<(Tag, int, int)> tags) { _tags = tags; }
+
+    public static TagSnapshot Take(Sprite s) => new(s.Tags.Select(t => (t, t.From, t.To)).ToList());
+
+    public void Restore(Sprite s)
+    {
+        s.Tags.Clear();
+        foreach (var (t, from, to) in _tags) { t.From = from; t.To = to; s.Tags.Add(t); }
+    }
+}
+
 
 /// <summary>Moves the cel keys of frames at or after an index up (a gap opens) or down (a gap closes).</summary>
 internal static class FrameShift

@@ -111,7 +111,7 @@ public class HistoryTests
     {
         var (_, h, cel) = Setup();
         for (int i = 0; i < 10; i++) h.Push(Paint(cel, i % 8, 0, (uint)i + 1));
-        long one = 72; // 2 pixels * 4 + 64
+        long one = Paint(cel, 0, 1, 1).Bytes;
         h.MaxBytes = one * 3;
         Assert.Equal(3, h.Count);
         Assert.True(h.TotalBytes <= one * 3);
@@ -125,7 +125,8 @@ public class HistoryTests
         var (_, h, cel) = Setup();
         h.Push(Paint(cel, 0, 0, 1));
         h.MarkSaved();
-        h.MaxBytes = 72 * 2;
+        h.MaxBytes = Paint(cel, 7, 7, 1).Bytes * 2;
+        cel.Image.Set(7, 7, 0);
         h.Push(Paint(cel, 1, 0, 2));
         h.Push(Paint(cel, 2, 0, 3));
         h.Undo(); h.Undo();
@@ -206,5 +207,82 @@ public class HistoryTests
         h.Redo();
         Assert.Equal((20, 12), (s.Width, s.Height));
         Assert.Equal((9, 4), (cel.X, cel.Y));
+    }
+
+    [Fact]
+    public void Capture_RectOutsideImage_IsEmptyEdit()
+    {
+        var (_, h, cel) = Setup(4, 4);
+        var r = new PixelRect(10, 10, 3, 3);
+        var before = PixelEdit.Snapshot(cel.Image, r);
+        Assert.Empty(before);
+        var e = PixelEdit.Capture(cel, r, before, "x");
+        h.Push(e);
+        Assert.True(h.Undo());
+        Assert.True(h.Redo());
+    }
+
+    [Fact]
+    public void AddLayer_UndoRemovesPaintedCels_RedoRestoresThem()
+    {
+        var (s, h, _) = Setup();
+        var l2 = new Layer();
+        h.Push(AddLayerEdit.Perform(s, l2, 1));
+        s.GetOrCreateCel(l2, 0).Image.Set(1, 1, 7);
+        h.Undo();
+        Assert.DoesNotContain(s.Cels.Keys, k => k.Item1 == l2);
+        h.Redo();
+        Assert.Equal(7u, s.Cels[(l2, 0)].Image.Get(1, 1));
+    }
+
+    [Fact]
+    public void AddFrame_UndoRemovesPaintedCels_RedoRestoresThem()
+    {
+        var (s, h, cel0) = Setup();
+        var layer = s.Layers[0];
+        s.Frames.Add(new Frame());
+        var cel1 = s.GetOrCreateCel(layer, 1);
+        h.Push(AddFrameEdit.Perform(s, new Frame(), 1));
+        s.GetOrCreateCel(layer, 1).Image.Set(2, 2, 9);
+        h.Undo();
+        Assert.Equal(2, s.Cels.Count);
+        Assert.Same(cel0, s.Cels[(layer, 0)]);
+        Assert.Same(cel1, s.Cels[(layer, 1)]);
+        h.Redo();
+        Assert.Equal(9u, s.Cels[(layer, 1)].Image.Get(2, 2));
+        Assert.Same(cel1, s.Cels[(layer, 2)]);
+    }
+
+    private static Tag T(int from, int to) => new() { Name = $"{from}-{to}", From = from, To = to };
+
+    [Fact]
+    public void AddFrame_ShiftsAndGrowsTags_UndoRestores()
+    {
+        var (s, h, _) = Setup();
+        for (int i = 0; i < 3; i++) s.Frames.Add(new Frame()); // 4 frames
+        s.Tags.AddRange(new[] { T(0, 0), T(1, 2), T(3, 3) });
+        h.Push(AddFrameEdit.Perform(s, new Frame(), 2)); // inside 1..2
+        Assert.Equal(new[] { (0, 0), (1, 3), (4, 4) }, s.Tags.Select(t => (t.From, t.To)));
+        h.Undo();
+        Assert.Equal(new[] { (0, 0), (1, 2), (3, 3) }, s.Tags.Select(t => (t.From, t.To)));
+        h.Redo();
+        Assert.Equal(new[] { (0, 0), (1, 3), (4, 4) }, s.Tags.Select(t => (t.From, t.To)));
+    }
+
+    [Fact]
+    public void RemoveFrame_ShiftsShrinksAndRemovesEmptyTags_UndoRestores()
+    {
+        var (s, h, _) = Setup();
+        for (int i = 0; i < 4; i++) s.Frames.Add(new Frame()); // 5 frames
+        var single = T(2, 2);
+        s.Tags.AddRange(new[] { T(0, 1), single, T(1, 3), T(3, 4) });
+        h.Push(RemoveFrameEdit.Perform(s, 2));
+        Assert.Equal(new[] { (0, 1), (1, 2), (2, 3) }, s.Tags.Select(t => (t.From, t.To)));
+        Assert.DoesNotContain(single, s.Tags);
+        h.Undo();
+        Assert.Equal(new[] { (0, 1), (2, 2), (1, 3), (3, 4) }, s.Tags.Select(t => (t.From, t.To)));
+        Assert.Same(single, s.Tags[1]);
+        h.Redo();
+        Assert.Equal(3, s.Tags.Count);
     }
 }
