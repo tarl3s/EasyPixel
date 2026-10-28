@@ -9,16 +9,16 @@ public static class Compositor
     /// Clears <paramref name="area"/> of <paramref name="target"/> (same size as the sprite) and draws the frame there,
     /// layers bottom to top. Groups are composited apart and then blended with their own mode and opacity.
     /// Hidden layers (or layers in a hidden group) are skipped unless <paramref name="includeHidden"/>.
-    /// Output is always RGBA; indexed cels go through the palette.
+    /// Pass a <paramref name="scratch"/> you own to avoid sharing the per-thread cache. Output is always RGBA; indexed cels go through the palette.
     /// </summary>
-    public static void Flatten(Sprite s, int frame, Image target, PixelRect area, bool includeHidden = false)
+    public static void Flatten(Sprite s, int frame, Image target, PixelRect area, bool includeHidden = false, CompositeScratch? scratch = null)
     {
         if (target.Width != s.Width || target.Height != s.Height)
             throw new ArgumentException("Target must have the sprite's size.", nameof(target));
         area = area.Intersect(new PixelRect(0, 0, s.Width, s.Height));
         if (area.IsEmpty) return;
         Clear(target, area);
-        var scratch = new List<Image>();
+        scratch ??= CompositeScratch.Shared;
         DrawChildren(s, frame, null, target, area, includeHidden, scratch, 0);
     }
 
@@ -28,7 +28,7 @@ public static class Compositor
             Array.Clear(img.Pixels, y * img.Width + area.X, area.W);
     }
 
-    private static void DrawChildren(Sprite s, int frame, Layer? parent, Image dest, PixelRect area, bool includeHidden, List<Image> scratch, int depth)
+    private static void DrawChildren(Sprite s, int frame, Layer? parent, Image dest, PixelRect area, bool includeHidden, CompositeScratch scratch, int depth)
     {
         foreach (var layer in s.Layers)
         {
@@ -36,8 +36,7 @@ public static class Compositor
             if (!layer.Visible && !includeHidden) continue;
             if (layer.IsGroup)
             {
-                if (scratch.Count <= depth) scratch.Add(new Image(s.Width, s.Height));
-                var buf = scratch[depth];
+                var buf = scratch.Group(depth, s.Width, s.Height);
                 Clear(buf, area);
                 DrawChildren(s, frame, layer, buf, area, includeHidden, scratch, depth + 1);
                 BlendBuffer(buf, dest, area, layer.Blend, layer.Opacity);

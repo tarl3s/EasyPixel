@@ -223,4 +223,59 @@ public class RenderTests
         Onion.Render(s, 2, new OnionSettings { Before = 2, After = 2, Opacity = 100 }, img);
         Assert.Equal(P(255, 255, 255, 50), img.Get(0, 0)); // two frames away: fades to 100 * 1/2
     }
+
+    [Fact]
+    public void Group_PartialArea_ReusingScratch_StaysCorrect()
+    {
+        var s = new Sprite(4, 1);
+        var group = new Layer { IsGroup = true, Opacity = 128 };
+        var a = new Layer { Parent = group };
+        s.Layers.Add(group); s.Layers.Add(a);
+        for (int x = 0; x < 4; x++) { Paint(s, s.Layers[0], 0, x, 0, P(255, 255, 255)); Paint(s, a, 0, x, 0, P(0, 0, 0)); }
+        var scratch = new CompositeScratch();
+        var img = new Image(4, 1, 0xFF123456);
+        Compositor.Flatten(s, 0, img, new PixelRect(1, 0, 2, 1), scratch: scratch);
+        Assert.Equal(0xFF123456u, img.Get(0, 0));
+        Assert.Equal(P(127, 127, 127), img.Get(1, 0));
+        Assert.Equal(P(127, 127, 127), img.Get(2, 0));
+        Assert.Equal(0xFF123456u, img.Get(3, 0));
+        // Second call over a different area reuses the scratch (stale pixels at x=1,2 must not leak).
+        s.Cels[(a, 0)].Image.Set(1, 0, 0);
+        s.Cels[(a, 0)].Image.Set(2, 0, 0);
+        Compositor.Flatten(s, 0, img, new PixelRect(2, 0, 2, 1), scratch: scratch);
+        Assert.Equal(P(127, 127, 127), img.Get(1, 0)); // outside the second area: untouched
+        Assert.Equal(P(255, 255, 255), img.Get(2, 0)); // child now empty: group adds nothing
+        Assert.Equal(P(127, 127, 127), img.Get(3, 0));
+    }
+
+    [Fact]
+    public void Onion_ZeroBeforeAndAfter_DrawsNothing_AndAreaIsRespected()
+    {
+        var s = new Sprite(3, 1);
+        s.Frames.Add(new Frame());
+        for (int x = 0; x < 3; x++) Paint(s, s.Layers[0], 1, x, 0, P(255, 255, 255));
+        var img = new Image(3, 1, 0xFF123456);
+        Onion.Render(s, 0, new OnionSettings { Before = 0, After = 0 }, img);
+        Assert.All(img.Pixels, p => Assert.Equal(0u, p));
+        img.Pixels.AsSpan().Fill(0xFF123456);
+        Onion.Render(s, 0, new OnionSettings { Before = 0, After = 1, Opacity = 100 }, img, new PixelRect(1, 0, 1, 1));
+        Assert.Equal(0xFF123456u, img.Get(0, 0));
+        Assert.Equal(P(255, 255, 255, 100), img.Get(1, 0));
+        Assert.Equal(0xFF123456u, img.Get(2, 0));
+    }
+
+    [Fact]
+    public void Indexed_PaletteEntryWithAlpha_IsBlended()
+    {
+        var s = new Sprite(1, 1, ColorMode.Indexed);
+        int bg = s.Palette.Add(new Rgba(255, 255, 255, 255));
+        int half = s.Palette.Add(new Rgba(0, 0, 0, 128));
+        var top = new Layer();
+        s.Layers.Add(top);
+        s.GetOrCreateCel(s.Layers[0], 0).Image.Set(0, 0, (uint)bg);
+        s.GetOrCreateCel(top, 0).Image.Set(0, 0, (uint)half);
+        var img = new Image(1, 1);
+        Compositor.Flatten(s, 0, img, new PixelRect(0, 0, 1, 1));
+        Assert.Equal(P(127, 127, 127), img.Get(0, 0)); // same as 50% black over white
+    }
 }
