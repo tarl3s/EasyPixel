@@ -72,7 +72,7 @@ public sealed class Sprite
 
         int replacement = Palette.Nearest(colors[index], skip: index);
         int shifted = replacement > index ? replacement - 1 : replacement;
-        foreach (var cel in Cels.Values)
+        foreach (var cel in Cels.Values.Distinct())
         {
             var px = cel.Image.Pixels;
             for (int i = 0; i < px.Length; i++)
@@ -97,7 +97,7 @@ public sealed class Sprite
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
         int col = (int)anchor % 3, row = (int)anchor / 3; // 0 = left/top, 1 = centre, 2 = right/bottom
         int dx = (width - Width) * col / 2, dy = (height - Height) * row / 2;
-        foreach (var cel in Cels.Values) { cel.X += dx; cel.Y += dy; }
+        foreach (var cel in Cels.Values.Distinct()) { cel.X += dx; cel.Y += dy; }
         Width = width;
         Height = height;
     }
@@ -109,6 +109,36 @@ public sealed class Sprite
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
         Width = width;
         Height = height;
+    }
+
+    /// <summary>Sets the mode without converting pixels. Meant for undo/redo of whole-sprite changes (see SpriteStateEdit).</summary>
+    internal void SetMode(ColorMode mode) => Mode = mode;
+
+    /// <summary>
+    /// Moves a palette entry to another position (the entries between shift by one). In an indexed sprite the pixels are
+    /// renumbered so the picture looks the same.
+    /// </summary>
+    public void MovePaletteEntry(int from, int to)
+    {
+        var colors = Palette.Colors;
+        ArgumentOutOfRangeException.ThrowIfNegative(from);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(from, colors.Count);
+        ArgumentOutOfRangeException.ThrowIfNegative(to);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(to, colors.Count);
+        if (from == to) return;
+        var c = colors[from];
+        colors.RemoveAt(from);
+        colors.Insert(to, c);
+        int Map(int i) => i == from ? to : from < to ? (i > from && i <= to ? i - 1 : i) : (i >= to && i < from ? i + 1 : i);
+        if (Palette.TransparentIndex >= 0) Palette.TransparentIndex = Map(Palette.TransparentIndex);
+        if (Mode != ColorMode.Indexed) return;
+        var map = new uint[colors.Count];
+        for (int i = 0; i < map.Length; i++) map[i] = (uint)Map(i);
+        foreach (var cel in Cels.Values.Distinct())
+        {
+            var px = cel.Image.Pixels;
+            for (int i = 0; i < px.Length; i++) if (px[i] < (uint)map.Length) px[i] = map[px[i]];
+        }
     }
 
     public void ConvertMode(ColorMode to)
@@ -123,7 +153,7 @@ public sealed class Sprite
         // Count colours; first-seen order makes ties and the palette order deterministic.
         var counts = new Dictionary<uint, int>();
         var order = new List<uint>();
-        foreach (var cel in Cels.Values)
+        foreach (var cel in Cels.Values.Distinct())
             foreach (uint p in cel.Image.Pixels)
             {
                 if ((p >> 24) == 0) continue;
@@ -143,7 +173,7 @@ public sealed class Sprite
         var map = new Dictionary<uint, uint>();
         foreach (uint p in kept) { map[p] = (uint)pal.Colors.Count; pal.Colors.Add(Rgba.FromPacked(p)); }
 
-        foreach (var cel in Cels.Values)
+        foreach (var cel in Cels.Values.Distinct())
         {
             var px = cel.Image.Pixels;
             for (int i = 0; i < px.Length; i++)
@@ -165,7 +195,7 @@ public sealed class Sprite
     {
         var colors = Palette.Colors;
         int t = Palette.TransparentIndex;
-        foreach (var cel in Cels.Values)
+        foreach (var cel in Cels.Values.Distinct())
         {
             var px = cel.Image.Pixels;
             for (int i = 0; i < px.Length; i++)
