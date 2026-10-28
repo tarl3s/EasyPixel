@@ -30,15 +30,22 @@ public partial class MainWindow
         Canvas.FinishGesture();
         var doc = Session.Doc;
         int w = doc.Width, h = doc.Height;
-        try
-        {
-            Session.Apply(SpriteStateEdit.Perform(doc, editName, () => change(doc)));
-        }
-        catch (Exception ex) when (ex is OutOfMemoryException or OverflowException)
+        SpriteState before;
+        try { before = SpriteStateEdit.Begin(doc); }
+        catch (OutOfMemoryException)
         {
             _ = Dialogs.Tell(L.T("There isn't enough memory for a canvas that big."));
             return;
         }
+        try { change(doc); }
+        catch (Exception ex) when (ex is OutOfMemoryException or OverflowException)
+        {
+            SpriteStateEdit.Capture(doc, before, editName).Undo(doc); // put back whatever was half done
+            Session.InvalidateAll();
+            _ = Dialogs.Tell(L.T("There isn't enough memory for a canvas that big."));
+            return;
+        }
+        Session.Apply(SpriteStateEdit.Capture(doc, before, editName));
         if (doc.Width != w || doc.Height != h) Canvas.FitToView();
         UpdateStatusBar();
     }

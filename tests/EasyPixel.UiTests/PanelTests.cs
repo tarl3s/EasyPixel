@@ -5,6 +5,8 @@ using EasyPixel.Core.Model;
 using EasyPixel.Dialogs;
 using EasyPixel.Panels;
 using EasyPixel.Tools;
+using Image = EasyPixel.Core.Model.Image;
+using PixelRect = EasyPixel.Core.Model.PixelRect;
 
 namespace EasyPixel.UiTests;
 
@@ -268,6 +270,39 @@ public class PanelTests
         Assert.Equal(Avalonia.Controls.WindowState.FullScreen, full.WindowState);
         full.Close();
         Harness.Pump();
+    }
+
+    [AvaloniaFact]
+    public async Task DrawAnimateExportGif_EndToEnd()
+    {
+        using var h = new Harness(8, 8);
+        h.Drag((1, 1), (3, 1));
+        h.Key(Key.N, RawInputModifiers.Alt); // frame 2 = copy of frame 1
+        h.Key(Key.E);
+        h.Drag((1, 1));                      // erase one pixel in frame 2
+        h.Dialogs.Numbers.Enqueue(250);
+        await h.Window.FrameDurationAsync();
+        h.Key(Key.Enter);
+        h.Window.PlayStep();
+        Assert.Equal(0, h.Session.Frame);
+        h.Key(Key.Enter);
+
+        var gif = Harness.TempFile("walk.gif");
+        h.Dialogs.Exports.Enqueue(new ExportOptions(ExportKind.Gif));
+        h.Dialogs.SavePaths.Enqueue(gif);
+        h.Dialogs.ConfirmAnswers.Enqueue(true);
+        await h.Window.ExportAsync();
+        Sprite read;
+        using (var f = File.OpenRead(gif)) read = new Core.Formats.GifFormat().Read(f, new List<string>());
+        Assert.Equal(2, read.Frames.Count);
+        Assert.Equal(250, read.Frames[1].DurationMs);
+        var a = new Image(8, 8);
+        var b = new Image(8, 8);
+        Core.Render.Compositor.Flatten(read, 0, a, new PixelRect(0, 0, 8, 8));
+        Core.Render.Compositor.Flatten(read, 1, b, new PixelRect(0, 0, 8, 8));
+        Assert.NotEqual(0u, a.Get(1, 1) >> 24);
+        Assert.Equal(0u, b.Get(1, 1) >> 24);
+        Assert.NotEqual(0u, b.Get(2, 1) >> 24);
     }
 
     // ---- palette ----

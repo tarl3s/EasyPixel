@@ -16,7 +16,7 @@ public sealed class ColorPanel : StackPanel
         Spacing = 6;
         Margin = new Thickness(8);
         Picker = new ColorPicker();
-        Hex = new TextBox { FontSize = 12, Width = 96, HorizontalAlignment = HorizontalAlignment.Left };
+        Hex = L.Keep(new TextBox { FontSize = 12, Width = 96, HorizontalAlignment = HorizontalAlignment.Left }); // a colour code, not words
         ToolTip.SetTip(Hex, L.T("Colour code: #RRGGBB or #RRGGBBAA"));
         var row = new DockPanel();
         var label = new TextBlock { Text = L.T("Colour"), Classes = { "dim" }, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
