@@ -100,6 +100,15 @@ public sealed class Sprite
         Height = height;
     }
 
+    /// <summary>Sets the canvas size without touching cels. Meant for undo/redo of a resize (see ResizeEdit); use Resize otherwise.</summary>
+    public void SetCanvasSize(int width, int height)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+        Width = width;
+        Height = height;
+    }
+
     public void ConvertMode(ColorMode to)
     {
         if (to == Mode) return;
