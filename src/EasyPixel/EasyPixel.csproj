@@ -8,6 +8,7 @@
     <RootNamespace>EasyPixel</RootNamespace>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +19,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EasyPixel.Core\EasyPixel.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Lang\*.json" LogicalName="EasyPixel.Lang.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
