@@ -11,6 +11,7 @@ public sealed class Sprite
     public List<Layer> Layers { get; } = new();
     public List<Frame> Frames { get; } = new();
     public List<Tag> Tags { get; } = new();
+    /// <summary>Cels by (layer, frame). A linked cel (one image shared by several frames, as in Aseprite) is the same <see cref="Cel"/> object stored under each of its keys.</summary>
     public Dictionary<(Layer, int), Cel> Cels { get; } = new();
 
     /// <summary>Chunks of a file format we do not model, kept so saving can warn about them.</summary>
