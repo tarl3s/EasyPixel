@@ -18,6 +18,7 @@ public sealed class LayersPanel : DockPanel
     private readonly NumericUpDown _opacity = new() { Minimum = 0, Maximum = 255, Increment = 1, FormatString = "0", Width = 110 };
     private readonly ComboBox _blend = new() { MinWidth = 120 };
     private readonly HashSet<Layer> _collapsed = new();
+    private Sprite? _doc;
     private MainWindow? _w;
     private bool _syncing;
 
@@ -87,6 +88,13 @@ public sealed class LayersPanel : DockPanel
     {
         if (_w == null) return;
         var s = _w.Session;
+        if (s.Doc != _doc)
+        {
+            // Another document: groups start folded as the file had them (Aseprite's collapsed flag).
+            _doc = s.Doc;
+            _collapsed.Clear();
+            foreach (var g in _doc.Layers.Where(Core.Formats.AsepriteFormat.IsCollapsed)) _collapsed.Add(g);
+        }
         var shown = new List<Layer>();
         _rows.Children.Clear();
         AddRows(s.Doc, null, 0, shown);

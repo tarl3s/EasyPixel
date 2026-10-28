@@ -2,15 +2,22 @@ using EasyPixel.Core.Model;
 
 namespace EasyPixel.Core.History;
 
-/// <summary>Moves a frame (its cels and duration) to another position; tags keep their frame numbers.</summary>
+/// <summary>
+/// Moves a frame (its cels and duration) to another position. Tags keep pointing at the same frames: each end follows
+/// its frame (From/To re-ordered when they cross).
+/// </summary>
 public sealed class MoveFrameEdit : IEdit
 {
     private readonly int _from, _to;
+    private readonly List<TagState> _tagsBefore, _tagsAfter;
 
-    private MoveFrameEdit(int from, int to) { _from = from; _to = to; }
+    private MoveFrameEdit(int from, int to, List<TagState> before, List<TagState> after)
+    {
+        _from = from; _to = to; _tagsBefore = before; _tagsAfter = after;
+    }
 
     public string Name => "Move frame";
-    public long Bytes => 64;
+    public long Bytes => 64 + (_tagsBefore.Count + _tagsAfter.Count) * 48L;
 
     public static MoveFrameEdit Perform(Sprite s, int from, int to)
     {
@@ -18,24 +25,33 @@ public sealed class MoveFrameEdit : IEdit
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(from, s.Frames.Count);
         ArgumentOutOfRangeException.ThrowIfNegative(to);
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(to, s.Frames.Count);
+        var before = TagsEdit.Take(s);
         Move(s, from, to);
-        return new MoveFrameEdit(from, to);
+        foreach (var t in s.Tags)
+        {
+            int a = Map(t.From, from, to), b = Map(t.To, from, to);
+            (t.From, t.To) = (Math.Min(a, b), Math.Max(a, b));
+        }
+        return new MoveFrameEdit(from, to, before, TagsEdit.Take(s));
     }
 
-    public void Undo(Sprite s) => Move(s, _to, _from);
-    public void Redo(Sprite s) => Move(s, _from, _to);
+    public void Undo(Sprite s) { Move(s, _to, _from); TagsEdit.Restore(s, _tagsBefore); }
+    public void Redo(Sprite s) { Move(s, _from, _to); TagsEdit.Restore(s, _tagsAfter); }
+
+    /// <summary>Where frame <paramref name="i"/> is after moving frame <paramref name="from"/> to <paramref name="to"/>.</summary>
+    private static int Map(int i, int from, int to) =>
+        i == from ? to : from < to ? (i > from && i <= to ? i - 1 : i) : (i >= to && i < from ? i + 1 : i);
 
     private static void Move(Sprite s, int from, int to)
     {
         if (from == to) return;
-        int Map(int i) => i == from ? to : from < to ? (i > from && i <= to ? i - 1 : i) : (i >= to && i < from ? i + 1 : i);
         var frame = s.Frames[from];
         s.Frames.RemoveAt(from);
         s.Frames.Insert(to, frame);
         int lo = Math.Min(from, to), hi = Math.Max(from, to);
         var moved = s.Cels.Where(kv => kv.Key.Item2 >= lo && kv.Key.Item2 <= hi).ToList();
         foreach (var kv in moved) s.Cels.Remove(kv.Key);
-        foreach (var kv in moved) s.Cels[(kv.Key.Item1, Map(kv.Key.Item2))] = kv.Value;
+        foreach (var kv in moved) s.Cels[(kv.Key.Item1, Map(kv.Key.Item2, from, to))] = kv.Value;
     }
 }
 
@@ -120,7 +136,7 @@ public sealed class TagsEdit : IEdit
     public void Undo(Sprite s) => Restore(s, _before);
     public void Redo(Sprite s) => Restore(s, _after);
 
-    private static void Restore(Sprite s, List<TagState> states)
+    internal static void Restore(Sprite s, List<TagState> states)
     {
         s.Tags.Clear();
         foreach (var t in states) { t.Restore(); s.Tags.Add(t.Tag); }

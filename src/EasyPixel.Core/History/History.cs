@@ -13,6 +13,16 @@ public interface IEdit
     long Bytes { get; }
 }
 
+/// <summary>
+/// An edit that can take in the next one, so a run of small changes (an opacity spinner) is one undo step. History asks
+/// only right after this edit was pushed (no undo, redo or save in between).
+/// </summary>
+public interface IMergeableEdit : IEdit
+{
+    /// <summary>Absorbs <paramref name="next"/> (already applied) and returns true, or returns false to keep them apart.</summary>
+    bool TryMerge(IEdit next);
+}
+
 /// <summary>Linear undo/redo stack with a memory cap.</summary>
 public sealed class History
 {
@@ -23,6 +33,7 @@ public sealed class History
     private int _savedPos;     // position at the last save; -1 when that state is no longer reachable
     private long _bytes;
     private long _maxBytes = 512L * 1024 * 1024;
+    private bool _mergeOpen; // the top edit was just pushed: the next push may merge into it
 
     public History(Sprite sprite)
     {
@@ -46,11 +57,24 @@ public sealed class History
     /// <summary>True when the document differs from the last <see cref="MarkSaved"/> state (or that state was dropped).</summary>
     public bool IsDirty => _savedPos != _pos;
 
-    public void MarkSaved() => _savedPos = _pos;
+    public void MarkSaved()
+    {
+        _savedPos = _pos;
+        _mergeOpen = false;
+    }
 
     public void Push(IEdit edit)
     {
         ArgumentNullException.ThrowIfNull(edit);
+        if (_mergeOpen && _pos == _edits.Count && _pos > 0 && _savedPos != _pos && _edits[_pos - 1] is IMergeableEdit m && m.TryMerge(edit))
+        {
+            _bytes -= _sizes[_pos - 1];
+            _sizes[_pos - 1] = m.Bytes;
+            _bytes += m.Bytes;
+            Trim();
+            return;
+        }
+        _mergeOpen = true;
         if (_pos < _edits.Count)
         {
             for (int i = _pos; i < _edits.Count; i++) _bytes -= _sizes[i];
@@ -68,6 +92,7 @@ public sealed class History
 
     public bool Undo()
     {
+        _mergeOpen = false;
         if (_pos == 0) return false;
         _edits[--_pos].Undo(_sprite);
         return true;
@@ -75,6 +100,7 @@ public sealed class History
 
     public bool Redo()
     {
+        _mergeOpen = false;
         if (_pos == _edits.Count) return false;
         _edits[_pos++].Redo(_sprite);
         return true;

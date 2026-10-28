@@ -412,4 +412,78 @@ public class EditorEditsTests
         h.Undo();
         Assert.Equal((0, 0), (cel.X, cel.Y));
     }
+
+    // ---- review fixes ----
+
+    [Fact]
+    public void MoveFrame_TagsFollowTheirFrames_AndUndo()
+    {
+        var s = Frames3(out _);
+        s.Frames.Add(new Frame());
+        var tag = new Tag { Name = "t", From = 1, To = 2 };
+        s.Tags.Add(tag);
+        var h = new History(s);
+        h.Push(MoveFrameEdit.Perform(s, 2, 0)); // the tag's last frame moves before its first
+        Assert.Equal((0, 2), (tag.From, tag.To));
+        h.Undo();
+        Assert.Equal((1, 2), (tag.From, tag.To));
+        h.Redo();
+        Assert.Equal((0, 2), (tag.From, tag.To));
+        h.Undo();
+        h.Push(MoveFrameEdit.Perform(s, 3, 0)); // a frame outside moves in front: the tag shifts with its frames
+        Assert.Equal((2, 3), (tag.From, tag.To));
+    }
+
+    [Fact]
+    public void OpacityEdits_MergeUntilAnotherStep()
+    {
+        var s = new Sprite(2, 2);
+        var l = s.Layers[0];
+        var h = new History(s);
+        void Opacity(byte o) => h.Push(LayerPropsEdit.Perform(l, LayerProps.Of(l) with { Opacity = o }, "Layer opacity"));
+        Opacity(200); Opacity(150); Opacity(100);
+        Assert.Equal(1, h.Count);
+        h.Push(LayerPropsEdit.Perform(l, LayerProps.Of(l) with { Visible = false }, "Hide layer"));
+        Opacity(50);
+        Assert.Equal(3, h.Count);
+        h.Undo();
+        Opacity(60); // after an undo a new step starts
+        Assert.Equal(3, h.Count);
+        h.MarkSaved();
+        Opacity(70); // the saved state stays reachable
+        Assert.Equal(4, h.Count);
+        h.Undo();
+        Assert.Equal((byte)60, l.Opacity);
+        h.Undo(); h.Undo();
+        Assert.Equal((byte)100, l.Opacity);
+        h.Undo();
+        Assert.Equal((byte)255, l.Opacity);
+    }
+
+    [Fact]
+    public void SelectByValue_UsesTheFillRule()
+    {
+        var img = new Image(3, 1);
+        img.Pixels[0] = 0xFF000010; img.Pixels[1] = 0xFF000014; img.Pixels[2] = 0xFF000040;
+        var exact = Core.Select.Selectors.ByValue(img, 0xFF000010, 0);
+        Assert.Equal((true, false, false), (exact.Contains(0, 0), exact.Contains(1, 0), exact.Contains(2, 0)));
+        var near = Core.Select.Selectors.ByValue(img, 0xFF000010, 8);
+        Assert.Equal((true, true, false), (near.Contains(0, 0), near.Contains(1, 0), near.Contains(2, 0)));
+    }
+
+    [Fact]
+    public void Aseprite_CollapsedGroup_IsReported()
+    {
+        var s = new Sprite(2, 2);
+        var g = LayerTree.Group(s, s.Layers[0], "G");
+        Assert.False(AsepriteFormat.IsCollapsed(g));
+        g.Extra["ase:flags"] = new byte[] { 1 | 2 | 32, 0, 1, 0, 0, 0, 0, 0 };
+        var ms = new MemoryStream();
+        new AsepriteFormat().Write(s, ms, new List<string>());
+        ms.Position = 0;
+        var read = new AsepriteFormat().Read(ms, new List<string>());
+        var group = read.Layers.Single(l => l.IsGroup);
+        Assert.True(AsepriteFormat.IsCollapsed(group));
+        Assert.False(AsepriteFormat.IsCollapsed(read.Layers.Single(l => !l.IsGroup)));
+    }
 }

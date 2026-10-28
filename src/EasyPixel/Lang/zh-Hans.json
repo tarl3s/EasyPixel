@@ -1,5 +1,6 @@
 {
   "_note": "zh-Hans translation of en.json (keys are the English texts).",
+  "A copy of your sprite was saved to {0}": "已将精灵的副本保存到 {0}",
   "A group can't be drawn on: pick a layer.": "不能在组上绘画：请选择一个图层。",
   "A sprite needs at least one frame": "精灵至少需要一帧",
   "A sprite needs at least one layer": "精灵至少需要一个图层",
@@ -269,6 +270,7 @@
   "Soft light": "柔光",
   "Some Aseprite data (slices/user data/tilesets) could not be kept": "部分 Aseprite 数据（切片/用户数据/图块集）无法保留",
   "Some empty or broken cels were skipped": "已跳过一些空的或损坏的单元格",
+  "Something went wrong and was stopped: {0}": "出现问题，操作已停止：{0}",
   "Spray": "喷枪",
   "Sprite": "精灵",
   "Sprite sheet (PNG + JSON)": "精灵表（PNG + JSON）",
@@ -289,6 +291,7 @@
   "The new theme is used the next time EasyPixel starts.": "新主题将在下次启动 EasyPixel 时使用。",
   "The palette is full (256 colours)": "调色板已满（256 色）",
   "The palette was cut to 256 colours": "调色板已截断为 256 色",
+  "The palette was extended to keep every colour the sprite uses.": "调色板已扩展，以保留精灵使用的所有颜色。",
   "Theme": "主题",
   "There isn't enough memory for a canvas that big.": "内存不足，无法创建这么大的画布。",
   "Tile grid": "图块网格",

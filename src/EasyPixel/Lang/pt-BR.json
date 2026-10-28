@@ -1,5 +1,6 @@
 {
   "_note": "pt-BR translation of en.json (keys are the English texts).",
+  "A copy of your sprite was saved to {0}": "Uma cópia do seu sprite foi salva em {0}",
   "A group can't be drawn on: pick a layer.": "Não dá para desenhar em um grupo: escolha uma camada.",
   "A sprite needs at least one frame": "Um sprite precisa de pelo menos um quadro",
   "A sprite needs at least one layer": "Um sprite precisa de pelo menos uma camada",
@@ -269,6 +270,7 @@
   "Soft light": "Luz suave",
   "Some Aseprite data (slices/user data/tilesets) could not be kept": "Alguns dados do Aseprite (fatias/dados do usuário/tilesets) não puderam ser mantidos",
   "Some empty or broken cels were skipped": "Algumas células vazias ou danificadas foram ignoradas",
+  "Something went wrong and was stopped: {0}": "Algo deu errado e foi interrompido: {0}",
   "Spray": "Spray",
   "Sprite": "Sprite",
   "Sprite sheet (PNG + JSON)": "Folha de sprites (PNG + JSON)",
@@ -289,6 +291,7 @@
   "The new theme is used the next time EasyPixel starts.": "O novo tema vale na próxima vez que o EasyPixel abrir.",
   "The palette is full (256 colours)": "A paleta está cheia (256 cores)",
   "The palette was cut to 256 colours": "A paleta foi cortada para 256 cores",
+  "The palette was extended to keep every colour the sprite uses.": "A paleta foi aumentada para manter todas as cores que o sprite usa.",
   "Theme": "Tema",
   "There isn't enough memory for a canvas that big.": "Não há memória suficiente para uma tela desse tamanho.",
   "Tile grid": "Grade de blocos",

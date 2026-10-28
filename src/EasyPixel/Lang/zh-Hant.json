@@ -1,5 +1,6 @@
 {
   "_note": "zh-Hant translation of en.json (keys are the English texts).",
+  "A copy of your sprite was saved to {0}": "已將精靈的副本儲存到 {0}",
   "A group can't be drawn on: pick a layer.": "無法在群組上繪圖：請選擇一個圖層。",
   "A sprite needs at least one frame": "精靈至少需要一個影格",
   "A sprite needs at least one layer": "精靈至少需要一個圖層",
@@ -269,6 +270,7 @@
   "Soft light": "柔光",
   "Some Aseprite data (slices/user data/tilesets) could not be kept": "部分 Aseprite 資料（切片/使用者資料/圖塊集）無法保留",
   "Some empty or broken cels were skipped": "已略過一些空白或損壞的儲存格",
+  "Something went wrong and was stopped: {0}": "發生問題，操作已停止：{0}",
   "Spray": "噴槍",
   "Sprite": "精靈",
   "Sprite sheet (PNG + JSON)": "精靈表（PNG + JSON）",
@@ -289,6 +291,7 @@
   "The new theme is used the next time EasyPixel starts.": "新主題會在下次啟動 EasyPixel 時使用。",
   "The palette is full (256 colours)": "調色盤已滿（256 色）",
   "The palette was cut to 256 colours": "調色盤已截斷為 256 色",
+  "The palette was extended to keep every colour the sprite uses.": "調色盤已擴充，以保留精靈使用的所有顏色。",
   "Theme": "主題",
   "There isn't enough memory for a canvas that big.": "記憶體不足，無法建立這麼大的畫布。",
   "Tile grid": "圖塊格線",

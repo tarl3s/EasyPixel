@@ -18,6 +18,7 @@ public partial class MainWindow
     };
 
     private readonly Playback _playback = new();
+    private int _playFrames; // frame count when playback started
     private DispatcherTimer? _playTimer;
 
     /// <summary>The frames picked in the timeline (Shift+click widens it); a single frame when nothing else is picked.</summary>
@@ -36,8 +37,8 @@ public partial class MainWindow
     {
         frame = Math.Clamp(frame, 0, Session.Doc.Frames.Count - 1);
         if (!extend) _rangeAnchor = frame;
-        Session.Frame = frame;
-        RefreshPanels();
+        if (Session.Frame != frame) Session.Frame = frame; // CurrentChanged refreshes the timeline
+        else OnCurrentChanged();
     }
 
     private void NewFrame_Click(object? sender, RoutedEventArgs e) => NewFrame();
@@ -158,23 +159,26 @@ public partial class MainWindow
         _playTimer = new DispatcherTimer { Interval = FrameTime(Session.Frame) };
         _playTimer.Tick += (_, _) => PlayStep();
         _playTimer.Start();
-        RefreshPanels();
+        _playFrames = Session.Doc.Frames.Count;
+        Timeline.Highlight();
     }
 
     internal void StopPlaying()
     {
         _playTimer?.Stop();
         _playTimer = null;
-        RefreshPanels();
+        Timeline?.Highlight();
     }
 
     /// <summary>One tick of playback: the next frame, or the end.</summary>
     internal void PlayStep()
     {
+        // Frames added or removed since playing started (undo, a menu command): the range is stale.
+        if (Session.Doc.Frames.Count != _playFrames) { StopPlaying(); return; }
         if (_playback.Next(Session.Frame) is not { } next) { StopPlaying(); return; }
         _rangeAnchor = next;
-        Session.Frame = next;
-        if (_playTimer != null) _playTimer.Interval = FrameTime(next);
+        Session.Frame = next; // clamped to the frames there are
+        if (_playTimer != null) _playTimer.Interval = FrameTime(Session.Frame);
     }
 
     private TimeSpan FrameTime(int frame) => TimeSpan.FromMilliseconds(Math.Max(10, Session.Doc.Frames[frame].DurationMs));
@@ -183,7 +187,7 @@ public partial class MainWindow
     {
         LoopItem.IsChecked = loop;
         _playback.Loop = loop;
-        Timeline.Rebuild();
+        Timeline.Highlight();
     }
 
     internal Playback Playback => _playback;
@@ -194,7 +198,7 @@ public partial class MainWindow
     {
         OnionItem.IsChecked = on;
         Canvas.ShowOnion = on;
-        Timeline.Rebuild();
+        Timeline.Highlight();
     }
 
     private void ApplyOnionSettings()

@@ -80,6 +80,19 @@ public static class Selectors
         }
     }
 
+    /// <summary>Selects every pixel of the image whose value matches <paramref name="value"/> within <paramref name="tolerance"/> (same rule as the bucket fill).</summary>
+    public static Selection ByValue(Image img, uint value, int tolerance)
+    {
+        int w = img.Width, h = img.Height;
+        var s = new Selection(w, h);
+        tolerance = Math.Clamp(tolerance, 0, 255);
+        var px = img.Pixels;
+        for (int j = 0; j < h; j++)
+            for (int i = 0; i < w; i++)
+                if (Fill.Matches(px[j * w + i], value, tolerance)) s.Set(i, j, true);
+        return s;
+    }
+
     /// <summary>Selects pixels matching the one at (x, y) within <paramref name="tolerance"/> (same rule as the bucket fill).</summary>
     public static Selection MagicWand(Image img, int x, int y, int tolerance, bool contiguous)
     {
@@ -89,13 +102,7 @@ public static class Selectors
         tolerance = Math.Clamp(tolerance, 0, 255);
         var px = img.Pixels;
         uint target = px[y * w + x];
-        if (!contiguous)
-        {
-            for (int j = 0; j < h; j++)
-                for (int i = 0; i < w; i++)
-                    if (Fill.Matches(px[j * w + i], target, tolerance)) s.Set(i, j, true);
-            return s;
-        }
+        if (!contiguous) return ByValue(img, target, tolerance);
         var stack = new Stack<(int, int)>();
         stack.Push((x, y));
         s.Set(x, y, true);

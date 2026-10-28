@@ -18,35 +18,25 @@ public partial class MainWindow
 
     /// <summary>
     /// Selects every pixel of the current layer that has <paramref name="color"/> (within the magic wand's tolerance),
-    /// wherever it is: the magic wand without "contiguous".
+    /// wherever it is: the magic wand without "contiguous", started from a colour instead of a pixel.
     /// </summary>
     internal void SelectByColor(Rgba color)
     {
         Session.DropFloating();
         var doc = Session.Doc;
         var sel = Selection.None(doc.Width, doc.Height);
-        if (doc.Cels.TryGetValue((Session.Layer, Session.Frame), out var cel))
-        {
-            int tol = Tools.Tolerance;
-            var img = cel.Image;
-            for (int y = 0; y < img.Height; y++)
-            {
-                int cy = y + cel.Y;
-                if ((uint)cy >= (uint)doc.Height) continue;
-                for (int x = 0; x < img.Width; x++)
-                {
-                    int cx = x + cel.X;
-                    if ((uint)cx >= (uint)doc.Width) continue;
-                    var c = Rgba.FromPacked(ToRgba(doc, img.Pixels[y * img.Width + x]));
-                    if (Near(c, color, tol)) sel.Set(cx, cy, true);
-                }
-            }
-        }
+        if (doc.Cels.TryGetValue((Session.Layer, Session.Frame), out var cel) && PixelValueOf(doc, color) is { } value)
+            sel = SelectionTools.FromImageSpace(Selectors.ByValue(cel.Image, value, Tools.Tolerance), cel.X, cel.Y, doc.Width, doc.Height);
         Session.Sel = sel;
         ShowStatus(sel.IsEmpty ? L.T("No pixel has that colour on this layer") : L.T("Selected every pixel of the primary colour"));
     }
 
-    private static bool Near(Rgba a, Rgba b, int tol) =>
-        (a.A == 0 && b.A == 0)
-        || (Math.Abs(a.R - b.R) <= tol && Math.Abs(a.G - b.G) <= tol && Math.Abs(a.B - b.B) <= tol && Math.Abs(a.A - b.A) <= tol);
+    /// <summary>The value an image stores for <paramref name="c"/> (an existing palette index in indexed mode), or null.</summary>
+    private static uint? PixelValueOf(Sprite doc, Rgba c)
+    {
+        if (doc.Mode == ColorMode.Rgba) return c.Packed;
+        if (c.A == 0 && doc.Palette.TransparentIndex >= 0) return (uint)doc.Palette.TransparentIndex;
+        int i = doc.Palette.IndexOf(c);
+        return i >= 0 ? (uint)i : null;
+    }
 }

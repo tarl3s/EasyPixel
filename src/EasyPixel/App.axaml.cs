@@ -35,6 +35,7 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        CrashGuard.Install();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var window = new MainWindow();

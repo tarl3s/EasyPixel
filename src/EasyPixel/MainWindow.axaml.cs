@@ -21,6 +21,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         Dialogs = new AppDialogs(this);
+        CrashGuard.Window = this;
         Tools.Changed += OnToolsChanged;
         Canvas.ViewChanged += UpdateStatusBar;
         BuildToolStrip();
@@ -57,12 +58,12 @@ public partial class MainWindow : Window
         if (Session != null)
         {
             Session.HistoryChanged -= OnHistoryChanged;
-            Session.CurrentChanged -= RefreshPanels;
+            Session.CurrentChanged -= OnCurrentChanged;
         }
         Session = s;
         _rangeAnchor = s.Frame;
         s.HistoryChanged += OnHistoryChanged;
-        s.CurrentChanged += RefreshPanels;
+        s.CurrentChanged += OnCurrentChanged;
         Canvas.Attach(s, Tools, ShowStatus);
         UpdateTitle();
         UpdateStatusBar();
@@ -78,8 +79,18 @@ public partial class MainWindow : Window
         return s;
     }
 
+    /// <summary>Another frame or layer became current: only what shows the current one is updated.</summary>
+    private void OnCurrentChanged()
+    {
+        if (Session.Layer != _layerShown) { _layerShown = Session.Layer; Layers.Rebuild(); }
+        Timeline.Highlight();
+        UpdateStatusBar();
+    }
+    private Layer? _layerShown;
+
     private void OnHistoryChanged()
     {
+        if (IsPlaying && Session.Doc.Frames.Count != _playFrames) StopPlaying();
         UpdateTitle();
         RefreshPanels();
     }
@@ -89,6 +100,7 @@ public partial class MainWindow : Window
     {
         if (Session == null) return;
         if (_rangeAnchor >= Session.Doc.Frames.Count) _rangeAnchor = Session.Frame;
+        _layerShown = Session.Layer;
         Layers?.Rebuild();
         Timeline?.Rebuild();
         PaletteView?.Rebuild();

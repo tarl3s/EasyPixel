@@ -63,25 +63,36 @@ public sealed class TimelinePanel : DockPanel
         Rebuild();
     }
 
-    public void Rebuild()
+    /// <summary>Only what changes when another frame is current or playback starts/stops: the cell colours and the buttons.</summary>
+    public void Highlight()
     {
         if (_w == null) return;
         var s = _w.Session;
-        var doc = s.Doc;
         _play.Content = _w.IsPlaying ? "■" : "▶";
         _loop.IsChecked = _w.Playback.Loop;
         _onion.IsChecked = _w.Canvas.ShowOnion;
         var (from, to) = _w.FrameRange;
-
-        while (_frames.Children.Count > doc.Frames.Count) _frames.Children.RemoveAt(_frames.Children.Count - 1);
-        while (_frames.Children.Count < doc.Frames.Count) _frames.Children.Add(NewCell(_frames.Children.Count));
-        for (int i = 0; i < doc.Frames.Count; i++)
+        int n = Math.Min(_frames.Children.Count, s.Doc.Frames.Count);
+        for (int i = 0; i < n; i++)
         {
             var cell = (Border)_frames.Children[i];
             bool current = i == s.Frame, picked = i >= from && i <= to;
             cell.Background = current ? Res.Brush("Bg3") : picked ? Res.Brush("Hover") : Res.Brush("Bg2");
             cell.BorderBrush = current ? Res.Brush("Accent") : Res.Brush("Border");
-            var texts = (StackPanel)cell.Child!;
+        }
+    }
+
+    /// <summary>Everything: cells, durations, tags (after a change to the document).</summary>
+    public void Rebuild()
+    {
+        if (_w == null) return;
+        var doc = _w.Session.Doc;
+        while (_frames.Children.Count > doc.Frames.Count) _frames.Children.RemoveAt(_frames.Children.Count - 1);
+        while (_frames.Children.Count < doc.Frames.Count) _frames.Children.Add(NewCell(_frames.Children.Count));
+        Highlight();
+        for (int i = 0; i < doc.Frames.Count; i++)
+        {
+            var texts = (StackPanel)((Border)_frames.Children[i]).Child!;
             ((TextBlock)texts.Children[0]).Text = (i + 1).ToString();
             ((TextBlock)texts.Children[1]).Text = L.F("{0} ms", doc.Frames[i].DurationMs);
         }

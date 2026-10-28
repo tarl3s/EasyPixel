@@ -49,7 +49,7 @@ public sealed class AsepriteFormat : ISpriteFormat
     private const int HeaderSize = 128, FrameHeaderSize = 16, ChunkHeaderSize = 6;
     private const int MaxCelPixels = 1 << 26;
     private const uint FlagLayerOpacity = 1, FlagGroupOpacity = 2, FlagLayerUuid = 4;
-    private const int LayerVisible = 1, LayerEditable = 2;
+    private const int LayerVisible = 1, LayerEditable = 2, LayerCollapsed = 32;
     private const int ChunkOldPalette = 0x0004, ChunkOldPalette64 = 0x0011, ChunkLayer = 0x2004, ChunkCel = 0x2005,
         ChunkCelExtra = 0x2006, ChunkTags = 0x2018, ChunkPalette = 0x2019, ChunkUserData = 0x2020;
     private const int CelRaw = 0, CelLinked = 1, CelCompressed = 2;
@@ -63,6 +63,11 @@ public sealed class AsepriteFormat : ISpriteFormat
     private const string KeyAfter = "ase:after", KeyFlags = "ase:flags", KeyUuid = "ase:uuid", KeyId = "ase:id",
         KeyZ = "ase:z", KeyUserData = "ase:userdata", KeyRepeat = "ase:repeat", KeyChunks = "ase:chunks",
         KeyTilemapCel = "ase:tilemap-cel:";
+
+    /// <summary>True when an Aseprite file showed this group folded (its "collapsed" layer flag, kept in Extra).</summary>
+    public static bool IsCollapsed(Layer layer) =>
+        layer.IsGroup && layer.Extra.TryGetValue(KeyFlags, out var b) && b.Length >= 2
+        && (BinaryPrimitives.ReadUInt16LittleEndian(b) & LayerCollapsed) != 0;
 
     public string Name => "Aseprite sprite";
     public string[] Extensions { get; } = { ".aseprite", ".ase" };

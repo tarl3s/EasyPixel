@@ -515,4 +515,108 @@ public class PanelTests
         App.Settings.Theme = "dark";
         App.Settings.Save();
     }
+
+    // ---- review fixes ----
+
+    [AvaloniaFact]
+    public void Playback_SurvivesUndoOfAFrame()
+    {
+        using var h = new Harness();
+        h.Window.NewEmptyFrame();
+        h.Window.NewEmptyFrame();       // 3 frames, on the last
+        h.Window.TogglePlay();
+        h.Window.Undo();                // back to 2 frames while playing
+        h.Window.PlayStep();            // used to index a frame that no longer exists
+        Assert.False(h.Window.IsPlaying);
+        Assert.InRange(h.Session.Frame, 0, 1);
+        h.Window.TogglePlay();
+        h.Window.PlayStep();
+        Assert.True(h.Window.IsPlaying);
+        h.Window.StopPlaying();
+    }
+
+    [AvaloniaFact]
+    public void CrashGuard_LogsKeepsWorkAndTells()
+    {
+        using var h = new Harness();
+        var folder = Path.Combine(TestAppBuilder.TempRoot, "crash");
+        CrashGuard.Folder = folder;
+        CrashGuard.Window = h.Window;
+        CrashGuard.Install();
+        try
+        {
+            h.Drag((1, 1)); // unsaved work
+            // Run the jobs the way the app's main loop does (a dispatcher frame), not the test pump.
+            var frame = new Avalonia.Threading.DispatcherFrame();
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => throw new InvalidOperationException("boom in a posted action"));
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => frame.Continue = false);
+            Avalonia.Threading.Dispatcher.UIThread.PushFrame(frame);
+            Harness.Pump();
+            Assert.Contains("boom in a posted action", File.ReadAllText(CrashGuard.LogPath));
+            var copy = Assert.Single(Directory.GetFiles(folder, "easypixel_recovery_*.epx"));
+            using (var f = File.OpenRead(copy)) Assert.Equal(16, new Core.Formats.EpxFormat().Read(f, new List<string>()).Width);
+            Assert.Contains(h.Dialogs.Told, t => t.Contains("boom in a posted action") && t.Contains(copy));
+            Assert.True(h.Window.IsVisible); // the editor stays open
+        }
+        finally
+        {
+            CrashGuard.UninstallUiHandler(); // later tests must see their own exceptions
+            CrashGuard.Window = null;
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task LoadingAShortPalette_IntoIndexed_KeepsUsedColours()
+    {
+        using var h = new Harness(4, 4, ColorMode.Indexed);
+        foreach (var c in new[] { new Rgba(255, 0, 0, 255), new Rgba(0, 255, 0, 255), new Rgba(0, 0, 255, 255) })
+        {
+            h.Window.Tools.SetPrimary(c);
+            h.Drag((h.Doc.Palette.Colors.Count, 0));
+        }
+        Assert.Equal(4, h.Doc.Palette.Colors.Count); // transparent + 3, index 3 used
+        var path = Harness.TempFile("two.hex");
+        File.WriteAllText(path, "ffffff\n000000\n");
+        await h.Window.PaletteView.LoadAsync(path);
+        Assert.Equal(4, h.Doc.Palette.Colors.Count);
+        Assert.Equal(new Rgba(0, 0, 255, 255), h.Doc.Palette.Colors[3]);
+        Assert.Contains(h.Dialogs.Told, t => t.Contains("extended"));
+    }
+
+    [AvaloniaFact]
+    public void RgbaRemoveColour_ShiftsTransparentIndex()
+    {
+        using var h = new Harness();
+        h.Doc.Palette.Colors.AddRange(new[] { new Rgba(1, 1, 1, 255), new Rgba(2, 2, 2, 255), new Rgba(0, 0, 0, 0) });
+        h.Doc.Palette.TransparentIndex = 2;
+        h.Window.PaletteView.Rebuild();
+        h.Window.PaletteView.Select(0);
+        h.Window.PaletteView.RemoveSelected();
+        Assert.Equal(1, h.Doc.Palette.TransparentIndex);
+        h.Window.Undo();
+        Assert.Equal(2, h.Doc.Palette.TransparentIndex);
+    }
+
+    [AvaloniaFact]
+    public void OpacitySpinner_IsOneUndoStep()
+    {
+        using var h = new Harness();
+        var l = h.Session.Layer;
+        for (int o = 250; o >= 200; o -= 10) h.Window.SetLayerOpacity(l, o);
+        Assert.Equal(1, h.Session.History.Count);
+        h.Window.Undo();
+        Assert.Equal((byte)255, l.Opacity);
+    }
+
+    [AvaloniaFact]
+    public void CollapsedGroupFromAseprite_StartsFolded()
+    {
+        using var h = new Harness();
+        var s = new Sprite(4, 4);
+        var inner = s.Layers[0];
+        var g = LayerTree.Group(s, inner, "G");
+        g.Extra["ase:flags"] = new byte[] { 1 | 2 | 32, 0, 1, 0, 0, 0, 0, 0 };
+        h.Window.SetSession(new EditorSession(s));
+        Assert.Equal(new[] { g }, h.Window.Layers.Shown);
+    }
 }

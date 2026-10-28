@@ -146,7 +146,13 @@ public sealed class PalettePanel : DockPanel
             if (Doc.Palette.Colors.Count == 1) { _w.ShowStatus(L.T("The last colour can't be removed")); return; }
             _w.Session.Apply(SpriteStateEdit.Perform(Doc, L.N("Remove colour"), () => Doc.RemovePaletteEntry(i)));
         }
-        else _w.Session.Apply(PaletteEdit.Perform(Doc, L.N("Remove colour"), () => Doc.Palette.Colors.RemoveAt(i)));
+        else
+            _w.Session.Apply(PaletteEdit.Perform(Doc, L.N("Remove colour"), () =>
+            {
+                var pal = Doc.Palette;
+                pal.Colors.RemoveAt(i);
+                pal.TransparentIndex = pal.TransparentIndex == i ? -1 : pal.TransparentIndex > i ? pal.TransparentIndex - 1 : pal.TransparentIndex;
+            }));
         Select(Math.Min(i, Doc.Palette.Colors.Count - 1));
     }
 
@@ -182,6 +188,11 @@ public sealed class PalettePanel : DockPanel
             return;
         }
         var doc = Doc;
+        // An indexed picture keeps its numbers: a shorter palette is padded (with the old colours) up to the highest one used.
+        int used = doc.Mode == ColorMode.Indexed ? HighestIndexUsed(doc) : -1;
+        bool padded = colors.Count <= used;
+        for (int i = colors.Count; i <= used; i++)
+            colors.Add(i < doc.Palette.Colors.Count ? doc.Palette.Colors[i] : new Rgba(0, 0, 0, 255));
         _w.Session.Apply(PaletteEdit.Perform(doc, L.N("Load palette"), () =>
         {
             int t = doc.Palette.TransparentIndex;
@@ -192,6 +203,16 @@ public sealed class PalettePanel : DockPanel
         _selected = -1;
         Rebuild();
         _w.ShowStatus(L.F("Loaded {0} colours", colors.Count));
+        if (padded) await _w.Dialogs.Tell(L.T("The palette was extended to keep every colour the sprite uses."));
+    }
+
+    private static int HighestIndexUsed(Sprite doc)
+    {
+        uint max = 0;
+        foreach (var cel in doc.Cels.Values.Distinct())
+            foreach (uint v in cel.Image.Pixels)
+                if (v > max) max = v;
+        return (int)Math.Min(max, Palette.MaxColors - 1);
     }
 
     internal async Task SaveAsync(string? path = null)

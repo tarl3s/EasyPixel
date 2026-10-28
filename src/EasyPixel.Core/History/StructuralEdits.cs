@@ -75,10 +75,10 @@ public sealed class AddFrameEdit : IEdit
 {
     private readonly Frame _frame;
     private readonly int _index;
-    private readonly TagSnapshot _tagsBefore, _tagsAfter;
+    private readonly List<TagState> _tagsBefore, _tagsAfter;
     private List<(Layer Layer, Cel Cel)> _cels = new(); // cels drawn on the new frame, held while the add is undone
 
-    private AddFrameEdit(Frame frame, int index, TagSnapshot before, TagSnapshot after)
+    private AddFrameEdit(Frame frame, int index, List<TagState> before, List<TagState> after)
     {
         _frame = frame; _index = index; _tagsBefore = before; _tagsAfter = after;
     }
@@ -88,7 +88,7 @@ public sealed class AddFrameEdit : IEdit
 
     public static AddFrameEdit Perform(Sprite s, Frame frame, int index)
     {
-        var before = TagSnapshot.Take(s);
+        var before = TagsEdit.Take(s);
         FrameShift.Open(s, index);
         s.Frames.Insert(index, frame);
         foreach (var t in s.Tags)
@@ -96,7 +96,7 @@ public sealed class AddFrameEdit : IEdit
             if (t.From >= index) t.From++;
             if (t.To >= index) t.To++;
         }
-        return new AddFrameEdit(frame, index, before, TagSnapshot.Take(s));
+        return new AddFrameEdit(frame, index, before, TagsEdit.Take(s));
     }
 
     public void Undo(Sprite s)
@@ -105,7 +105,7 @@ public sealed class AddFrameEdit : IEdit
         foreach (var c in _cels) s.Cels.Remove((c.Layer, _index));
         s.Frames.RemoveAt(_index);
         FrameShift.Close(s, _index);
-        _tagsBefore.Restore(s);
+        TagsEdit.Restore(s, _tagsBefore);
     }
 
     public void Redo(Sprite s)
@@ -114,7 +114,7 @@ public sealed class AddFrameEdit : IEdit
         s.Frames.Insert(_index, _frame);
         foreach (var c in _cels) s.Cels[(c.Layer, _index)] = c.Cel;
         _cels = new();
-        _tagsAfter.Restore(s);
+        TagsEdit.Restore(s, _tagsAfter);
     }
 }
 
@@ -123,9 +123,9 @@ public sealed class RemoveFrameEdit : IEdit
     private readonly Frame _frame;
     private readonly int _index;
     private readonly List<(Layer Layer, Cel Cel)> _cels;
-    private readonly TagSnapshot _tagsBefore, _tagsAfter;
+    private readonly List<TagState> _tagsBefore, _tagsAfter;
 
-    private RemoveFrameEdit(Frame frame, int index, List<(Layer Layer, Cel Cel)> cels, TagSnapshot before, TagSnapshot after)
+    private RemoveFrameEdit(Frame frame, int index, List<(Layer Layer, Cel Cel)> cels, List<TagState> before, List<TagState> after)
     {
         _frame = frame; _index = index; _cels = cels; _tagsBefore = before; _tagsAfter = after;
     }
@@ -135,7 +135,7 @@ public sealed class RemoveFrameEdit : IEdit
 
     public static RemoveFrameEdit Perform(Sprite s, int index)
     {
-        var before = TagSnapshot.Take(s);
+        var before = TagsEdit.Take(s);
         var frame = s.Frames[index];
         var cels = s.Cels.Where(kv => kv.Key.Item2 == index).Select(kv => (Layer: kv.Key.Item1, Cel: kv.Value)).ToList();
         foreach (var c in cels) s.Cels.Remove((c.Layer, index));
@@ -148,7 +148,7 @@ public sealed class RemoveFrameEdit : IEdit
             if (t.From > index) t.From--;
             if (t.To >= index) t.To--;
         }
-        return new RemoveFrameEdit(frame, index, cels, before, TagSnapshot.Take(s));
+        return new RemoveFrameEdit(frame, index, cels, before, TagsEdit.Take(s));
     }
 
     public void Undo(Sprite s)
@@ -156,7 +156,7 @@ public sealed class RemoveFrameEdit : IEdit
         FrameShift.Open(s, _index);
         s.Frames.Insert(_index, _frame);
         foreach (var c in _cels) s.Cels[(c.Layer, _index)] = c.Cel;
-        _tagsBefore.Restore(s);
+        TagsEdit.Restore(s, _tagsBefore);
     }
 
     public void Redo(Sprite s)
@@ -164,22 +164,7 @@ public sealed class RemoveFrameEdit : IEdit
         foreach (var c in _cels) s.Cels.Remove((c.Layer, _index));
         s.Frames.RemoveAt(_index);
         FrameShift.Close(s, _index);
-        _tagsAfter.Restore(s);
-    }
-}
-
-/// <summary>The tag list with each tag's frame range, so a frame edit can put tags back exactly.</summary>
-internal sealed class TagSnapshot
-{
-    private readonly List<(Tag Tag, int From, int To)> _tags;
-    private TagSnapshot(List<(Tag, int, int)> tags) { _tags = tags; }
-
-    public static TagSnapshot Take(Sprite s) => new(s.Tags.Select(t => (t, t.From, t.To)).ToList());
-
-    public void Restore(Sprite s)
-    {
-        s.Tags.Clear();
-        foreach (var (t, from, to) in _tags) { t.From = from; t.To = to; s.Tags.Add(t); }
+        TagsEdit.Restore(s, _tagsAfter);
     }
 }
 

@@ -108,10 +108,11 @@ public readonly record struct LayerProps(string Name, bool Visible, bool Locked,
 }
 
 /// <summary>A change of a layer's settings (rename, show/hide, lock, opacity, blend mode).</summary>
-public sealed class LayerPropsEdit : IEdit
+public sealed class LayerPropsEdit : IMergeableEdit
 {
     private readonly Layer _layer;
-    private readonly LayerProps _before, _after;
+    private readonly LayerProps _before;
+    private LayerProps _after;
 
     private LayerPropsEdit(string name, Layer layer, LayerProps before, LayerProps after)
     {
@@ -128,6 +129,16 @@ public sealed class LayerPropsEdit : IEdit
         after.ApplyTo(layer);
         return new LayerPropsEdit(name, layer, before, after);
     }
+
+    /// <summary>Consecutive opacity changes of one layer (a spinner, a drag) become one step.</summary>
+    public bool TryMerge(IEdit next)
+    {
+        if (next is not LayerPropsEdit n || n._layer != _layer || !OnlyOpacity(_before, _after) || !OnlyOpacity(n._before, n._after)) return false;
+        _after = n._after;
+        return true;
+    }
+
+    private static bool OnlyOpacity(LayerProps a, LayerProps b) => a.Opacity != b.Opacity && a with { Opacity = b.Opacity } == b;
 
     public void Undo(Sprite s) => _before.ApplyTo(_layer);
     public void Redo(Sprite s) => _after.ApplyTo(_layer);

@@ -1,5 +1,6 @@
 {
   "_note": "fr translation of en.json (keys are the English texts).",
+  "A copy of your sprite was saved to {0}": "Une copie de votre sprite a été enregistrée dans {0}",
   "A group can't be drawn on: pick a layer.": "Impossible de dessiner sur un groupe : choisissez un calque.",
   "A sprite needs at least one frame": "Un sprite doit avoir au moins une image",
   "A sprite needs at least one layer": "Un sprite doit avoir au moins un calque",
@@ -269,6 +270,7 @@
   "Soft light": "Lumière douce",
   "Some Aseprite data (slices/user data/tilesets) could not be kept": "Certaines données Aseprite (slices/données utilisateur/tilesets) n'ont pas pu être gardées",
   "Some empty or broken cels were skipped": "Des cellules vides ou abîmées ont été ignorées",
+  "Something went wrong and was stopped: {0}": "Un problème est survenu et a été arrêté : {0}",
   "Spray": "Aérographe",
   "Sprite": "Sprite",
   "Sprite sheet (PNG + JSON)": "Planche de sprites (PNG + JSON)",
@@ -289,6 +291,7 @@
   "The new theme is used the next time EasyPixel starts.": "Le nouveau thème s'applique au prochain démarrage d'EasyPixel.",
   "The palette is full (256 colours)": "La palette est pleine (256 couleurs)",
   "The palette was cut to 256 colours": "La palette a été réduite à 256 couleurs",
+  "The palette was extended to keep every colour the sprite uses.": "La palette a été agrandie pour garder toutes les couleurs utilisées par le sprite.",
   "Theme": "Thème",
   "There isn't enough memory for a canvas that big.": "Il n'y a pas assez de mémoire pour un canevas aussi grand.",
   "Tile grid": "Grille de tuiles",
