@@ -80,6 +80,8 @@ public partial class MainWindow
 
     internal async Task CutAsync()
     {
+        // Like Delete: nothing selected means nothing to cut (copy alone would copy the whole layer).
+        if (Session.Float == null && Session.Sel.IsEmpty) { ShowStatus(L.T("Select something first")); return; }
         await CopyAsync();
         DeleteSelection();
     }
@@ -94,16 +96,18 @@ public partial class MainWindow
         var doc = Session.Doc;
         var cel = Session.CelForDrawing();
         var before = CelReplaceEdit.Begin(cel);
-        var pixels = new Image(img.Width, img.Height);
+        uint clear = doc.TransparentPixel;
+        var pixels = new Image(img.Width, img.Height, clear);
         for (int i = 0; i < img.Pixels.Length; i++)
         {
             var c = Rgba.FromPacked(img.Pixels[i]);
-            pixels.Pixels[i] = c.A == 0 ? 0 : doc.ColorToPixel(c);
+            pixels.Pixels[i] = c.A == 0 ? clear : doc.ColorToPixel(c);
         }
         int x = Session.Sel.IsEmpty ? (doc.Width - img.Width) / 2 : Session.Sel.Bounds.X;
         int y = Session.Sel.IsEmpty ? (doc.Height - img.Height) / 2 : Session.Sel.Bounds.Y;
+        var selectionBefore = Session.Sel;
         Session.Sel = Selectors.Rect(doc.Width, doc.Height, new PixelRect(x, y, img.Width, img.Height));
-        Session.BeginFloating(new Floating(pixels, x, y), cel, before, "Paste");
+        Session.BeginFloating(new Floating(pixels, x, y, clear), cel, before, "Paste", selectionBefore);
         Tools.Current = ToolKind.Move;
         UpdateTitle();
     }
@@ -126,7 +130,7 @@ public partial class MainWindow
         {
             var src = fs.Pixels.Pixels;
             var copy = new Image(src.Width, src.Height);
-            for (int i = 0; i < src.Pixels.Length; i++) copy.Pixels[i] = src.Pixels[i] == 0 ? 0 : ToRgba(doc, src.Pixels[i]);
+            for (int i = 0; i < src.Pixels.Length; i++) copy.Pixels[i] = src.Pixels[i] == fs.Pixels.Clear ? 0 : ToRgba(doc, src.Pixels[i]);
             return copy;
         }
         if (!doc.Cels.TryGetValue((Session.Layer, Session.Frame), out var cel)) return null;

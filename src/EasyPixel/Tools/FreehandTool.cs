@@ -15,6 +15,12 @@ public sealed class FreehandTool : Tool
     private int _lastX, _lastY;
     private readonly List<(int X, int Y)> _path = new(); // pixel-perfect: the points kept so far (image coordinates)
     private uint _value;
+    // Shading / lighten-darken: each pixel changes once per stroke, from its value when the stroke began (as in
+    // Aseprite), however often overlapping brush stamps pass over it.
+    private readonly HashSet<int> _shaded = new();
+    private readonly Image _one = new(1, 1);
+    private PixelSink? _oneSink;
+    private static readonly Brush OnePixel = new();
 
     public FreehandTool(ToolKind kind, string name) : base(kind, name) { }
 
@@ -30,6 +36,7 @@ public sealed class FreehandTool : Tool
         Active = true;
         _press = p;
         _path.Clear();
+        _shaded.Clear();
         _value = Kind == ToolKind.Eraser ? c.Session.Doc.TransparentPixel : PaintValue(c, p);
         _lastX = _stroke.ToImageX(p.X);
         _lastY = _stroke.ToImageY(p.Y);
@@ -77,18 +84,9 @@ public sealed class FreehandTool : Tool
             case ToolKind.Pencil or ToolKind.Eraser:
                 foreach (var (x, y) in pts) Brush.Stamp(sink, x, y, _value, t.Brush, sym);
                 break;
-            case ToolKind.Shading:
-                {
-                    var doc = c.Session.Doc;
-                    bool indexed = doc.Mode == ColorMode.Indexed;
-                    var ramp = indexed || doc.Palette.Colors.Count >= 2 ? doc.Palette : t.DefaultRamp;
-                    foreach (var (x, y) in pts)
-                        foreach (var (mx, my) in Mirrors(x, y, sym)) Shading.Apply(sink, mx, my, t.Brush, ramp, !_press.Right, indexed);
-                    break;
-                }
-            case ToolKind.LightenDarken:
+            case ToolKind.Shading or ToolKind.LightenDarken:
                 foreach (var (x, y) in pts)
-                    foreach (var (mx, my) in Mirrors(x, y, sym)) Shading.LightenDarken(sink, mx, my, t.Brush, _press.Right ? -t.LightenAmount : t.LightenAmount);
+                    foreach (var (mx, my) in Mirrors(x, y, sym)) ShadeFootprint(c, st, sink, mx, my);
                 break;
             case ToolKind.Dither:
                 foreach (var (x, y) in pts)
@@ -138,6 +136,46 @@ public sealed class FreehandTool : Tool
         _path.Add(pt);
         Brush.Stamp(sink, pt.X, pt.Y, _value, new Brush(), sym);
         return restored;
+    }
+
+    /// <summary>Shades every pixel under the brush at (x, y) (image coordinates) not shaded yet in this stroke.</summary>
+    private void ShadeFootprint(ToolContext c, Stroke st, PixelSink sink, int x, int y)
+    {
+        int w = st.Image.Width;
+        Brush.ForEach(x, y, c.Tools.Brush, (px, py) =>
+        {
+            if (!sink.CanWrite(px, py) || !_shaded.Add(py * w + px)) return;
+            if (Shaded(c, st.Original(px, py)) is uint v) sink.Set(px, py, v);
+        });
+    }
+
+    /// <summary>The value one shading step away from <paramref name="v"/>, or null when it stays (transparent, not in the ramp, at its end).</summary>
+    private uint? Shaded(ToolContext c, uint v)
+    {
+        var doc = c.Session.Doc;
+        bool lighten = !_press.Right;
+        if (Kind == ToolKind.LightenDarken)
+        {
+            if ((v >> 24) == 0) return null;
+            _one.Pixels[0] = v;
+            _oneSink ??= new PixelSink(_one);
+            Shading.LightenDarken(_oneSink, 0, 0, OnePixel, lighten ? c.Tools.LightenAmount : -c.Tools.LightenAmount);
+            return _one.Pixels[0];
+        }
+        int step = lighten ? 1 : -1;
+        if (doc.Mode == ColorMode.Indexed)
+        {
+            int count = doc.Palette.Colors.Count, transparent = doc.Palette.TransparentIndex;
+            if (v >= (uint)count || (int)v == transparent) return null;
+            int next = (int)v + step;
+            return next < 0 || next >= count || next == transparent ? null : (uint)next;
+        }
+        if ((v >> 24) == 0) return null;
+        var ramp = doc.Palette.Colors.Count >= 2 ? doc.Palette : c.Tools.DefaultRamp;
+        int idx = ramp.IndexOf(Rgba.FromPacked(v));
+        int to = idx + step;
+        if (idx < 0 || to < 0 || to >= ramp.Colors.Count || ramp.Colors[to].A == 0) return null;
+        return ramp.Colors[to].Packed;
     }
 
     private static IEnumerable<(int, int)> Mirrors(int x, int y, Symmetry? sym) =>

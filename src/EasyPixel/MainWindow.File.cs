@@ -206,10 +206,15 @@ public partial class MainWindow
             case ExportKind.Sheet:
                 {
                     var layout = o.Layout == SheetKind.Grid ? SheetLayout.Grid(o.Columns) : new SheetLayout(o.Layout);
+                    var jsonPath = Path.ChangeExtension(path, ".json");
+                    // The picker only asked about the PNG; the JSON next to it may be someone's file too.
+                    if (File.Exists(jsonPath)
+                        && !await Dialogs.Confirm(L.F("{0} already exists. Replace it?", Path.GetFileName(jsonPath)), L.T("Replace"), L.T("Cancel")))
+                        return;
                     var (sheet, json) = SpriteSheet.Export(doc, layout, o.Padding);
                     ok = await WriteCheckedAsync(path, typeName, (s, _) => s.Write(Png.Encode(sheet)), L.T("Export anyway"));
                     if (ok)
-                        ok = await WriteCheckedAsync(Path.ChangeExtension(path, ".json"), "JSON", (s, _) => s.Write(System.Text.Encoding.UTF8.GetBytes(json)), L.T("Export anyway"));
+                        ok = await WriteCheckedAsync(jsonPath, "JSON", (s, _) => s.Write(System.Text.Encoding.UTF8.GetBytes(json)), L.T("Export anyway"));
                     break;
                 }
             default:
@@ -235,7 +240,8 @@ public partial class MainWindow
         var items = new List<Control>();
         foreach (var p in App.Settings.Recent)
         {
-            var item = new MenuItem { Header = p };
+            // A TextBlock, not a string: a string header would turn "_" in the path into an access key.
+            var item = new MenuItem { Header = new TextBlock { Text = p } };
             var path = p;
             item.Click += async (_, _) =>
             {

@@ -81,6 +81,7 @@ public sealed partial class PixelCanvas : Control
     /// <summary>Shows <paramref name="s"/>, drawing with <paramref name="tools"/>; <paramref name="status"/> receives tool messages.</summary>
     public void Attach(EditorSession s, ToolController tools, Action<string> status)
     {
+        FinishGesture(); // a stroke in progress belongs to the old document (and to the shared stroke backup)
         if (_s != null)
         {
             _s.Changed -= RefreshArea;
@@ -89,7 +90,6 @@ public sealed partial class PixelCanvas : Control
         _s = s;
         _tools = tools;
         _ctx = new ToolContext(s, tools, PickComposite, status);
-        _activeTool = null;
         s.Changed += RefreshArea;
         s.SelectionChanged += OnSelectionChanged;
         _composite = null;
@@ -102,6 +102,9 @@ public sealed partial class PixelCanvas : Control
     internal ToolContext? Context => _ctx;
 
     // ---- picture ----
+
+    /// <summary>Pixels recomposited so far (tests check that selection guides don't recomposite the picture).</summary>
+    internal long RefreshedPixels { get; private set; }
 
     public void RefreshAll()
     {
@@ -123,6 +126,7 @@ public sealed partial class PixelCanvas : Control
         }
         area = area.Intersect(_s.CanvasRect);
         if (area.IsEmpty) return;
+        RefreshedPixels += (long)area.W * area.H;
         Compositor.Flatten(doc, _s.Frame, _composite, area, scratch: _scratch);
         bool onion = _showOnion && doc.Frames.Count > 1;
         if (onion)
@@ -187,7 +191,7 @@ public sealed partial class PixelCanvas : Control
                     for (int x = 0; x < img.Width; x++)
                     {
                         uint v = img.Pixels[y * img.Width + x];
-                        row[x] = v == 0 ? 0 : !indexed ? v
+                        row[x] = v == fs.Pixels.Clear ? 0 : !indexed ? v
                             : (int)v == doc.Palette.TransparentIndex || v >= (uint)doc.Palette.Colors.Count ? 0 : doc.Palette.Colors[(int)v].Packed;
                     }
                 }
@@ -323,7 +327,8 @@ public sealed partial class PixelCanvas : Control
         FinishGesture(); // keep what was drawn rather than losing it
     }
 
-    private void FinishGesture()
+    /// <summary>Ends the gesture in progress as if the button were released (keeps what was drawn).</summary>
+    internal void FinishGesture()
     {
         var tool = _activeTool;
         _activeTool = null;

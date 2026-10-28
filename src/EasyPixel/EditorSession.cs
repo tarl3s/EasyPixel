@@ -13,6 +13,8 @@ public sealed class FloatingState
     public required CelState Before { get; init; }
     /// <summary>The selection when the pixels were lifted, and where the pixels were then.</summary>
     public required Selection SelectionAtLift { get; init; }
+    /// <summary>The selection to put back when the move is cancelled (a paste replaces the selection with its own rectangle).</summary>
+    public required Selection SelectionBefore { get; init; }
     public required int StartX { get; init; }
     public required int StartY { get; init; }
     public required string EditName { get; init; }
@@ -102,11 +104,11 @@ public sealed class EditorSession
     }
 
     /// <summary>Starts moving pixels: <paramref name="f"/> was lifted out of (or will be pasted into) <paramref name="cel"/>.</summary>
-    public void BeginFloating(Floating f, Cel cel, CelState before, string editName)
+    public void BeginFloating(Floating f, Cel cel, CelState before, string editName, Selection? selectionBefore = null)
     {
         Float = new FloatingState
         {
-            Pixels = f, Cel = cel, Before = before, SelectionAtLift = Sel, StartX = f.X, StartY = f.Y, EditName = editName,
+            Pixels = f, Cel = cel, Before = before, SelectionAtLift = Sel, SelectionBefore = selectionBefore ?? Sel, StartX = f.X, StartY = f.Y, EditName = editName,
         };
         Invalidate(Float.Bounds);
         SelectionChanged?.Invoke();
@@ -142,7 +144,7 @@ public sealed class EditorSession
         fs.Cel.Image = fs.Before.Image;
         fs.Cel.X = fs.Before.X;
         fs.Cel.Y = fs.Before.Y;
-        _sel = fs.SelectionAtLift;
+        _sel = fs.SelectionBefore;
         InvalidateAll();
         SelectionChanged?.Invoke();
     }
@@ -152,7 +154,7 @@ public sealed class EditorSession
     {
         if (Float is not { } fs) return;
         Float = null;
-        Push(CelReplaceEdit.Capture(fs.Cel, fs.Before, L.T("Delete")));
+        Push(CelReplaceEdit.Capture(fs.Cel, fs.Before, "Delete"));
         _sel = Selection.None(Doc.Width, Doc.Height);
         InvalidateAll();
         SelectionChanged?.Invoke();

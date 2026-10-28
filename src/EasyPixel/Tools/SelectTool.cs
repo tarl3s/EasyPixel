@@ -34,7 +34,7 @@ public sealed class SelectTool : Tool
         if (!Active) return;
         if (Kind == ToolKind.Lasso) { if (_points[^1] != (p.X, p.Y)) _points.Add((p.X, p.Y)); }
         else _points[^1] = (p.X, p.Y);
-        c.Session.Invalidate(c.Session.CanvasRect); // the guide moved
+        // Only the guide moved: the canvas repaints it; no pixels changed, so nothing is recomposited.
     }
 
     public override void Up(ToolContext c, ToolInput p)
@@ -66,8 +66,7 @@ public sealed class SelectTool : Tool
     public override void Cancel(ToolContext c)
     {
         Active = false;
-        _points.Clear();
-        c.Session.InvalidateAll();
+        _points.Clear(); // the canvas repaints without the guide
     }
 
     internal static SelectMode Mode(ToolInput p) => p.Shift ? SelectMode.Add : p.Alt ? SelectMode.Subtract : SelectMode.Replace;

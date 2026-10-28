@@ -43,7 +43,7 @@ public class ViewAndExportTests
         h.Dialogs.SavePaths.Enqueue(gif);
         h.Dialogs.ConfirmAnswers.Enqueue(true);
         await h.Window.ExportAsync();
-        Assert.Equal(2, new GifFormat().Read(File.OpenRead(gif), new List<string>()).Frames.Count);
+        using (var f = File.OpenRead(gif)) Assert.Equal(2, new GifFormat().Read(f, new List<string>()).Frames.Count);
 
         var sheet = Harness.TempFile("sheet.png");
         h.Dialogs.Exports.Enqueue(new ExportOptions(ExportKind.Sheet, SheetKind.Horizontal, 1, 2));
@@ -51,7 +51,20 @@ public class ViewAndExportTests
         await h.Window.ExportAsync();
         var s = Png.Decode(File.ReadAllBytes(sheet));
         Assert.Equal((10, 4), (s.Width, s.Height));
-        Assert.True(File.Exists(Path.ChangeExtension(sheet, ".json")));
+        var jsonPath = Path.ChangeExtension(sheet, ".json");
+        Assert.True(File.Exists(jsonPath));
+
+        // Exporting again over an existing JSON asks first; "no" writes nothing.
+        File.WriteAllText(jsonPath, "mine");
+        File.WriteAllText(sheet, "old");
+        h.Dialogs.Exports.Enqueue(new ExportOptions(ExportKind.Sheet));
+        h.Dialogs.SavePaths.Enqueue(sheet);
+        h.Dialogs.ConfirmAnswers.Clear(); // (the GIF step may not have used its answer)
+        h.Dialogs.ConfirmAnswers.Enqueue(false);
+        await h.Window.ExportAsync();
+        Assert.Contains("sheet.json", h.Dialogs.Confirms[^1]);
+        Assert.Equal("mine", File.ReadAllText(jsonPath));
+        Assert.Equal("old", File.ReadAllText(sheet));
         Assert.True(h.Session.History.IsDirty); // exporting doesn't count as saving
     }
 }

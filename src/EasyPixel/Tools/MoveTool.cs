@@ -96,7 +96,7 @@ public sealed class MoveTool : Tool
     {
         var cel = s.CelForDrawing();
         var before = CelReplaceEdit.Begin(cel);
-        var f = Floating.Lift(cel, s.Sel);
+        var f = Floating.Lift(cel, s.Sel, s.Doc.TransparentPixel);
         s.BeginFloating(f, cel, before, "Move");
     }
 

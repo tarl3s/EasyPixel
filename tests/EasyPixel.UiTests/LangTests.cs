@@ -23,7 +23,8 @@ public class LangTests
         var missing = new List<string>();
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir != null && !File.Exists(Path.Combine(dir.FullName, "EasyPixel.sln"))) dir = dir.Parent;
-        Assert.NotNull(dir);
+        Assert.True(dir != null,
+            $"EasyPixel.sln not found above {AppContext.BaseDirectory}: this test reads the app's sources, run it from the repository (dotnet test).");
         var app = Path.Combine(dir!.FullName, "src", "EasyPixel");
         foreach (var file in Directory.EnumerateFiles(app, "*.*", SearchOption.AllDirectories))
         {

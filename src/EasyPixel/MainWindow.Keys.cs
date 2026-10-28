@@ -26,6 +26,15 @@ public partial class MainWindow
     internal bool HandleKey(Key key, KeyModifiers mods, bool inTextBox = false)
     {
         bool ctrl = mods.HasFlag(KeyModifiers.Control), shift = mods.HasFlag(KeyModifiers.Shift);
+        // A key during a drag: Escape abandons it, anything but a modifier or Space ends it first, so no command runs
+        // in the middle of a stroke (strokes share one backup buffer and keep their own undo step).
+        bool modifierOnly = key is Key.LeftShift or Key.RightShift or Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt
+            or Key.Space;
+        if (!modifierOnly && !inTextBox)
+        {
+            if (key == Key.Escape) { if (Canvas.CancelGesture()) return true; }
+            else Canvas.FinishGesture();
+        }
         if (ctrl)
         {
             switch (key)

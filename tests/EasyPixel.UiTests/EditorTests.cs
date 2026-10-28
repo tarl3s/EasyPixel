@@ -111,7 +111,8 @@ public class EditorTests
         Assert.Empty(h.Dialogs.Confirms); // nothing lost: no question
         Assert.False(h.Session.History.IsDirty);
 
-        var back = new Core.Formats.AsepriteFormat().Read(File.OpenRead(path), new List<string>());
+        Sprite back;
+        using (var f = File.OpenRead(path)) back = new Core.Formats.AsepriteFormat().Read(f, new List<string>());
         Assert.Equal(2, back.Layers.Count);
         Assert.Equal(2, back.Frames.Count);
         Assert.Equal(250, back.Frames[1].DurationMs);
