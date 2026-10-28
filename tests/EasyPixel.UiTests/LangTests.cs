@@ -45,6 +45,9 @@ public class LangTests
         foreach (var file in Directory.EnumerateFiles(formats, "*.cs"))
             foreach (Match m in Regex.Matches(File.ReadAllText(file), @"(?:warnings\.Add\(|Warning = )""([^""]+)"""))
                 Check(m.Groups[1].Value);
+        foreach (var file in Directory.EnumerateFiles(Path.Combine(dir.FullName, "src", "EasyPixel.Core", "Bridge"), "*.cs"))
+            foreach (Match m in Regex.Matches(File.ReadAllText(file), @"const string \w+Warning = ""([^""]+)"""))
+                Check(m.Groups[1].Value);
         // Undo step names of the Core edits ("Undo {0}").
         foreach (var file in Directory.EnumerateFiles(Path.Combine(dir.FullName, "src", "EasyPixel.Core", "History"), "*.cs"))
             foreach (Match m in Regex.Matches(File.ReadAllText(file), @"public string Name => ""([^""]+)"""))

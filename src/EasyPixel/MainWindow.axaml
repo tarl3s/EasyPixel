@@ -18,6 +18,9 @@
         <MenuItem Header="{loc:T 'Save as…'}" InputGesture="Ctrl+Shift+S" Click="SaveAs_Click" />
         <MenuItem Header="{loc:T 'Export…'}" InputGesture="Ctrl+E" Click="Export_Click" />
         <Separator />
+        <MenuItem Header="{loc:T 'Import sprite from EasyEngine…'}" Click="ImportEngine_Click" />
+        <MenuItem Header="{loc:T 'Export to EasyEngine'}" Click="ExportEngine_Click" />
+        <Separator />
         <MenuItem Header="{loc:T 'Exit'}" Click="Exit_Click" />
       </MenuItem>
       <MenuItem Header="{loc:T 'Edit'}">

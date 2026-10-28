@@ -94,6 +94,13 @@ public sealed class AppDialogs : IDialogs
         return w.Result == 0 ? w.Options : null;
     }
 
+    public async Task<int?> Choose(string title, string message, IReadOnlyList<string> options)
+    {
+        var w = new ChooseWindow(title, message, options);
+        await w.ShowDialog(_owner);
+        return w.Result == 0 ? w.Index : null;
+    }
+
     public async Task<OnionOptions?> AskOnion(OnionOptions current)
     {
         var w = new OnionWindow(current);

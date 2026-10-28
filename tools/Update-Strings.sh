@@ -6,7 +6,7 @@
 # The UI test Lang_EnJsonHasEveryText fails when this needs running.
 set -euo pipefail
 cd "$(dirname "$0")/../src"
-find EasyPixel EasyPixel.Core/Formats EasyPixel.Core/History -type f \( -name '*.cs' -o -name '*.axaml' \) -not -path '*/obj/*' -not -path '*/bin/*' -print0 |
+find EasyPixel EasyPixel.Core/Formats EasyPixel.Core/Bridge EasyPixel.Core/History -type f \( -name '*.cs' -o -name '*.axaml' \) -not -path '*/obj/*' -not -path '*/bin/*' -print0 |
   xargs -0 perl -ne '
     while (/L\.[TFN]\("((?:[^"\\]|\\.)*)"/g) { $k{$1} = 1 }
     while (/loc:T \x27([^\x27]*)\x27/g) { $k{$1} = 1 }
@@ -14,6 +14,7 @@ find EasyPixel EasyPixel.Core/Formats EasyPixel.Core/History -type f \( -name '*
                                while (/(?:ToolKind\.\w+ => |_ => )"([^"]+)"/g) { $k{$1} = 1 } }
     if ($ARGV =~ m{/Formats/}) { while (/public string Name => "([^"]+)"/g) { $k{$1} = 1 }
                                  while (/(?:warnings\.Add\(|Warning = )"([^"]+)"/g) { $k{$1} = 1 } }
+    if ($ARGV =~ m{/Bridge/}) { while (/const string \w+Warning = "([^"]+)"/g) { $k{$1} = 1 } }
     if ($ARGV =~ m{/History/}) { while (/public string Name => "([^"]+)"/g) { $k{$1} = 1 } }
     if ($ARGV =~ m{MainWindow\.Keys\.cs$}) { while (/\("[^"]*", "([^"]+)"\)/g) { $k{$1} = 1 } }
     END {

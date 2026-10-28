@@ -49,6 +49,13 @@ internal sealed class FakeDialogs : IDialogs
     public Task<string?> AskText(string title, string label, string value) => Task.FromResult(Texts.Count > 0 ? Texts.Dequeue() : null);
     public Task<(int Width, int Height)?> AskSize(string title, int width, int height) => Task.FromResult(Sizes.Count > 0 ? Sizes.Dequeue() : null);
     public Task<CanvasSizeOptions?> AskCanvasSize(int width, int height) => Task.FromResult(CanvasSizes.Count > 0 ? CanvasSizes.Dequeue() : null);
+    public Queue<int?> Choices { get; } = new();
+    public List<IReadOnlyList<string>> ChoiceLists { get; } = new();
+    public Task<int?> Choose(string title, string message, IReadOnlyList<string> options)
+    {
+        ChoiceLists.Add(options);
+        return Task.FromResult(Choices.Count > 0 ? Choices.Dequeue() : null);
+    }
     public Task<OnionOptions?> AskOnion(OnionOptions current) => Task.FromResult(Onions.Count > 0 ? Onions.Dequeue() : null);
     public Task<SettingsChoice?> AskSettings(SettingsChoice current) => Task.FromResult(SettingsChoices.Count > 0 ? SettingsChoices.Dequeue() : null);
 

@@ -33,9 +33,22 @@ public partial class App : Application
         Resources.MergedDictionaries.Add(_palette);
     }
 
+    /// <summary>Tells EasyEngine where EasyPixel lives (HKCU\Software\EasyPixel\InstallPath). A run through "dotnet" has no program of its own to point at.</summary>
+    private static void RegisterInstall()
+    {
+        try
+        {
+            var exe = Environment.ProcessPath;
+            if (exe != null && !Path.GetFileNameWithoutExtension(exe).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
+                new WindowsInstallRegistry().Write("EasyPixel", exe);
+        }
+        catch (Exception e) when (e is System.Security.SecurityException or UnauthorizedAccessException or IOException) { }
+    }
+
     public override void OnFrameworkInitializationCompleted()
     {
         CrashGuard.Install();
+        RegisterInstall();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var window = new MainWindow();

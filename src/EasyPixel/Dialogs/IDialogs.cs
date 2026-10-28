@@ -55,6 +55,9 @@ public interface IDialogs
     /// <summary>Sprite → Canvas size: new size and where the picture stays.</summary>
     Task<CanvasSizeOptions?> AskCanvasSize(int width, int height);
 
+    /// <summary>Pick one of <paramref name="options"/> (shown as given); the index, or null when cancelled.</summary>
+    Task<int?> Choose(string title, string message, IReadOnlyList<string> options);
+
     Task<OnionOptions?> AskOnion(OnionOptions current);
 
     Task<SettingsChoice?> AskSettings(SettingsChoice current);
