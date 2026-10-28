@@ -14,7 +14,7 @@ public sealed class Sprite
     /// <summary>Cels by (layer, frame). A linked cel (one image shared by several frames, as in Aseprite) is the same <see cref="Cel"/> object stored under each of its keys.</summary>
     public Dictionary<(Layer, int), Cel> Cels { get; } = new();
 
-    /// <summary>Chunks of a file format we do not model, kept so saving can warn about them.</summary>
+    /// <summary>File-level data of a file format we do not model, kept so saving can write it back or warn about it. Data owned by a layer, frame, cel or tag lives in that object's <c>Extra</c>.</summary>
     public Dictionary<string, byte[]> UnknownChunks { get; } = new();
 
     /// <summary>A new sprite with one layer and one frame. Indexed sprites start with a transparent entry at index 0.</summary>

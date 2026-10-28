@@ -32,6 +32,10 @@ public class FormatTestsEpx
                 cel.Image.Pixels[i] = mode == ColorMode.Indexed ? (uint)rnd.Next(3) : (uint)rnd.NextInt64(0, uint.MaxValue);
         }
         sp.UnknownChunks["abcd"] = new byte[] { 1, 2, 3, 255 };
+        bg.Extra["ase:after"] = new byte[] { 9, 8 };
+        sp.Frames[1].Extra["ase:chunks"] = new byte[] { 7 };
+        sp.Tags[0].Extra["ase:repeat"] = new byte[] { 2, 0 };
+        sp.Cels[(child, 1)].Extra["ase:z"] = new byte[] { 1, 0 };
         return sp;
     }
 
@@ -100,6 +104,13 @@ public class FormatTestsEpx
             Assert.Equal(cel.Image.Pixels, rc.Image.Pixels);
         }
         Assert.Equal(sp.UnknownChunks["abcd"], r.UnknownChunks["abcd"]);
+        Assert.Equal(new byte[] { 9, 8 }, r.Layers[0].Extra["ase:after"]);
+        Assert.Empty(r.Layers[1].Extra);
+        Assert.Equal(new byte[] { 7 }, r.Frames[1].Extra["ase:chunks"]);
+        Assert.Empty(r.Frames[0].Extra);
+        Assert.Equal(new byte[] { 2, 0 }, r.Tags[0].Extra["ase:repeat"]);
+        Assert.Equal(new byte[] { 1, 0 }, r.Cels[(r.Layers[2], 1)].Extra["ase:z"]);
+        Assert.Empty(r.Cels[(r.Layers[0], 0)].Extra);
     }
 
     private static byte[] ZipWithJson(string json)

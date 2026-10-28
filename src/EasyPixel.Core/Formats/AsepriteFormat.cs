@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Text;
 using EasyPixel.Core.Model;
 
@@ -12,21 +13,24 @@ namespace EasyPixel.Core.Formats;
 /// groups through the child level), cels (0x2005: raw, linked, compressed image), tags (0x2018; the colour also comes
 /// from the tag's user data, as Aseprite 1.3 writes it), palette (0x2019; the old 0x0004/0x0011 chunks only when the
 /// file has no 0x2019). Greyscale files are read as RGBA. Saving writes RGBA (depth 32) or indexed (depth 8),
-/// compressed cels, the layer-opacity and group-opacity header flags, a user-data chunk with the colour for every tag,
-/// and also an old 0x0004 palette chunk when the palette has ≤ 256 opaque colours (as Aseprite does, for old readers).
+/// compressed cels, the layer-opacity header flag (and the group one when there are groups), a user-data chunk with
+/// the colour for every tag, and after the 0x2019 palette an old 0x0004 chunk when the palette has ≤ 256 opaque
+/// colours (as Aseprite does, for old readers).
 /// </para>
 /// <para>
-/// Everything else goes into <see cref="Sprite.UnknownChunks"/> as raw chunks (6-byte chunk header included) and is
-/// written back in the same place. Keys:
-/// <c>ase:frame{N}:{k}:{type:X4}</c> — a chunk on its own at position k of frame N (colour profile, slices, tilesets,
-/// tilemap cels, palettes of later frames…), put back at that position;
-/// <c>ase:layer{i}:{name}:after</c>, <c>ase:frame{N}:cel{L}:after</c>, <c>ase:after-palette</c> — chunks (user data,
-/// cel extra) attached to a layer, a cel or the sprite, written right after their owner;
-/// <c>ase:layer{i}:{name}:extra</c> — layer flags EasyPixel does not model, tilemap type, tileset index and UUID;
-/// <c>ase:frame{N}:cel{L}:z</c> — a cel's z-index; <c>ase:tag{i}:{name}:userdata</c> / <c>:repeat</c> — a tag's user-data
-/// text/properties and its repeat count; <c>ase:header:grid</c> — pixel ratio and grid. Layer indices are file order,
-/// which for a sprite read from a file is its layer list order. When an owner no longer exists (frame deleted, layer
-/// renamed or moved, a tilemap layer drawn on), its data is dropped and <see cref="LostDataWarning"/> is reported.
+/// Everything else is kept as raw chunks (6-byte chunk header included) on the object that owns it, so it follows that
+/// object through edits and goes away with it:
+/// <see cref="Layer.Extra"/> — <c>ase:after</c> (user data), <c>ase:flags</c> (all layer flags, type, tileset index),
+/// <c>ase:uuid</c>, <c>ase:id</c> (file index at reading; names the layer for its tilemap cels);
+/// <see cref="Cel.Extra"/> — <c>ase:after</c> (user data, cel extra), <c>ase:z</c> (z-index);
+/// <see cref="Tag.Extra"/> — <c>ase:userdata</c> (user-data body with text/properties), <c>ase:repeat</c>;
+/// <see cref="Frame.Extra"/> — <c>ase:chunks</c> (the frame's other chunks — slices, palettes of later frames… — each
+/// with the user data that follows it, in their order, written after the frame's modelled chunks) and
+/// <c>ase:tilemap-cel:{id}</c> (a tilemap cel, written with the layer whose <c>ase:id</c> is id).
+/// <see cref="Sprite.UnknownChunks"/> holds file-level data: <c>ase:before-palette</c> (colour profile…),
+/// <c>ase:sprite-userdata</c>, <c>ase:before-layers</c> (tilesets…), <c>ase:header:grid</c> (pixel ratio and grid).
+/// Data that cannot be written (a tilemap layer that was drawn on, a damaged entry, file-level keys of another
+/// format) is dropped with <see cref="LostDataWarning"/>.
 /// </para>
 /// <para>Cel opacity is stored in 1/255 steps. A linked cel is the same <see cref="Cel"/> object under two frames.</para>
 /// </summary>
@@ -38,6 +42,7 @@ public sealed class AsepriteFormat : ISpriteFormat
     public const string PaletteCutWarning = "The palette was cut to 256 colours";
     public const string PaletteNamesWarning = "Palette colour names were not kept";
     public const string BlendWarning = "An unknown layer blend mode was changed to Normal";
+    public const string BrokenCelWarning = "Some empty or broken cels were skipped";
     public const string NoTransparentIndexWarning = "Aseprite needs a transparent palette index; index 0 was used";
 
     private const ushort FileMagic = 0xA5E0, FrameMagic = 0xF1FA;
@@ -50,8 +55,14 @@ public sealed class AsepriteFormat : ISpriteFormat
     private const int CelRaw = 0, CelLinked = 1, CelCompressed = 2;
     private const int LayerNormal = 0, LayerGroup = 1, LayerTilemap = 2;
     private const uint UserText = 1, UserColor = 2;
-    /// <summary>Header bytes 34–43 as Aseprite writes them: pixel ratio 1:1, grid at 0,0 of 16×16.</summary>
+    /// <summary>Header bytes 34–43 as Aseprite 1.3 writes them: pixel ratio 1:1, grid at 0,0 of 16×16.</summary>
     private static readonly byte[] DefaultGrid = { 1, 1, 0, 0, 0, 0, 16, 0, 16, 0 };
+
+    private const string KeyBeforePalette = "ase:before-palette", KeySpriteUserData = "ase:sprite-userdata",
+        KeyBeforeLayers = "ase:before-layers", KeyGrid = "ase:header:grid";
+    private const string KeyAfter = "ase:after", KeyFlags = "ase:flags", KeyUuid = "ase:uuid", KeyId = "ase:id",
+        KeyZ = "ase:z", KeyUserData = "ase:userdata", KeyRepeat = "ase:repeat", KeyChunks = "ase:chunks",
+        KeyTilemapCel = "ase:tilemap-cel:";
 
     public string Name => "Aseprite sprite";
     public string[] Extensions { get; } = { ".aseprite", ".ase" };
@@ -59,6 +70,9 @@ public sealed class AsepriteFormat : ISpriteFormat
     public bool CanWrite => true;
 
     private static FormatException Damaged() => new("This Aseprite file is damaged or incomplete and could not be read.");
+
+    private static void Append(Dictionary<string, byte[]> dict, string key, byte[] raw) =>
+        dict[key] = dict.TryGetValue(key, out var prev) ? [.. prev, .. raw] : raw;
 
     // ───────────────────────────── reading ─────────────────────────────
 
@@ -104,8 +118,9 @@ public sealed class AsepriteFormat : ISpriteFormat
     /// <summary>What a following user-data / cel-extra chunk belongs to.</summary>
     private abstract record Owner;
     private sealed record PaletteOwner : Owner;
-    private sealed record LayerOwner(int Index) : Owner;
-    private sealed record CelOwner(int Frame, int Layer) : Owner;
+    /// <summary>Following chunks are appended to <c>Dict[Key]</c>.</summary>
+    private sealed record ExtraOwner(Dictionary<string, byte[]> Dict, string Key) : Owner;
+    private sealed record LinkedCelOwner(Cel Cel) : Owner;
     private sealed record TagsOwner(int First, int Count) : Owner { public int Next { get; set; } }
 
     private sealed class Reader
@@ -115,7 +130,7 @@ public sealed class AsepriteFormat : ISpriteFormat
         private Sprite _sp = null!;
         private int _depth;
         private uint _headerFlags;
-        private bool _sawPalette;
+        private bool _sawPalette, _sawAnyPalette;
         private Rgba[]? _oldPalette;
         private int _oldPaletteSize;
         /// <summary>The last layer read at each child level, to find a layer's group.</summary>
@@ -151,7 +166,7 @@ public sealed class AsepriteFormat : ISpriteFormat
             _sp.Layers.Clear();
             _sp.Frames.Clear();
             _sp.Palette = new Palette { TransparentIndex = mode == ColorMode.Indexed ? transparent : -1 };
-            if (!grid.AsSpan().SequenceEqual(DefaultGrid) && grid.Any(b => b != 0)) _sp.UnknownChunks["ase:header:grid"] = grid;
+            if (!grid.AsSpan().SequenceEqual(DefaultGrid)) _sp.UnknownChunks[KeyGrid] = grid;
 
             int pos = HeaderSize;
             for (int f = 0; f < frames; f++)
@@ -192,61 +207,69 @@ public sealed class AsepriteFormat : ISpriteFormat
                 {
                     case ChunkPalette when frame == 0:
                         ReadPalette(body);
-                        _sawPalette = true;
+                        _sawPalette = _sawAnyPalette = true;
                         owner = new PaletteOwner();
                         break;
                     case ChunkOldPalette or ChunkOldPalette64 when frame == 0:
                         ReadOldPalette(body, type == ChunkOldPalette64);
+                        _sawAnyPalette = true;
                         owner = new PaletteOwner();
                         break;
                     case ChunkLayer:
-                        ReadLayer(body);
-                        owner = new LayerOwner(_sp.Layers.Count - 1);
+                        owner = new ExtraOwner(ReadLayer(body).Extra, KeyAfter);
                         break;
-                    case ChunkCel when ReadCel(body, frame) is int layer:
-                        owner = new CelOwner(frame, layer);
+                    case ChunkCel:
+                        owner = ReadCel(body, frame, raw);
                         break;
                     case ChunkTags:
                         int first = _sp.Tags.Count;
                         ReadTags(body);
                         owner = new TagsOwner(first, _sp.Tags.Count - first);
                         break;
-                    case ChunkUserData or ChunkCelExtra when owner is not null && Attach(owner, type, raw, body):
+                    case ChunkUserData or ChunkCelExtra when owner is not null && Attach(owner, frame, type, raw, body):
                         break;
                     default:
-                        _sp.UnknownChunks[$"ase:frame{frame}:{k}:{type:X4}"] = raw;
-                        owner = null;
+                        // A chunk we don't model: kept in order, together with the chunks that follow it.
+                        var run = RunFor(frame);
+                        Append(run.Dict, run.Key, raw);
+                        owner = run;
                         break;
                 }
             }
         }
 
+        /// <summary>Where unmodelled chunks of this place in the file are kept.</summary>
+        private ExtraOwner RunFor(int frame) =>
+            frame == 0 && _sp.Layers.Count == 0
+                ? new ExtraOwner(_sp.UnknownChunks, _sawAnyPalette ? KeyBeforeLayers : KeyBeforePalette)
+                : new ExtraOwner(_sp.Frames[frame].Extra, KeyChunks);
+
         /// <summary>Keeps a user-data / cel-extra chunk with the object it follows. False when it belongs to nothing we track.</summary>
-        private bool Attach(Owner owner, int type, byte[] raw, Cursor body)
+        private bool Attach(Owner owner, int frame, int type, byte[] raw, Cursor body)
         {
-            string? key = owner switch
+            switch (owner)
             {
-                PaletteOwner when type == ChunkUserData => "ase:after-palette",
-                LayerOwner l => $"ase:layer{l.Index}:{_sp.Layers[l.Index].Name}:after",
-                CelOwner c => $"ase:frame{c.Frame}:cel{c.Layer}:after",
-                _ => null,
-            };
-            if (key != null)
-            {
-                _sp.UnknownChunks[key] = _sp.UnknownChunks.TryGetValue(key, out var prev) ? [.. prev, .. raw] : raw;
-                return true;
+                case ExtraOwner e:
+                    Append(e.Dict, e.Key, raw);
+                    return true;
+                case PaletteOwner when type == ChunkUserData:
+                    Append(_sp.UnknownChunks, KeySpriteUserData, raw);
+                    return true;
+                case LinkedCelOwner l:
+                    // The shared cel already holds its user data from the first frame; anything else stays with this frame.
+                    if (l.Cel.Extra.TryGetValue(KeyAfter, out var after) && after.AsSpan().IndexOf(raw.AsSpan()) >= 0) return true;
+                    Append(_sp.Frames[frame].Extra, KeyChunks, raw);
+                    return true;
+                case TagsOwner t when type == ChunkUserData && t.Next < t.Count:
+                    var tag = _sp.Tags[t.First + t.Next++];
+                    var all = body.Rest();
+                    var (flags, color) = UserData.Read(all);
+                    if (color is { } c) tag.Color = c;
+                    if ((flags & ~UserColor) != 0) tag.Extra[KeyUserData] = all;
+                    return true;
+                default:
+                    return false;
             }
-            if (owner is TagsOwner t && type == ChunkUserData && t.Next < t.Count)
-            {
-                int i = t.First + t.Next++;
-                var tag = _sp.Tags[i];
-                var all = body.Rest();
-                var (flags, color) = UserData.Read(all);
-                if (color is { } c) tag.Color = c;
-                if ((flags & ~UserColor) != 0) _sp.UnknownChunks[$"ase:tag{i}:{tag.Name}:userdata"] = all;
-                return true;
-            }
-            return false;
         }
 
         private void ReadPalette(Cursor c)
@@ -288,7 +311,7 @@ public sealed class AsepriteFormat : ISpriteFormat
 
         private static byte Scale6(byte v) { v &= 63; return (byte)(v << 2 | v >> 4); }
 
-        private void ReadLayer(Cursor c)
+        private Layer ReadLayer(Cursor c)
         {
             int flags = c.U16(), type = c.U16(), level = c.U16();
             c.Skip(4); // default width/height, ignored
@@ -297,7 +320,7 @@ public sealed class AsepriteFormat : ISpriteFormat
             c.Skip(3);
             string name = c.Str();
             uint tileset = type == LayerTilemap ? c.U32() : 0;
-            byte[] uuid = (_headerFlags & FlagLayerUuid) != 0 ? c.Bytes(16) : Array.Empty<byte>();
+            byte[]? uuid = (_headerFlags & FlagLayerUuid) != 0 ? c.Bytes(16) : null;
 
             bool isGroup = type == LayerGroup;
             bool groupValid = !isGroup || (_headerFlags & FlagGroupOpacity) != 0;
@@ -319,12 +342,14 @@ public sealed class AsepriteFormat : ISpriteFormat
             _levels.Add(layer);
             _sp.Layers.Add(layer);
 
-            if ((flags & ~(LayerVisible | LayerEditable)) != 0 || type == LayerTilemap || uuid.Length > 0)
-                _sp.UnknownChunks[$"ase:layer{_sp.Layers.Count - 1}:{name}:extra"] = LayerExtra.Encode(flags, type, tileset, uuid);
+            if ((flags & ~(LayerVisible | LayerEditable)) != 0 || type == LayerTilemap)
+                layer.Extra[KeyFlags] = new Out().U16(flags).U16(type).U32(tileset).ToArray();
+            if (uuid != null) layer.Extra[KeyUuid] = uuid;
+            return layer;
         }
 
-        /// <summary>Reads an image or linked cel into the model and returns its layer index; null for a tilemap (or unknown) cel, kept as raw data.</summary>
-        private int? ReadCel(Cursor c, int frame)
+        /// <summary>Reads a cel into the model (or keeps a tilemap cel as raw data); returns what following user data belongs to.</summary>
+        private Owner? ReadCel(Cursor c, int frame, byte[] raw)
         {
             int li = c.U16();
             int x = c.S16(), y = c.S16();
@@ -332,26 +357,36 @@ public sealed class AsepriteFormat : ISpriteFormat
             int type = c.U16();
             short z = c.S16();
             c.Skip(5);
-            if (type is not (CelRaw or CelLinked or CelCompressed)) return null;
             if (li >= _sp.Layers.Count) throw new FormatException("A cel in this Aseprite file points at a missing layer.");
             var layer = _sp.Layers[li];
 
+            if (type is not (CelRaw or CelLinked or CelCompressed))
+            {
+                if (!layer.Extra.ContainsKey(KeyId)) layer.Extra[KeyId] = BitConverter.GetBytes(li);
+                var key = KeyTilemapCel + BitConverter.ToInt32(layer.Extra[KeyId]);
+                Append(_sp.Frames[frame].Extra, key, raw);
+                return new ExtraOwner(_sp.Frames[frame].Extra, key);
+            }
             if (type == CelLinked)
             {
                 int target = c.U16();
-                if (target < frame && _sp.Cels.TryGetValue((layer, target), out var linked)) _sp.Cels[(layer, frame)] = linked;
+                if (target < frame && _sp.Cels.TryGetValue((layer, target), out var linked))
+                {
+                    _sp.Cels[(layer, frame)] = linked;
+                    return new LinkedCelOwner(linked);
+                }
+                Warn(BrokenCelWarning);
+                return null;
             }
-            else
-            {
-                int w = c.U16(), h = c.U16();
-                if (w == 0 || h == 0) return li;
-                if ((long)w * h > MaxCelPixels) throw new FormatException("A cel in this Aseprite file is too large.");
-                int n = w * h * (_depth / 8);
-                byte[] px = type == CelRaw ? c.Bytes(n) : Inflate(c.Rest(), n);
-                _sp.Cels[(layer, frame)] = new Cel(DecodePixels(px, w, h), x, y) { Opacity = opacity / 255f };
-            }
-            if (z != 0) _sp.UnknownChunks[$"ase:frame{frame}:cel{li}:z"] = BitConverter.GetBytes(z);
-            return li;
+            int w = c.U16(), h = c.U16();
+            if (w == 0 || h == 0) { Warn(BrokenCelWarning); return null; }
+            if ((long)w * h > MaxCelPixels) throw new FormatException("A cel in this Aseprite file is too large.");
+            int n = w * h * (_depth / 8);
+            byte[] px = type == CelRaw ? c.Bytes(n) : Inflate(c.Rest(), n);
+            var cel = new Cel(DecodePixels(px, w, h), x, y) { Opacity = opacity / 255f };
+            if (z != 0) cel.Extra[KeyZ] = BitConverter.GetBytes(z);
+            _sp.Cels[(layer, frame)] = cel;
+            return new ExtraOwner(cel.Extra, KeyAfter);
         }
 
         private static byte[] Inflate(byte[] compressed, int n)
@@ -392,7 +427,7 @@ public sealed class AsepriteFormat : ISpriteFormat
                     Dir = dir switch { 1 => LoopDir.Reverse, 2 or 3 => LoopDir.PingPong, _ => LoopDir.Forward },
                 };
                 if (dir == 3) Warn(PingPongReverseWarning);
-                if (repeat != 0) _sp.UnknownChunks[$"ase:tag{_sp.Tags.Count}:{tag.Name}:repeat"] = BitConverter.GetBytes((ushort)repeat);
+                if (repeat != 0) tag.Extra[KeyRepeat] = BitConverter.GetBytes((ushort)repeat);
                 _sp.Tags.Add(tag);
             }
         }
@@ -438,18 +473,6 @@ public sealed class AsepriteFormat : ISpriteFormat
         }
     }
 
-    /// <summary>Layer data EasyPixel does not model: all flags, layer type, tileset index, UUID (0 or 16 bytes).</summary>
-    private readonly record struct LayerExtra(int Flags, int Type, uint Tileset, byte[] Uuid)
-    {
-        public static byte[] Encode(int flags, int type, uint tileset, byte[] uuid) =>
-            new Out().U16(flags).U16(type).U32(tileset).Bytes(uuid).ToArray();
-
-        public static LayerExtra? Decode(byte[] b) => b.Length is 8 or 24
-            ? new LayerExtra(BinaryPrimitives.ReadUInt16LittleEndian(b), BinaryPrimitives.ReadUInt16LittleEndian(b.AsSpan(2)),
-                BinaryPrimitives.ReadUInt32LittleEndian(b.AsSpan(4)), b[8..])
-            : null;
-    }
-
     // ───────────────────────────── writing ─────────────────────────────
 
     private sealed class Out
@@ -471,7 +494,7 @@ public sealed class AsepriteFormat : ISpriteFormat
         return new Out().U32((uint)(ChunkHeaderSize + d.Length)).U16(type).Bytes(d).ToArray();
     }
 
-    /// <summary>Splits concatenated raw chunks; null when the bytes are not whole chunks.</summary>
+    /// <summary>Splits concatenated raw chunks into copies; null when the bytes are not whole chunks.</summary>
     private static List<byte[]>? SplitChunks(byte[] b)
     {
         var list = new List<byte[]>();
@@ -490,28 +513,24 @@ public sealed class AsepriteFormat : ISpriteFormat
 
     private sealed class Writer
     {
+        private static readonly HashSet<string> FileLevelKeys = new() { KeyBeforePalette, KeySpriteUserData, KeyBeforeLayers, KeyGrid };
+
         private readonly Sprite _sp;
         private readonly List<string> _warnings;
-        private readonly HashSet<string> _used = new();
         private bool _lost;
         /// <summary>Layers in file order: stacking order with each group right before its members.</summary>
         private readonly List<Layer> _order = new();
-        private readonly HashSet<int> _tilemapLayers = new();
+        /// <summary>File index of each layer written as a tilemap, by its <c>ase:id</c>.</summary>
+        private readonly Dictionary<int, int> _tilemapIndexById = new();
+        /// <summary><c>ase:id</c> of every layer still in the sprite.</summary>
+        private readonly HashSet<int> _knownIds = new();
 
         public Writer(Sprite sp, List<string> warnings) { _sp = sp; _warnings = warnings; }
 
-        private byte[]? Take(string key)
+        /// <summary>The raw chunks stored under <paramref name="key"/>; none (and a warning) when they are not whole chunks.</summary>
+        private List<byte[]> Chunks(Dictionary<string, byte[]> dict, string key)
         {
-            if (!_sp.UnknownChunks.TryGetValue(key, out var v)) return null;
-            _used.Add(key);
-            return v;
-        }
-
-        /// <summary>Attached raw chunks kept under <paramref name="key"/>; none (and a warning) when they are not whole chunks.</summary>
-        private List<byte[]> TakeChunks(string key)
-        {
-            var raw = Take(key);
-            if (raw == null) return new();
+            if (!dict.TryGetValue(key, out var raw)) return new();
             var list = SplitChunks(raw);
             if (list == null) { _lost = true; return new(); }
             return list;
@@ -530,19 +549,23 @@ public sealed class AsepriteFormat : ISpriteFormat
             bool indexed = _sp.Mode == ColorMode.Indexed;
             int transparent = _sp.Palette.TransparentIndex;
             if (indexed && transparent < 0) { _warnings.Add(NoTransparentIndexWarning); transparent = 0; }
-            var grid = Take("ase:header:grid") is { Length: 10 } g ? g : DefaultGrid;
+            var grid = DefaultGrid;
+            if (_sp.UnknownChunks.TryGetValue(KeyGrid, out var g))
+            {
+                if (g.Length == DefaultGrid.Length) grid = g; else _lost = true;
+            }
             long total = HeaderSize + frames.Sum(f => (long)f.Length);
             if (total > uint.MaxValue) throw new InvalidOperationException("The sprite is too large for an Aseprite file.");
 
+            uint flags = FlagLayerOpacity | (_order.Any(l => l.IsGroup) ? FlagGroupOpacity : 0) | (uuids ? FlagLayerUuid : 0);
             var header = new Out().U32((uint)total).U16(FileMagic).U16(_sp.Frames.Count).U16(_sp.Width).U16(_sp.Height)
-                .U16(indexed ? 8 : 32).U32(FlagLayerOpacity | FlagGroupOpacity | (uuids ? FlagLayerUuid : 0))
-                .U16(Math.Clamp(_sp.Frames[0].DurationMs, 0, ushort.MaxValue)).Zero(8)
+                .U16(indexed ? 8 : 32).U32(flags).U16(Math.Clamp(_sp.Frames[0].DurationMs, 0, ushort.MaxValue)).Zero(8)
                 .U8(indexed ? Math.Clamp(transparent, 0, 255) : 0).Zero(3)
                 .U16(Math.Max(1, _sp.Palette.Colors.Count)).Bytes(grid).Zero(84).ToArray();
             s.Write(header);
             foreach (var f in frames) s.Write(f);
 
-            if (_lost || _sp.UnknownChunks.Keys.Any(k => !_used.Contains(k))) _warnings.Add(LostDataWarning);
+            if (_lost || _sp.UnknownChunks.Keys.Any(k => !FileLevelKeys.Contains(k))) _warnings.Add(LostDataWarning);
         }
 
         private void AddInFileOrder(Layer? parent)
@@ -566,54 +589,59 @@ public sealed class AsepriteFormat : ISpriteFormat
         /// <summary>For every layer in file order: its layer chunk followed by the chunks attached to it.</summary>
         private List<List<byte[]>> WriteLayers(out bool uuids)
         {
-            var extras = new LayerExtra?[_order.Count];
-            for (int i = 0; i < _order.Count; i++)
-            {
-                if (Take($"ase:layer{i}:{_order[i].Name}:extra") is not { } raw) continue;
-                extras[i] = LayerExtra.Decode(raw);
-                if (extras[i] == null) _lost = true;
-            }
-            uuids = extras.Any(e => e is { Uuid.Length: 16 });
-
+            uuids = _order.Any(l => l.Extra.TryGetValue(KeyUuid, out var u) && u.Length == 16);
             var result = new List<List<byte[]>>();
             for (int i = 0; i < _order.Count; i++)
             {
                 var l = _order[i];
-                var extra = extras[i];
-                int type = l.IsGroup ? LayerGroup : LayerNormal;
-                if (extra?.Type == LayerTilemap && !l.IsGroup)
+                int flagsKept = 0, type = l.IsGroup ? LayerGroup : LayerNormal;
+                uint tileset = 0;
+                if (l.Extra.TryGetValue(KeyFlags, out var fx))
                 {
-                    if (_sp.Cels.Keys.Any(k => k.Item1 == l)) _lost = true; // drawn on: saved as a normal layer
-                    else { type = LayerTilemap; _tilemapLayers.Add(i); }
+                    if (fx.Length != 8) _lost = true;
+                    else
+                    {
+                        flagsKept = BinaryPrimitives.ReadUInt16LittleEndian(fx);
+                        if (BinaryPrimitives.ReadUInt16LittleEndian(fx.AsSpan(2)) == LayerTilemap && !l.IsGroup)
+                        {
+                            if (_sp.Cels.Keys.Any(k => k.Item1 == l)) _lost = true; // drawn on: saved as a normal layer
+                            else { type = LayerTilemap; tileset = BinaryPrimitives.ReadUInt32LittleEndian(fx.AsSpan(4)); }
+                        }
+                    }
                 }
-                int flags = (extra?.Flags ?? 0) & ~(LayerVisible | LayerEditable) | (l.Visible ? LayerVisible : 0) | (l.Locked ? 0 : LayerEditable);
+                if (l.Extra.TryGetValue(KeyId, out var idb) && idb.Length == 4)
+                {
+                    int id = BitConverter.ToInt32(idb);
+                    _knownIds.Add(id);
+                    if (type == LayerTilemap) _tilemapIndexById[id] = i;
+                }
+
+                int flags = flagsKept & ~(LayerVisible | LayerEditable) | (l.Visible ? LayerVisible : 0) | (l.Locked ? 0 : LayerEditable);
                 var body = new Out().U16(flags).U16(type).U16(Level(l)).U16(0).U16(0).U16((int)l.Blend).U8(l.Opacity).Zero(3).Str(l.Name);
-                if (type == LayerTilemap) body.U32(extra!.Value.Tileset);
-                if (uuids) body.Bytes(extra is { Uuid.Length: 16 } e ? e.Uuid : Guid.NewGuid().ToByteArray());
+                if (type == LayerTilemap) body.U32(tileset);
+                if (uuids) body.Bytes(l.Extra.TryGetValue(KeyUuid, out var u) && u.Length == 16 ? u : NewUuid(i, l.Name));
                 var chunks = new List<byte[]> { Chunk(ChunkLayer, body) };
-                chunks.AddRange(TakeChunks($"ase:layer{i}:{l.Name}:after"));
+                chunks.AddRange(Chunks(l.Extra, KeyAfter));
                 result.Add(chunks);
             }
             return result;
         }
 
+        /// <summary>A UUID for a layer that has none, derived from its place and name so saving twice gives the same file.</summary>
+        private static byte[] NewUuid(int index, string name) => MD5.HashData(Encoding.UTF8.GetBytes($"easypixel-layer:{index}:{name}"));
+
         private byte[] WriteFrame(int f, List<List<byte[]>> layerChunks)
         {
-            // Attached chunks are flagged so kept chunks are never put between an owner and what belongs to it.
-            var chunks = new List<(byte[] Bytes, bool Attached)>();
-            void Owned(byte[] owner, IEnumerable<byte[]> attached)
-            {
-                chunks.Add((owner, false));
-                foreach (var a in attached) chunks.Add((a, true));
-            }
+            var chunks = new List<byte[]>();
+            var frameExtra = _sp.Frames[f].Extra;
 
             if (f == 0)
             {
-                var palette = PaletteChunks();
-                var spriteData = TakeChunks("ase:after-palette");
-                if (palette.Count == 0 && spriteData.Count > 0) _lost = true;
-                for (int i = 0; i < palette.Count; i++) Owned(palette[i], i == palette.Count - 1 ? spriteData : Array.Empty<byte[]>());
-                foreach (var lc in layerChunks) Owned(lc[0], lc.Skip(1));
+                chunks.AddRange(Chunks(_sp.UnknownChunks, KeyBeforePalette));
+                chunks.AddRange(PaletteChunks());
+                chunks.AddRange(Chunks(_sp.UnknownChunks, KeySpriteUserData));
+                chunks.AddRange(Chunks(_sp.UnknownChunks, KeyBeforeLayers));
+                foreach (var lc in layerChunks) chunks.AddRange(lc);
             }
 
             for (int i = 0; i < _order.Count; i++)
@@ -621,22 +649,47 @@ public sealed class AsepriteFormat : ISpriteFormat
                 var layer = _order[i];
                 if (!_sp.Cels.TryGetValue((layer, f), out var cel)) continue;
                 if (layer.IsGroup) { _lost = true; continue; } // Aseprite groups have no pixels
-                Owned(CelChunk(i, f, layer, cel), TakeChunks($"ase:frame{f}:cel{i}:after"));
+                int link = LinkedFrame(layer, cel, f);
+                chunks.Add(CelChunk(i, cel, link));
+                if (link < 0) chunks.AddRange(Chunks(cel.Extra, KeyAfter));
             }
-
-            if (f == 0 && _sp.Tags.Count > 0)
+            foreach (var key in frameExtra.Keys.Where(k => k.StartsWith(KeyTilemapCel, StringComparison.Ordinal)))
             {
-                var (tags, userData) = TagChunks();
-                Owned(tags, userData);
+                bool idOk = int.TryParse(key.AsSpan(KeyTilemapCel.Length), out int id);
+                if (idOk && _tilemapIndexById.TryGetValue(id, out int li))
+                {
+                    var tc = Chunks(frameExtra, key);
+                    if (tc.Count == 0 || tc[0].Length < 8) { _lost = true; continue; }
+                    BinaryPrimitives.WriteUInt16LittleEndian(tc[0].AsSpan(6), (ushort)li); // its layer's current index
+                    InsertCelInLayerOrder(chunks, tc, li);
+                }
+                else if (!idOk || _knownIds.Contains(id)) _lost = true; // the layer is still there but no longer a tilemap
             }
 
-            InsertKept(f, chunks);
+            if (f == 0 && _sp.Tags.Count > 0) chunks.AddRange(TagChunks());
+            chunks.AddRange(Chunks(frameExtra, KeyChunks));
 
             int n = chunks.Count;
-            var frame = new Out().U32((uint)(FrameHeaderSize + chunks.Sum(c => c.Bytes.Length))).U16(FrameMagic)
-                .U16(Math.Min(n, 0xFFFF)).U16(Math.Clamp(_sp.Frames[f].DurationMs, 0, ushort.MaxValue)).Zero(2).U32((uint)n);
-            foreach (var c in chunks) frame.Bytes(c.Bytes);
+            var frame = new Out().U32((uint)(FrameHeaderSize + chunks.Sum(c => c.Length))).U16(FrameMagic)
+                .U16(Math.Min(n, 0xFFFF)).U16(Math.Clamp(_sp.Frames[f].DurationMs, 0, ushort.MaxValue)).Zero(2)
+                .U32(n < 0xFFFF ? 0u : (uint)n); // as Aseprite: the new count only when the old field is too small
+            foreach (var c in chunks) frame.Bytes(c);
             return frame.ToArray();
+        }
+
+        /// <summary>Puts a tilemap cel (and its user data) before the first cel of a higher layer, as Aseprite orders cels.</summary>
+        private static void InsertCelInLayerOrder(List<byte[]> chunks, List<byte[]> cel, int layerIndex)
+        {
+            int at = chunks.FindIndex(c => BinaryPrimitives.ReadUInt16LittleEndian(c.AsSpan(4)) == ChunkCel
+                                           && BinaryPrimitives.ReadUInt16LittleEndian(c.AsSpan(6)) > layerIndex);
+            chunks.InsertRange(at < 0 ? chunks.Count : at, cel);
+        }
+
+        private int LinkedFrame(Layer layer, Cel cel, int f)
+        {
+            for (int g = 0; g < f; g++)
+                if (_sp.Cels.TryGetValue((layer, g), out var other) && ReferenceEquals(other, cel)) return g;
+            return -1;
         }
 
         private List<byte[]> PaletteChunks()
@@ -656,35 +709,30 @@ public sealed class AsepriteFormat : ISpriteFormat
             return list;
         }
 
-        /// <summary>The tags chunk and one user-data chunk per tag carrying its colour (and any text/properties it had).</summary>
-        private (byte[] Tags, List<byte[]> UserData) TagChunks()
+        /// <summary>The tags chunk, then one user-data chunk per tag carrying its colour (and any text/properties it had).</summary>
+        private List<byte[]> TagChunks()
         {
             var body = new Out().U16(_sp.Tags.Count).Zero(8);
             var userData = new List<byte[]>();
-            for (int i = 0; i < _sp.Tags.Count; i++)
+            foreach (var t in _sp.Tags)
             {
-                var t = _sp.Tags[i];
-                int repeat = Take($"ase:tag{i}:{t.Name}:repeat") is { Length: 2 } r ? BinaryPrimitives.ReadUInt16LittleEndian(r) : 0;
+                int repeat = t.Extra.TryGetValue(KeyRepeat, out var r) && r.Length == 2 ? BinaryPrimitives.ReadUInt16LittleEndian(r) : 0;
                 body.U16(Math.Clamp(t.From, 0, ushort.MaxValue)).U16(Math.Clamp(t.To, 0, ushort.MaxValue))
                     .U8(t.Dir switch { LoopDir.Reverse => 1, LoopDir.PingPong => 2, _ => 0 }).U16(repeat).Zero(6)
                     .U8(t.Color.R).U8(t.Color.G).U8(t.Color.B).U8(0).Str(t.Name);
                 byte[] ud;
-                try { ud = UserData.WithColor(Take($"ase:tag{i}:{t.Name}:userdata"), t.Color); }
+                try { ud = UserData.WithColor(t.Extra.GetValueOrDefault(KeyUserData), t.Color); }
                 catch (FormatException) { _lost = true; ud = UserData.WithColor(null, t.Color); }
                 userData.Add(Chunk(ChunkUserData, new Out().Bytes(ud)));
             }
-            return (Chunk(ChunkTags, body), userData);
+            return [Chunk(ChunkTags, body), .. userData];
         }
 
-        private byte[] CelChunk(int li, int f, Layer layer, Cel cel)
+        private byte[] CelChunk(int li, Cel cel, int link)
         {
             if (cel.X is < short.MinValue or > short.MaxValue || cel.Y is < short.MinValue or > short.MaxValue)
                 throw new InvalidOperationException("A cel lies too far outside the canvas for an Aseprite file.");
-            short z = Take($"ase:frame{f}:cel{li}:z") is { Length: 2 } zb ? BinaryPrimitives.ReadInt16LittleEndian(zb) : (short)0;
-            int link = -1;
-            for (int g = 0; g < f && link < 0; g++)
-                if (_sp.Cels.TryGetValue((layer, g), out var other) && ReferenceEquals(other, cel)) link = g;
-
+            short z = cel.Extra.TryGetValue(KeyZ, out var zb) && zb.Length == 2 ? BinaryPrimitives.ReadInt16LittleEndian(zb) : (short)0;
             var body = new Out().U16(li).S16(cel.X).S16(cel.Y).U8((int)Math.Round(Math.Clamp(cel.Opacity, 0f, 1f) * 255))
                 .U16(link >= 0 ? CelLinked : CelCompressed).S16(z).Zero(5);
             if (link >= 0) return Chunk(ChunkCel, body.U16(link));
@@ -698,31 +746,6 @@ public sealed class AsepriteFormat : ISpriteFormat
             var compressed = new MemoryStream();
             using (var zs = new ZLibStream(compressed, CompressionLevel.Optimal, leaveOpen: true)) zs.Write(px);
             return Chunk(ChunkCel, body.U16(img.Width).U16(img.Height).Bytes(compressed.ToArray()));
-        }
-
-        /// <summary>Puts the chunks kept on their own from frame <paramref name="f"/> back at their old positions.</summary>
-        private void InsertKept(int f, List<(byte[] Bytes, bool Attached)> chunks)
-        {
-            string prefix = $"ase:frame{f}:";
-            var kept = new List<(int Pos, string Key)>();
-            foreach (var key in _sp.UnknownChunks.Keys)
-            {
-                if (!key.StartsWith(prefix, StringComparison.Ordinal)) continue;
-                var parts = key[prefix.Length..].Split(':');
-                if (parts.Length == 2 && int.TryParse(parts[0], out int pos) && parts[1].Length == 4) kept.Add((pos, key));
-            }
-            foreach (var (pos, key) in kept.OrderBy(k => k.Pos))
-            {
-                var raw = _sp.UnknownChunks[key];
-                if (SplitChunks(raw) is not { Count: 1 }) continue; // not one whole chunk: left unused → warning
-                int type = BinaryPrimitives.ReadUInt16LittleEndian(raw.AsSpan(4));
-                // A tilemap cel only makes sense on the tilemap layer it was read with.
-                if (type == ChunkCel && (raw.Length < 8 || !_tilemapLayers.Contains(BinaryPrimitives.ReadUInt16LittleEndian(raw.AsSpan(6))))) continue;
-                _used.Add(key);
-                int at = Math.Min(pos, chunks.Count);
-                while (at < chunks.Count && chunks[at].Attached) at++;
-                chunks.Insert(at, (raw, false));
-            }
         }
     }
 }

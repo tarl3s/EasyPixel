@@ -41,6 +41,8 @@ public sealed class Cel
     public int Y { get; set; }
     public Image Image { get; set; }
     public float Opacity { get; set; } = 1f;
+    /// <summary>Format-specific data EasyPixel does not model, written back by the format that read it.</summary>
+    public Dictionary<string, byte[]> Extra { get; } = new();
 
     public Cel(Image image, int x = 0, int y = 0)
     {

@@ -97,7 +97,8 @@ internal static class AseHand
             int size = (int)BinaryPrimitives.ReadUInt32LittleEndian(file.AsSpan(pos));
             Assert.Equal(0xF1FA, U16At(file, pos + 4));
             int n = (int)BinaryPrimitives.ReadUInt32LittleEndian(file.AsSpan(pos + 12));
-            Assert.Equal(Math.Min(n, 0xFFFF), U16At(file, pos + 6));
+            if (n == 0) n = U16At(file, pos + 6); // the new count is 0 when the old field holds it
+            else Assert.Equal(Math.Min(n, 0xFFFF), U16At(file, pos + 6));
             int end = pos + size, p = pos + 16;
             var chunks = new List<(int, byte[])>();
             for (int k = 0; k < n; k++)
@@ -289,7 +290,8 @@ public class FormatTestsAseprite
                 celExtra,
                 AseHand.Tags((0, 1, 0, new Rgba(50, 60, 70, 0), "t")), // Aseprite 1.3 writes the colour in both places
                 AseHand.UserData("tag note", new Rgba(50, 60, 70, 80)),
-                slice),
+                slice,
+                AseHand.UserData("slice note", null)),
             AseHand.Frame(100,
                 AseHand.RawCel(0, 0, 0, 255, 1, 1, new byte[] { 5, 6, 7, 8 }),
                 future));
@@ -323,15 +325,214 @@ public class FormatTestsAseprite
         var again = Load(Save(sp));
         Assert.Equal(new Rgba(1, 2, 3, 4), again.Tags[0].Color);
 
-        // Deleting the frame that held an unknown chunk drops it with a warning.
-        sp.Frames.RemoveAt(1);
-        sp.Cels.Remove((sp.Layers[0], 1));
-        var lost = new List<string>();
-        var cut = AseHand.Parse(Save(sp, lost));
-        Assert.Contains(AsepriteFormat.LostDataWarning, lost);
-        Assert.Equal("Some Aseprite data (slices/user data/tilesets) could not be kept", AsepriteFormat.LostDataWarning);
+        // Deleting the frame that held an unknown chunk deletes the chunk with it (the user's intent: no warning).
+        RemoveFrame(sp, 1);
+        var cut = AseHand.Parse(Save(sp, warnings));
+        Assert.Empty(warnings);
         Assert.DoesNotContain(cut.SelectMany(f => f), c => c.Type == 0x2099);
         Assert.Contains(cut[0], c => c.Type == 0x2022);
+    }
+
+    private static void InsertFrame(Sprite sp, int at)
+    {
+        var moved = sp.Cels.Where(kv => kv.Key.Item2 >= at).ToList();
+        foreach (var kv in moved) sp.Cels.Remove(kv.Key);
+        foreach (var kv in moved) sp.Cels[(kv.Key.Item1, kv.Key.Item2 + 1)] = kv.Value;
+        sp.Frames.Insert(at, new Frame());
+    }
+
+    private static void RemoveFrame(Sprite sp, int at)
+    {
+        var moved = sp.Cels.Where(kv => kv.Key.Item2 >= at).ToList();
+        foreach (var kv in moved) sp.Cels.Remove(kv.Key);
+        foreach (var kv in moved) if (kv.Key.Item2 > at) sp.Cels[(kv.Key.Item1, kv.Key.Item2 - 1)] = kv.Value;
+        sp.Frames.RemoveAt(at);
+    }
+
+    private static string? UserText(byte[] chunkData) =>
+        (chunkData[0] & 1) != 0 ? Encoding.UTF8.GetString(chunkData, 6, AseHand.U16At(chunkData, 4)) : null;
+
+    [Fact]
+    public void KeptChunks_StayNextToTheirUserData_WhenTheWriterAddsChunks()
+    {
+        var slice = AseHand.Chunk(0x2022, b => b.U32(1).U32(0).U32(0).Str("s").U32(0).S16(0).U32(0).U32(0).U32(1).U32(1));
+        // An Aseprite 1.2-style file: opaque palette without the old 0x0004 chunk, which our writer adds.
+        var file = AseHand.File(1, 1, 32, 1, 0, 1,
+            AseHand.Frame(100,
+                AseHand.Palette(new Rgba(1, 2, 3, 255)),
+                AseHand.Layer("L"),
+                AseHand.RawCel(0, 0, 0, 255, 1, 1, new byte[] { 1, 2, 3, 4 }),
+                AseHand.Tags((0, 0, 0, new Rgba(1, 1, 1, 0), "t")),
+                AseHand.UserData("tag", new Rgba(1, 1, 1, 255)),
+                slice,
+                AseHand.UserData("slice", null)));
+        var sp = Load(file);
+        sp.Layers.Insert(0, new Layer { Name = "New bottom" });
+
+        var frame0 = AseHand.Parse(Save(sp))[0];
+        Assert.Equal(new[] { 0x2019, 0x0004, 0x2004, 0x2004, 0x2005, 0x2018, 0x2020, 0x2022, 0x2020 }, frame0.Select(c => c.Type));
+        Assert.Equal("tag", UserText(frame0[6].Data));
+        Assert.Equal("slice", UserText(frame0[8].Data));
+        Assert.Equal(1, AseHand.U16At(frame0[4].Data, 0)); // the cel now points at its layer's new index
+    }
+
+    [Fact]
+    public void KeptData_FollowsItsOwner_AfterInsertingAndDeletingFramesAndLayers()
+    {
+        var future = AseHand.Chunk(0x2099, b => b.U32(7));
+        var px = new byte[] { 1, 2, 3, 4 };
+        var file = AseHand.File(1, 1, 32, 1, 0, 1,
+            AseHand.Frame(100, AseHand.Layer("A"), AseHand.UserData("a", null), AseHand.Layer("B"), AseHand.UserData("b", null),
+                AseHand.RawCel(0, 0, 0, 255, 1, 1, px)),
+            AseHand.Frame(100, AseHand.RawCel(1, 0, 0, 255, 1, 1, px), AseHand.UserData("cel", null)),
+            AseHand.Frame(100, future, AseHand.UserData("f2", null)));
+        var sp = Load(file);
+        Layer a = sp.Layers[0], b = sp.Layers[1];
+        var celB = sp.Cels[(b, 1)];
+        var (aAfter, bAfter, celAfter, f2Run) = (a.Extra["ase:after"], b.Extra["ase:after"], celB.Extra["ase:after"], sp.Frames[2].Extra["ase:chunks"]);
+
+        InsertFrame(sp, 1);                 // frames: 0, new, old 1, old 2
+        InsertFrame(sp, 1);                 // frames: 0, new, new, old 1, old 2
+        RemoveFrame(sp, 2);                 // frames: 0, new, old 1, old 2
+        sp.Layers.Insert(0, new Layer { Name = "Bottom" });
+
+        var warnings = new List<string>();
+        var bytes = Save(sp, warnings);
+        Assert.Empty(warnings);
+        var r = Load(bytes);
+        Assert.Equal(new[] { "Bottom", "A", "B" }, r.Layers.Select(l => l.Name));
+        Assert.Empty(r.Layers[0].Extra);
+        Assert.Equal(aAfter, r.Layers[1].Extra["ase:after"]);
+        Assert.Equal(bAfter, r.Layers[2].Extra["ase:after"]);
+        Assert.Equal(celAfter, r.Cels[(r.Layers[2], 2)].Extra["ase:after"]);
+        Assert.Equal(f2Run, r.Frames[3].Extra["ase:chunks"]);
+        Assert.Empty(r.Frames[1].Extra);
+        Assert.Empty(r.Frames[2].Extra);
+
+        var frames = AseHand.Parse(bytes);
+        Assert.Equal("cel", UserText(frames[2].Single(c => c.Type == 0x2020).Data));
+        Assert.Equal(new[] { 0x2099, 0x2020 }, frames[3].Select(c => c.Type));
+    }
+
+    [Fact]
+    public void TilemapLayer_KeepsItsTilesetAndCels_WhenLayersMove()
+    {
+        var tileset = AseHand.Chunk(0x2023, b => b.U32(0).U32(0).U32(1).U16(1).U16(1).S16(1).Str("ts").U32(0));
+        var tilemapLayer = AseHand.Chunk(0x2004, b => b.U16(3).U16(2).U16(0).U16(0).U16(0).U16(0).U8(255).Zero(3).Str("Map").U32(0));
+        var tilemapCel = AseHand.Chunk(0x2005, b => b.U16(0).S16(0).S16(0).U8(255).U16(3).S16(0).Zero(5).U16(1).U16(1).U16(32)
+            .U32(0x1FFFFFFF).U32(0x20000000).U32(0x40000000).U32(0x80000000).Zero(10).U32(0x12345678));
+        var file = AseHand.File(1, 1, 32, 1, 0, 1,
+            AseHand.Frame(100, AseHand.Palette(new Rgba(0, 0, 0, 0)), tileset, tilemapLayer, tilemapCel));
+        var sp = Load(file);
+        sp.Layers.Insert(0, new Layer { Name = "Bottom" });
+        var warnings = new List<string>();
+        var frame0 = AseHand.Parse(Save(sp, warnings))[0];
+        Assert.Empty(warnings);
+        Assert.Equal(new[] { 0x2019, 0x2023, 0x2004, 0x2004, 0x2005 }, frame0.Select(c => c.Type));
+        Assert.Equal(2, AseHand.U16At(frame0[3].Data, 2)); // still a tilemap layer
+        Assert.Equal(1, AseHand.U16At(frame0[4].Data, 0)); // the tilemap cel follows its layer
+        Assert.Equal(3, AseHand.U16At(frame0[4].Data, 7));
+
+        // Drawing on the tilemap layer turns it into a normal layer; its tiles can't be kept.
+        sp.GetOrCreateCel(sp.Layers[1], 0);
+        Save(sp, warnings);
+        Assert.Contains(AsepriteFormat.LostDataWarning, warnings);
+    }
+
+    [Fact]
+    public void Reader_WarnsAboutWhatItChanges()
+    {
+        var warnings = new List<string>();
+        var namedPalette = AseHand.Chunk(0x2019, b => b.U32(1).U32(0).U32(0).Zero(8).U16(1).U8(1).U8(2).U8(3).U8(4).Str("Skin"));
+        var sp = Load(AseHand.File(1, 1, 32, 1, 0, 1,
+            AseHand.Frame(100,
+                namedPalette,
+                AseHand.Layer("L", blend: 99),
+                AseHand.LinkCel(0, 0),                              // links to itself: broken
+                AseHand.Tags((0, 0, 3, new Rgba(0, 0, 0, 0), "pr")))), warnings);
+        Assert.Equal(new[] { new Rgba(1, 2, 3, 4) }, sp.Palette.Colors);
+        Assert.Equal(BlendMode.Normal, sp.Layers[0].Blend);
+        Assert.Equal(LoopDir.PingPong, sp.Tags[0].Dir);
+        Assert.Empty(sp.Cels);
+        Assert.Equal(new[] { AsepriteFormat.PaletteNamesWarning, AsepriteFormat.BlendWarning, AsepriteFormat.BrokenCelWarning, AsepriteFormat.PingPongReverseWarning }, warnings);
+
+        warnings.Clear();
+        Load(AseHand.File(1, 1, 32, 1, 0, 1, AseHand.Frame(100, AseHand.Layer("L"), AseHand.RawCel(0, 0, 0, 255, 0, 0, Array.Empty<byte>()))), warnings);
+        Assert.Equal(new[] { AsepriteFormat.BrokenCelWarning }, warnings);
+
+        warnings.Clear();
+        var bad = new Sprite(1, 1);
+        bad.UnknownChunks["ase:header:grid"] = new byte[3];
+        Save(bad, warnings);
+        Assert.Equal(new[] { AsepriteFormat.LostDataWarning }, warnings);
+        Assert.Equal("Some Aseprite data (slices/user data/tilesets) could not be kept", AsepriteFormat.LostDataWarning);
+    }
+
+    [Fact]
+    public void LayerUuids_KeptAndNewOnesDeterministic()
+    {
+        var uuid = Enumerable.Range(1, 16).Select(i => (byte)i).ToArray();
+        var layer = AseHand.Chunk(0x2004, b => b.U16(3).U16(0).U16(0).U16(0).U16(0).U16(0).U8(255).Zero(3).Str("L").Bytes(uuid));
+        var sp = Load(AseHand.File(1, 1, 32, 1 | 4, 0, 1, AseHand.Frame(100, layer)));
+        sp.Layers.Add(new Layer { Name = "New" });
+        var first = Save(sp);
+        Assert.Equal(first, Save(sp));
+        Assert.Equal(5u, BitConverter.ToUInt32(first, 14));
+        var layers = AseHand.Parse(first)[0].Where(c => c.Type == 0x2004).ToList();
+        Assert.Equal(uuid, layers[0].Data[^16..]);
+        Assert.NotEqual(uuid, layers[1].Data[^16..]);
+    }
+
+    /// <summary>
+    /// A real file saved by Aseprite on the owner's machine (read-only; never copied into the repo).
+    /// Elsewhere the test has nothing to check and passes.
+    /// </summary>
+    [Fact]
+    public void RealAsepriteFile_ReadWriteRead_KeepsEverything()
+    {
+        const string path = @"C:\Users\tarle\Downloads\Sprite-0002.ase";
+        if (!File.Exists(path)) return;
+        var original = File.ReadAllBytes(path);
+        var warnings = new List<string>();
+        var sp = Load(original, warnings);
+        Assert.Empty(warnings);
+
+        string dir = Path.Combine(Path.GetTempPath(), "EasyPixel.Tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            string tmp = Path.Combine(dir, "copy.ase");
+            using (var fs = File.Create(tmp)) Ase.Write(sp, fs, warnings);
+            Assert.Empty(warnings);
+            Sprite r;
+            using (var fs = File.OpenRead(tmp)) r = Ase.Read(fs, warnings);
+            Assert.Empty(warnings);
+
+            Assert.Equal((sp.Width, sp.Height, sp.Mode), (r.Width, r.Height, r.Mode));
+            Assert.Equal(sp.Palette.Colors, r.Palette.Colors);
+            Assert.Equal(sp.Palette.TransparentIndex, r.Palette.TransparentIndex);
+            Assert.Equal(sp.Layers.Select(l => (l.Name, l.Visible, l.Locked, l.Opacity, l.Blend, l.IsGroup)),
+                         r.Layers.Select(l => (l.Name, l.Visible, l.Locked, l.Opacity, l.Blend, l.IsGroup)));
+            Assert.Equal(sp.Frames.Select(f => f.DurationMs), r.Frames.Select(f => f.DurationMs));
+            Assert.Equal(sp.Tags.Select(t => (t.Name, t.From, t.To, t.Dir, t.Color)), r.Tags.Select(t => (t.Name, t.From, t.To, t.Dir, t.Color)));
+            Assert.Equal(sp.Cels.Count, r.Cels.Count);
+            foreach (var ((layer, frame), cel) in sp.Cels)
+            {
+                var rc = r.Cels[(r.Layers[sp.Layers.IndexOf(layer)], frame)];
+                Assert.Equal((cel.X, cel.Y, cel.Opacity), (rc.X, rc.Y, rc.Opacity));
+                Assert.Equal(cel.Image.Pixels, rc.Image.Pixels);
+            }
+
+            // Same chunks in the same order; only compressed cel data may differ (another zlib).
+            var a = AseHand.Parse(original);
+            var b = AseHand.Parse(File.ReadAllBytes(tmp));
+            Assert.Equal(original[..128], File.ReadAllBytes(tmp)[..128].Select((x, i) => i < 4 ? original[i] : x).ToArray());
+            Assert.Equal(a.Select(f => f.Select(c => c.Type)), b.Select(f => f.Select(c => c.Type)));
+            for (int f = 0; f < a.Count; f++)
+                for (int k = 0; k < a[f].Count; k++)
+                    if (a[f][k].Type != 0x2005) Assert.Equal(a[f][k].Data, b[f][k].Data);
+        }
+        finally { Directory.Delete(dir, recursive: true); }
     }
 
     [Fact]

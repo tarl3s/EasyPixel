@@ -53,11 +53,12 @@ public sealed class EpxFormat : ISpriteFormat
                 w.WriteString("blend", l.Blend.ToString());
                 w.WriteNumber("parent", l.Parent == null ? -1 : sp.Layers.IndexOf(l.Parent));
                 w.WriteBoolean("isGroup", l.IsGroup);
+                WriteExtra(w, l.Extra);
                 w.WriteEndObject();
             }
             w.WriteEndArray();
             w.WriteStartArray("frames");
-            foreach (var f in sp.Frames) { w.WriteStartObject(); w.WriteNumber("durationMs", f.DurationMs); w.WriteEndObject(); }
+            foreach (var f in sp.Frames) { w.WriteStartObject(); w.WriteNumber("durationMs", f.DurationMs); WriteExtra(w, f.Extra); w.WriteEndObject(); }
             w.WriteEndArray();
             w.WriteStartArray("tags");
             foreach (var t in sp.Tags)
@@ -68,6 +69,7 @@ public sealed class EpxFormat : ISpriteFormat
                 w.WriteNumber("to", t.To);
                 w.WriteString("dir", t.Dir.ToString());
                 w.WriteString("color", t.Color.Packed.ToString("X8"));
+                WriteExtra(w, t.Extra);
                 w.WriteEndObject();
             }
             w.WriteEndArray();
@@ -81,6 +83,7 @@ public sealed class EpxFormat : ISpriteFormat
                 w.WriteNumber("y", cel.Y);
                 w.WriteNumber("opacity", cel.Opacity);
                 w.WriteString("file", CelFile(layer, frame));
+                WriteExtra(w, cel.Extra);
                 w.WriteEndObject();
             }
             w.WriteEndArray();
@@ -151,6 +154,7 @@ public sealed class EpxFormat : ISpriteFormat
                 IsGroup = l.GetProperty("isGroup").GetBoolean(),
             });
             parents.Add(l.GetProperty("parent").GetInt32());
+            ReadExtra(l, sp.Layers[^1].Extra);
         }
         for (int i = 0; i < parents.Count; i++)
             if (parents[i] != -1)
@@ -163,10 +167,14 @@ public sealed class EpxFormat : ISpriteFormat
                 if (++steps > parents.Count) throw new FormatException("Layer groups contain themselves.");
 
         foreach (var f in root.GetProperty("frames").EnumerateArray())
+        {
             sp.Frames.Add(new Frame { DurationMs = f.GetProperty("durationMs").GetInt32() });
+            ReadExtra(f, sp.Frames[^1].Extra);
+        }
         if (sp.Layers.Count == 0 || sp.Frames.Count == 0) throw new FormatException("The sprite has no layers or no frames.");
 
         foreach (var t in root.GetProperty("tags").EnumerateArray())
+        {
             sp.Tags.Add(new Tag
             {
                 Name = t.GetProperty("name").GetString() ?? "",
@@ -175,6 +183,8 @@ public sealed class EpxFormat : ISpriteFormat
                 Dir = Enum.Parse<LoopDir>(t.GetProperty("dir").GetString()!),
                 Color = Rgba.FromPacked(Convert.ToUInt32(t.GetProperty("color").GetString(), 16)),
             });
+            ReadExtra(t, sp.Tags[^1].Extra);
+        }
 
         foreach (var c in root.GetProperty("cels").EnumerateArray())
         {
@@ -186,11 +196,27 @@ public sealed class EpxFormat : ISpriteFormat
             {
                 Opacity = c.GetProperty("opacity").GetSingle(),
             };
+            ReadExtra(c, sp.Cels[(sp.Layers[li], fi)].Extra);
         }
 
         if (root.TryGetProperty("unknownChunks", out var uc) && uc.ValueKind == JsonValueKind.Object)
             foreach (var p in uc.EnumerateObject()) sp.UnknownChunks[p.Name] = Convert.FromBase64String(p.Value.GetString() ?? "");
         return sp;
+    }
+
+    /// <summary>Format-specific data of a layer, frame, tag or cel, as base64 under "extra" (left out when empty).</summary>
+    private static void WriteExtra(Utf8JsonWriter w, Dictionary<string, byte[]> extra)
+    {
+        if (extra.Count == 0) return;
+        w.WriteStartObject("extra");
+        foreach (var (k, v) in extra) w.WriteString(k, Convert.ToBase64String(v));
+        w.WriteEndObject();
+    }
+
+    private static void ReadExtra(JsonElement e, Dictionary<string, byte[]> extra)
+    {
+        if (e.TryGetProperty("extra", out var x) && x.ValueKind == JsonValueKind.Object)
+            foreach (var p in x.EnumerateObject()) extra[p.Name] = Convert.FromBase64String(p.Value.GetString() ?? "");
     }
 
     private static byte[]? ReadEntry(ZipArchive zip, string name)
