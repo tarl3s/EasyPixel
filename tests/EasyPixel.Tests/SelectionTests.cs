@@ -112,3 +112,33 @@ public class SelectionTests
         f.FlipV();
     }
 }
+
+public class FloatingClearValueTests
+{
+    [Fact]
+    public void Indexed_TransparentIndexNotZero_LiftAndDropUseIt()
+    {
+        const uint clear = 3;
+        var cel = new Cel(new Image(4, 4, clear));
+        cel.Image.Set(1, 1, 0); // index 0 is a real colour here
+        cel.Image.Set(2, 1, 5);
+        var sel = Selectors.Rect(4, 4, new PixelRect(0, 0, 3, 3));
+
+        var f = Floating.Lift(cel, sel, clear);
+        Assert.Equal(clear, f.Clear);
+        Assert.Equal(clear, cel.Image.Get(1, 1)); // the hole is transparent, not colour 0
+        Assert.Equal(0u, f.Pixels.Get(1, 1));
+        Assert.Equal(clear, f.Pixels.Get(0, 0));
+
+        f.X = 1; f.Y = 1;
+        f.Drop(cel);
+        Assert.Equal(0u, cel.Image.Get(2, 2));  // colour 0 is dropped like any colour
+        Assert.Equal(5u, cel.Image.Get(3, 2));
+        Assert.Equal(clear, cel.Image.Get(1, 1)); // transparent floating pixels don't overwrite
+
+        f.X = -2; f.Y = 0; // column 1 (colour 0) lands at x = -1: the cel grows, the new area is transparent
+        f.Drop(cel);
+        Assert.Equal(-1, cel.X);
+        Assert.Equal(clear, cel.Image.Get(0, 3));
+    }
+}
