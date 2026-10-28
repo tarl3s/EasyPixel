@@ -132,7 +132,7 @@ public sealed class PalettePanel : DockPanel
         if (_w == null) return;
         if (Doc.Palette.Colors.Count >= Palette.MaxColors) { _w.ShowStatus(L.T("The palette is full (256 colours)")); return; }
         var c = _w.Tools.Primary;
-        _w.Session.Apply(PaletteEdit.Perform(Doc, "Add colour", () => Doc.Palette.Add(c)));
+        _w.Session.Apply(PaletteEdit.Perform(Doc, L.N("Add colour"), () => Doc.Palette.Add(c)));
         Select(Doc.Palette.Colors.Count - 1);
     }
 
@@ -144,9 +144,9 @@ public sealed class PalettePanel : DockPanel
         if (Doc.Mode == ColorMode.Indexed)
         {
             if (Doc.Palette.Colors.Count == 1) { _w.ShowStatus(L.T("The last colour can't be removed")); return; }
-            _w.Session.Apply(SpriteStateEdit.Perform(Doc, "Remove colour", () => Doc.RemovePaletteEntry(i)));
+            _w.Session.Apply(SpriteStateEdit.Perform(Doc, L.N("Remove colour"), () => Doc.RemovePaletteEntry(i)));
         }
-        else _w.Session.Apply(PaletteEdit.Perform(Doc, "Remove colour", () => Doc.Palette.Colors.RemoveAt(i)));
+        else _w.Session.Apply(PaletteEdit.Perform(Doc, L.N("Remove colour"), () => Doc.Palette.Colors.RemoveAt(i)));
         Select(Math.Min(i, Doc.Palette.Colors.Count - 1));
     }
 
@@ -157,8 +157,8 @@ public sealed class PalettePanel : DockPanel
         int from = _selected, to = from + delta;
         if (to < 0 || to >= Doc.Palette.Colors.Count) return;
         _w.Session.Apply(Doc.Mode == ColorMode.Indexed
-            ? SpriteStateEdit.Perform(Doc, "Move colour", () => Doc.MovePaletteEntry(from, to))
-            : PaletteEdit.Perform(Doc, "Move colour", () => Doc.MovePaletteEntry(from, to)));
+            ? SpriteStateEdit.Perform(Doc, L.N("Move colour"), () => Doc.MovePaletteEntry(from, to))
+            : PaletteEdit.Perform(Doc, L.N("Move colour"), () => Doc.MovePaletteEntry(from, to)));
         Select(to);
     }
 
@@ -182,7 +182,7 @@ public sealed class PalettePanel : DockPanel
             return;
         }
         var doc = Doc;
-        _w.Session.Apply(PaletteEdit.Perform(doc, "Load palette", () =>
+        _w.Session.Apply(PaletteEdit.Perform(doc, L.N("Load palette"), () =>
         {
             int t = doc.Palette.TransparentIndex;
             doc.Palette.Colors.Clear();

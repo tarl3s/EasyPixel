@@ -114,34 +114,34 @@ public partial class MainWindow
         var name = await Dialogs.AskText(L.T("New tag"), L.T("Name"), L.T("Tag") + " " + (Session.Doc.Tags.Count + 1));
         if (string.IsNullOrWhiteSpace(name)) return;
         var tag = new Tag { Name = name, From = from, To = to, Color = TagColors[Session.Doc.Tags.Count % TagColors.Length] };
-        ChangeTags("New tag", () => Session.Doc.Tags.Add(tag));
+        ChangeTags(L.N("New tag"), () => Session.Doc.Tags.Add(tag));
     }
 
     internal async Task RenameTagAsync(Tag tag)
     {
         var name = await Dialogs.AskText(L.T("Rename tag"), L.T("Name"), tag.Name);
         if (string.IsNullOrWhiteSpace(name) || name == tag.Name) return;
-        ChangeTags("Rename tag", () => tag.Name = name);
+        ChangeTags(L.N("Rename tag"), () => tag.Name = name);
     }
 
     internal void SetTagDirection(Tag tag, LoopDir dir)
     {
-        if (tag.Dir != dir) ChangeTags("Tag direction", () => tag.Dir = dir);
+        if (tag.Dir != dir) ChangeTags(L.N("Tag direction"), () => tag.Dir = dir);
     }
 
     internal void SetTagColor(Tag tag, Rgba color)
     {
-        if (tag.Color != color) ChangeTags("Tag colour", () => tag.Color = color);
+        if (tag.Color != color) ChangeTags(L.N("Tag colour"), () => tag.Color = color);
     }
 
     /// <summary>Makes the tag cover the picked frames.</summary>
     internal void SetTagRange(Tag tag)
     {
         var (from, to) = FrameRange;
-        if (tag.From != from || tag.To != to) ChangeTags("Tag frames", () => { tag.From = from; tag.To = to; });
+        if (tag.From != from || tag.To != to) ChangeTags(L.N("Tag frames"), () => { tag.From = from; tag.To = to; });
     }
 
-    internal void RemoveTag(Tag tag) => ChangeTags("Remove tag", () => Session.Doc.Tags.Remove(tag));
+    internal void RemoveTag(Tag tag) => ChangeTags(L.N("Remove tag"), () => Session.Doc.Tags.Remove(tag));
 
     // ---- playback ----
 

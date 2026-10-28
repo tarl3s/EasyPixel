@@ -12,11 +12,11 @@ public partial class MainWindow
 {
     private void CanvasSize_Click(object? sender, RoutedEventArgs e) => _ = CanvasSizeAsync();
     private void Resize_Click(object? sender, RoutedEventArgs e) => _ = ResizeAsync();
-    private void RotateCw_Click(object? sender, RoutedEventArgs e) => ChangeSprite("Rotate", s => SpriteTransforms.Rotate(s, SpriteRotation.Clockwise90));
-    private void RotateCcw_Click(object? sender, RoutedEventArgs e) => ChangeSprite("Rotate", s => SpriteTransforms.Rotate(s, SpriteRotation.CounterClockwise90));
-    private void Rotate180_Click(object? sender, RoutedEventArgs e) => ChangeSprite("Rotate", s => SpriteTransforms.Rotate(s, SpriteRotation.Half));
-    private void FlipH_Click(object? sender, RoutedEventArgs e) => ChangeSprite("Flip", s => SpriteTransforms.Flip(s, horizontal: true));
-    private void FlipV_Click(object? sender, RoutedEventArgs e) => ChangeSprite("Flip", s => SpriteTransforms.Flip(s, horizontal: false));
+    private void RotateCw_Click(object? sender, RoutedEventArgs e) => ChangeSprite(L.N("Rotate"), s => SpriteTransforms.Rotate(s, SpriteRotation.Clockwise90));
+    private void RotateCcw_Click(object? sender, RoutedEventArgs e) => ChangeSprite(L.N("Rotate"), s => SpriteTransforms.Rotate(s, SpriteRotation.CounterClockwise90));
+    private void Rotate180_Click(object? sender, RoutedEventArgs e) => ChangeSprite(L.N("Rotate"), s => SpriteTransforms.Rotate(s, SpriteRotation.Half));
+    private void FlipH_Click(object? sender, RoutedEventArgs e) => ChangeSprite(L.N("Flip"), s => SpriteTransforms.Flip(s, horizontal: true));
+    private void FlipV_Click(object? sender, RoutedEventArgs e) => ChangeSprite(L.N("Flip"), s => SpriteTransforms.Flip(s, horizontal: false));
     private void ModeRgba_Click(object? sender, RoutedEventArgs e) => SetColorMode(ColorMode.Rgba);
     private void ModeIndexed_Click(object? sender, RoutedEventArgs e) => SetColorMode(ColorMode.Indexed);
     private void Outline_Click(object? sender, RoutedEventArgs e) => OutlineCel();
@@ -65,13 +65,13 @@ public partial class MainWindow
         var doc = Session.Doc;
         if (await Dialogs.AskSize(L.T("Resize sprite"), doc.Width, doc.Height) is not { } size || size.Width < 1 || size.Height < 1) return;
         if ((size.Width, size.Height) == (doc.Width, doc.Height) || !await ConfirmLarge(size.Width, size.Height)) return;
-        ChangeSprite("Resize sprite", s => SpriteTransforms.Scale(s, size.Width, size.Height));
+        ChangeSprite(L.N("Resize sprite"), s => SpriteTransforms.Scale(s, size.Width, size.Height));
     }
 
     internal void SetColorMode(ColorMode mode)
     {
         if (Session.Doc.Mode == mode) return;
-        ChangeSprite("Colour mode", s => s.ConvertMode(mode));
+        ChangeSprite(L.N("Colour mode"), s => s.ConvertMode(mode));
         UpdateModeMenu();
     }
 
@@ -84,7 +84,7 @@ public partial class MainWindow
     /// <summary>Draws a one-pixel outline in the primary colour around what is drawn on the current cel (inside the selection, if any).</summary>
     internal void OutlineCel()
     {
-        if (Canvas.Context is not { } ctx || Stroke.Begin(ctx, "Outline") is not { } st) return;
+        if (Canvas.Context is not { } ctx || Stroke.Begin(ctx, L.N("Outline")) is not { } st) return;
         var doc = Session.Doc;
         uint clear = doc.TransparentPixel;
         var sink = st.Step();
@@ -98,7 +98,7 @@ public partial class MainWindow
     internal async Task PixelateAsync()
     {
         if (await Dialogs.AskNumber(L.T("Pixelate"), L.T("Block size (pixels)"), 2, 2, 256) is not { } cell) return;
-        if (Canvas.Context is not { } ctx || Stroke.Begin(ctx, "Pixelate") is not { } st) return;
+        if (Canvas.Context is not { } ctx || Stroke.Begin(ctx, L.N("Pixelate")) is not { } st) return;
         var sink = st.Step();
         Pixelate.Apply(sink, cell);
         st.EndStep(sink);
@@ -109,6 +109,6 @@ public partial class MainWindow
     internal async Task ReduceColorsAsync()
     {
         if (await Dialogs.AskNumber(L.T("Reduce colours"), L.T("Colours to keep"), 16, 2, 256) is not { } n) return;
-        ChangeSprite("Reduce colours", s => SpriteTransforms.ReduceColors(s, Session.Doc.Mode == ColorMode.Indexed ? Math.Min(n, 255) : n));
+        ChangeSprite(L.N("Reduce colours"), s => SpriteTransforms.ReduceColors(s, Session.Doc.Mode == ColorMode.Indexed ? Math.Min(n, 255) : n));
     }
 }

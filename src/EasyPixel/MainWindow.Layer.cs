@@ -38,14 +38,14 @@ public partial class MainWindow
     internal void NewLayer()
     {
         var layer = new Layer { Name = FreeName("Layer") };
-        ChangeLayers("New layer", () => LayerTree.Insert(Session.Doc, layer, Session.Layer));
+        ChangeLayers(L.N("New layer"), () => LayerTree.Insert(Session.Doc, layer, Session.Layer));
         Session.Layer = layer;
     }
 
     internal void NewGroup()
     {
         var group = new Layer { Name = FreeName("Group"), IsGroup = true };
-        ChangeLayers("New group", () => LayerTree.Insert(Session.Doc, group, Session.Layer));
+        ChangeLayers(L.N("New group"), () => LayerTree.Insert(Session.Doc, group, Session.Layer));
         Session.Layer = group;
     }
 
@@ -53,7 +53,7 @@ public partial class MainWindow
     {
         Layer copy = null!;
         var layer = Session.Layer;
-        ChangeLayers("Duplicate layer", () => copy = LayerTree.Duplicate(Session.Doc, layer, " " + L.T("copy")));
+        ChangeLayers(L.N("Duplicate layer"), () => copy = LayerTree.Duplicate(Session.Doc, layer, " " + L.T("copy")));
         Session.Layer = copy;
     }
 
@@ -62,7 +62,7 @@ public partial class MainWindow
         var layer = Session.Layer;
         var block = LayerTree.Block(Session.Doc, layer);
         if (!Session.Doc.Layers.Except(block).Any(l => !l.IsGroup)) { ShowStatus(L.T("A sprite needs at least one layer")); return; }
-        ChangeLayers("Remove layer", () => LayerTree.Remove(Session.Doc, layer));
+        ChangeLayers(L.N("Remove layer"), () => LayerTree.Remove(Session.Doc, layer));
     }
 
     internal void MoveLayer(int direction)
@@ -71,7 +71,7 @@ public partial class MainWindow
         var sib = LayerTree.Siblings(Session.Doc, layer);
         int j = sib.IndexOf(layer) + Math.Sign(direction);
         if (j < 0 || j >= sib.Count) return;
-        ChangeLayers("Move layer", () => LayerTree.Move(Session.Doc, layer, direction));
+        ChangeLayers(L.N("Move layer"), () => LayerTree.Move(Session.Doc, layer, direction));
     }
 
     /// <summary>Puts the current layer in a new group.</summary>
@@ -79,42 +79,42 @@ public partial class MainWindow
     {
         var layer = Session.Layer;
         var name = FreeName("Group");
-        ChangeLayers("Group layer", () => LayerTree.Group(Session.Doc, layer, name));
+        ChangeLayers(L.N("Group layer"), () => LayerTree.Group(Session.Doc, layer, name));
     }
 
     internal void PutIntoGroup(Layer layer, Layer group)
     {
         if (!group.IsGroup || group == layer || LayerTree.IsInside(group, layer)) return;
-        ChangeLayers("Put into group", () => LayerTree.PutInto(Session.Doc, layer, group));
+        ChangeLayers(L.N("Put into group"), () => LayerTree.PutInto(Session.Doc, layer, group));
     }
 
     internal void MoveOutOfGroup(Layer layer)
     {
         if (layer.Parent == null) return;
-        ChangeLayers("Move out of group", () => LayerTree.MoveOut(Session.Doc, layer));
+        ChangeLayers(L.N("Move out of group"), () => LayerTree.MoveOut(Session.Doc, layer));
     }
 
     internal async Task RenameLayerAsync(Layer layer)
     {
         if (await Dialogs.AskText(L.T("Rename layer"), L.T("Name"), layer.Name) is not { Length: > 0 } name || name == layer.Name) return;
-        SetLayerProps(layer, LayerProps.Of(layer) with { Name = name }, "Rename layer");
+        SetLayerProps(layer, LayerProps.Of(layer) with { Name = name }, L.N("Rename layer"));
     }
 
     internal void ToggleVisible(Layer layer) =>
-        SetLayerProps(layer, LayerProps.Of(layer) with { Visible = !layer.Visible }, layer.Visible ? "Hide layer" : "Show layer");
+        SetLayerProps(layer, LayerProps.Of(layer) with { Visible = !layer.Visible }, layer.Visible ? L.N("Hide layer") : L.N("Show layer"));
 
     internal void ToggleLock(Layer layer) =>
-        SetLayerProps(layer, LayerProps.Of(layer) with { Locked = !layer.Locked }, layer.Locked ? "Unlock layer" : "Lock layer");
+        SetLayerProps(layer, LayerProps.Of(layer) with { Locked = !layer.Locked }, layer.Locked ? L.N("Unlock layer") : L.N("Lock layer"));
 
     internal void SetLayerOpacity(Layer layer, int opacity)
     {
         var o = (byte)Math.Clamp(opacity, 0, 255);
-        if (o != layer.Opacity) SetLayerProps(layer, LayerProps.Of(layer) with { Opacity = o }, "Layer opacity");
+        if (o != layer.Opacity) SetLayerProps(layer, LayerProps.Of(layer) with { Opacity = o }, L.N("Layer opacity"));
     }
 
     internal void SetLayerBlend(Layer layer, BlendMode blend)
     {
-        if (blend != layer.Blend) SetLayerProps(layer, LayerProps.Of(layer) with { Blend = blend }, "Blend mode");
+        if (blend != layer.Blend) SetLayerProps(layer, LayerProps.Of(layer) with { Blend = blend }, L.N("Blend mode"));
     }
 
     private void SetLayerProps(Layer layer, LayerProps props, string editName)

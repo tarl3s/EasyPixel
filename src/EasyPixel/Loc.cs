@@ -43,6 +43,9 @@ public static class L
         return n.Contains("Hant") || n.EndsWith("TW") || n.EndsWith("HK") || n.EndsWith("MO") ? "zh-Hant" : "zh-Hans";
     }
 
+    /// <summary>Marks the English name of an undo step ("Undo {0}" shows it through <see cref="T"/>); returns it unchanged.</summary>
+    public static string N(string englishName) => englishName;
+
     public static string T(string english) =>
         english != null && _table.TryGetValue(english, out var t) ? t : english ?? "";
 
