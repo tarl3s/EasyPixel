@@ -63,7 +63,7 @@ public static class Fill
         }
     }
 
-    private static bool Matches(uint a, uint b, int tol)
+    internal static bool Matches(uint a, uint b, int tol)
     {
         if (a == b) return true;
         if (tol == 0) return false;
