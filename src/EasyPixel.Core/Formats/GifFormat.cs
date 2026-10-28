@@ -25,6 +25,7 @@ public sealed class GifFormat : ISpriteFormat
     {
         private readonly byte[] _d;
         public int Pos;
+        public bool AtEnd => Pos >= _d.Length;
         public Cursor(byte[] d) { _d = d; }
         public byte Byte() { if (Pos >= _d.Length) throw Cut(); return _d[Pos++]; }
         public int U16() { int a = Byte(); return a | Byte() << 8; }
@@ -45,7 +46,7 @@ public sealed class GifFormat : ISpriteFormat
         var ms = new MemoryStream();
         s.CopyTo(ms);
         var c = new Cursor(ms.ToArray());
-        try { return ReadCore(c); }
+        try { return ReadCore(c, warnings); }
         catch (FormatException) { throw; }
         catch (Exception e) when (e is IndexOutOfRangeException or ArgumentException or OverflowException or InvalidOperationException or OutOfMemoryException)
         {
@@ -53,7 +54,7 @@ public sealed class GifFormat : ISpriteFormat
         }
     }
 
-    private static Sprite ReadCore(Cursor c)
+    private static Sprite ReadCore(Cursor c, List<string> warnings)
     {
         var head = Encoding.ASCII.GetString(c.Take(6));
         if (head != "GIF87a" && head != "GIF89a") throw new FormatException("This is not a GIF file.");
@@ -69,6 +70,11 @@ public sealed class GifFormat : ISpriteFormat
         int frameCount = 0, disposal = 0, transparent = -1, delay = 0;
         while (true)
         {
+            if (c.AtEnd && frameCount > 0)
+            {
+                warnings.Add("The GIF file ends without its closing mark; frames were read anyway");
+                break;
+            }
             int b = c.Byte();
             if (b == 0x3B) break;
             if (b == 0x21)

@@ -287,11 +287,15 @@ public class FormatTestsOther
         var ms = new MemoryStream();
         new GifFormat().Write(Anim1(8, 6, 3, 100), ms, new List<string>());
         var full = ms.ToArray();
-        foreach (int cut in new[] { 3, 10, 20, full.Length / 2, full.Length - 1 })
+        foreach (int cut in new[] { 3, 10, 20, full.Length / 2, full.Length - 5 })
         {
             var ex = Record.Exception(() => new GifFormat().Read(new MemoryStream(full[..cut]), new()));
             Assert.IsType<FormatException>(ex);
         }
+        var w = new List<string>();
+        var kept = new GifFormat().Read(new MemoryStream(full[..^1]), w);
+        Assert.Equal(3, kept.Frames.Count);
+        Assert.Contains("The GIF file ends without its closing mark; frames were read anyway", w);
         Assert.Throws<FormatException>(() => new GifFormat().Read(new MemoryStream(Encoding.ASCII.GetBytes("NOTAGIF89a....")), new()));
     }
 
