@@ -1,0 +1,38 @@
+using EasyPixel.Core.Formats;
+using EasyPixel.Core.Model;
+
+namespace EasyPixel.Dialogs;
+
+public enum SaveChoice { Save, DontSave, Cancel }
+
+public sealed record NewSpriteOptions(int Width, int Height, ColorMode Mode);
+
+public enum ExportKind { Png, Gif, Sheet }
+
+public sealed record ExportOptions(ExportKind Kind, SheetKind Layout = SheetKind.Horizontal, int Columns = 4, int Padding = 0);
+
+/// <summary>A file type offered by a save picker: its name and extensions (with the dot).</summary>
+public sealed record FileType(string Name, string[] Extensions);
+
+/// <summary>
+/// Every question the main window asks the person. The app shows real windows (<see cref="AppDialogs"/>); the UI tests
+/// answer from a script. All texts passed in are already translated.
+/// </summary>
+public interface IDialogs
+{
+    /// <summary>"Save changes to {name}?" with Save / Don't save / Cancel.</summary>
+    Task<SaveChoice> AskSaveChanges(string docName);
+
+    /// <summary>A yes/no question; true = <paramref name="yes"/>.</summary>
+    Task<bool> Confirm(string message, string yes, string no);
+
+    Task Tell(string message);
+
+    Task<NewSpriteOptions?> AskNewSprite();
+
+    Task<ExportOptions?> AskExport();
+
+    Task<string?> PickOpenFile(IReadOnlyList<FileType> types);
+
+    Task<string?> PickSaveFile(string title, string suggestedName, IReadOnlyList<FileType> types);
+}

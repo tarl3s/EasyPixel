@@ -1,0 +1,24 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Palette (Light). Same keys in Dark.axaml and Light.axaml; views use them through DynamicResource or Res. -->
+  <SolidColorBrush x:Key="Bg0" Color="#F4F5F7" />
+  <SolidColorBrush x:Key="Bg1" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="Bg2" Color="#ECEEF2" />
+  <SolidColorBrush x:Key="Bg3" Color="#E1E4EA" />
+  <SolidColorBrush x:Key="Hover" Color="#D8DCE4" />
+  <SolidColorBrush x:Key="Border" Color="#C3C8D2" />
+  <SolidColorBrush x:Key="Text" Color="#1B1E24" />
+  <SolidColorBrush x:Key="TextDim" Color="#4B5260" />
+  <SolidColorBrush x:Key="Accent" Color="#15803D" />
+  <SolidColorBrush x:Key="AccentHover" Color="#166534" />
+  <SolidColorBrush x:Key="AccentText" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="Danger" Color="#B91C1C" />
+  <!-- The canvas: the area around the sprite, the transparency checkerboard, the pixel grid, the marching ants. -->
+  <SolidColorBrush x:Key="Viewport" Color="#D5D8DE" />
+  <SolidColorBrush x:Key="CheckerA" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="CheckerB" Color="#D0D0D0" />
+  <SolidColorBrush x:Key="GridLine" Color="#40000000" />
+  <SolidColorBrush x:Key="AntsDark" Color="#000000" />
+  <SolidColorBrush x:Key="AntsLight" Color="#FFFFFF" />
+  <Color x:Key="SystemAccentColor">#15803D</Color>
+</ResourceDictionary>

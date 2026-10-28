@@ -44,6 +44,10 @@ dotnet run --project src/EasyPixel
 |---|---|
 | `Directory.Build.props` | shared version and compiler settings |
 | `src/EasyPixel.Core` | portable model (`Model/Sprite.cs`…), file formats, tools; no UI |
-| `src/EasyPixel` | the Avalonia app (`Program.cs`, `App.axaml`, `MainWindow.axaml`) |
+| `src/EasyPixel` | the Avalonia app: `App.axaml(.cs)` (theme + language from settings), `MainWindow.*.cs` (one partial per area: File, Edit, Tools, Keys), `EditorSession.cs` (open sprite, history, frame, layer, selection, floating pixels), `Settings.cs` (`%APPDATA%/EasyPixel/settings.json`), `Loc.cs` (`L.T`) |
+| `src/EasyPixel/Tools` | `ToolController` + one class per tool family; `Stroke` turns a gesture into one undo step |
+| `src/EasyPixel/Canvas` | `PixelCanvas`: zoom/pan, dirty-rect render into a `WriteableBitmap`, grid, onion skin, marching ants |
+| `src/EasyPixel/Dialogs` | `IDialogs` (every question the window asks; tests script it) and the real windows |
+| `src/EasyPixel/Theme`, `Lang` | `Dark.axaml`/`Light.axaml` palettes (same keys); `Lang/en.json` written by `tools/Update-Strings.sh` |
 | `tests/EasyPixel.Tests` | portable tests of Core |
 | `tests/EasyPixel.UiTests` | headless UI tests (`InternalsVisibleTo` from the app) |

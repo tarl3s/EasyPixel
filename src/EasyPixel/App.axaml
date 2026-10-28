@@ -1,8 +1,37 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="EasyPixel.App"
-             RequestedThemeVariant="Default">
+             Name="EasyPixel">
+  <!-- The palette (Theme/Dark.axaml or Theme/Light.axaml) is merged in App.Initialize from the settings. -->
   <Application.Styles>
     <FluentTheme />
+    <Style Selector="Window">
+      <Setter Property="Background" Value="{DynamicResource Bg0}" />
+      <Setter Property="Foreground" Value="{DynamicResource Text}" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="TextBlock.dim">
+      <Setter Property="Foreground" Value="{DynamicResource TextDim}" />
+    </Style>
+    <Style Selector="Menu">
+      <Setter Property="Background" Value="{DynamicResource Bg1}" />
+    </Style>
+    <Style Selector="ToggleButton.tool">
+      <Setter Property="Width" Value="36" />
+      <Setter Property="Height" Value="34" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="2" />
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="ToggleButton.tool:checked /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Accent}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentText}" />
+    </Style>
+    <Style Selector="Border.bar">
+      <Setter Property="Background" Value="{DynamicResource Bg1}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Border}" />
+    </Style>
   </Application.Styles>
 </Application>

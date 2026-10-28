@@ -8,8 +8,11 @@ public class MainWindowTests
     public void MainWindowConstructs()
     {
         var window = new MainWindow();
-        window.Show();
-        Assert.Equal("EasyPixel", window.Title);
-        window.Close();
+        try
+        {
+            window.Show();
+            Assert.Equal("Untitled - EasyPixel", window.Title);
+        }
+        finally { window.Close(); }
     }
 }
