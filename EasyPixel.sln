@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{2D5EBA23-2EC6-4F16-9C3F-53D3FB4C5823}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyPixel.Core", "src\EasyPixel.Core\EasyPixel.Core.csproj", "{CC91590F-8A7B-447B-A0F2-B051407E2663}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyPixel", "src\EasyPixel\EasyPixel.csproj", "{7EEA8C6D-5273-43BB-8A6D-C1B01F237696}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{81C6898D-12E9-4875-9713-7E9E16F15902}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyPixel.Tests", "tests\EasyPixel.Tests\EasyPixel.Tests.csproj", "{A9ABB588-8916-403E-A697-A9A9DEC0BFAA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyPixel.UiTests", "tests\EasyPixel.UiTests\EasyPixel.UiTests.csproj", "{3FC6DC80-12F9-4EDA-BA5E-97D9A080804F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CC91590F-8A7B-447B-A0F2-B051407E2663}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC91590F-8A7B-447B-A0F2-B051407E2663}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC91590F-8A7B-447B-A0F2-B051407E2663}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC91590F-8A7B-447B-A0F2-B051407E2663}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7EEA8C6D-5273-43BB-8A6D-C1B01F237696}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EEA8C6D-5273-43BB-8A6D-C1B01F237696}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EEA8C6D-5273-43BB-8A6D-C1B01F237696}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EEA8C6D-5273-43BB-8A6D-C1B01F237696}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9ABB588-8916-403E-A697-A9A9DEC0BFAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9ABB588-8916-403E-A697-A9A9DEC0BFAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9ABB588-8916-403E-A697-A9A9DEC0BFAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9ABB588-8916-403E-A697-A9A9DEC0BFAA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3FC6DC80-12F9-4EDA-BA5E-97D9A080804F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3FC6DC80-12F9-4EDA-BA5E-97D9A080804F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3FC6DC80-12F9-4EDA-BA5E-97D9A080804F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3FC6DC80-12F9-4EDA-BA5E-97D9A080804F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{CC91590F-8A7B-447B-A0F2-B051407E2663} = {2D5EBA23-2EC6-4F16-9C3F-53D3FB4C5823}
+		{7EEA8C6D-5273-43BB-8A6D-C1B01F237696} = {2D5EBA23-2EC6-4F16-9C3F-53D3FB4C5823}
+		{A9ABB588-8916-403E-A697-A9A9DEC0BFAA} = {81C6898D-12E9-4875-9713-7E9E16F15902}
+		{3FC6DC80-12F9-4EDA-BA5E-97D9A080804F} = {81C6898D-12E9-4875-9713-7E9E16F15902}
+	EndGlobalSection
+EndGlobal
