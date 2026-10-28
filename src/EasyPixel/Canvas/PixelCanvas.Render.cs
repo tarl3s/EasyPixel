@@ -26,6 +26,7 @@ public sealed partial class PixelCanvas
 
         var page = new Rect(Offset.X, Offset.Y, doc.Width * Scale, doc.Height * Scale);
         var vis = page.Intersect(bounds);
+        if (Tiled) DrawTiles(ctx, page, bounds);
         if (vis.Width > 0 && vis.Height > 0)
         {
             ctx.FillRectangle(Checker(), vis);
@@ -36,6 +37,7 @@ public sealed partial class PixelCanvas
                     DrawPart(ctx, fb, fs.Pixels.X, fs.Pixels.Y, fb.PixelSize.Width, fb.PixelSize.Height, bounds);
             }
             if (_showGrid && Scale >= MinGridScale) DrawGrid(ctx, vis);
+            if (ShowTileGrid) DrawTileGrid(ctx, vis);
         }
         DrawSelection(ctx, bounds);
         DrawToolOverlay(ctx);
@@ -84,6 +86,43 @@ public sealed partial class PixelCanvas
     }
 
     private static uint Packed(Color c) => new Rgba(c.R, c.G, c.B, c.A).Packed;
+
+    /// <summary>Tiled preview: the picture repeated in the eight places around the canvas, to check a pattern tiles.</summary>
+    private void DrawTiles(DrawingContext ctx, Rect page, Rect bounds)
+    {
+        var doc = _s!.Doc;
+        var dim = new SolidColorBrush(Res.Color("Viewport"), 0.35);
+        for (int ty = -1; ty <= 1; ty++)
+            for (int tx = -1; tx <= 1; tx++)
+            {
+                if (tx == 0 && ty == 0) continue;
+                var tile = new Rect(page.X + tx * page.Width, page.Y + ty * page.Height, page.Width, page.Height).Intersect(bounds);
+                if (tile.Width <= 0 || tile.Height <= 0) continue;
+                ctx.FillRectangle(Checker(), tile);
+                using (ctx.PushRenderOptions(new RenderOptions { BitmapInterpolationMode = BitmapInterpolationMode.None }))
+                    DrawPart(ctx, _bitmap!, tx * doc.Width, ty * doc.Height, doc.Width, doc.Height, bounds);
+                ctx.FillRectangle(dim, tile); // a little darker, so the real canvas stands out
+            }
+    }
+
+    /// <summary>The tile grid (View → Grid settings): a line every <see cref="TileGrid"/> pixels, once the cells are big enough to see.</summary>
+    private void DrawTileGrid(DrawingContext ctx, Rect vis)
+    {
+        var (gw, gh) = TileGrid;
+        if (gw < 1 || gh < 1 || gw * Scale < 4 || gh * Scale < 4) return;
+        var pen = new Pen(Res.Brush("Accent"), 1);
+        var doc = _s!.Doc;
+        for (int x = 0; x <= doc.Width; x += gw)
+        {
+            double sx = Math.Round(Offset.X + x * Scale) + 0.5;
+            if (sx >= vis.X - 1 && sx <= vis.Right + 1) ctx.DrawLine(pen, new Point(sx, vis.Y), new Point(sx, vis.Bottom));
+        }
+        for (int y = 0; y <= doc.Height; y += gh)
+        {
+            double sy = Math.Round(Offset.Y + y * Scale) + 0.5;
+            if (sy >= vis.Y - 1 && sy <= vis.Bottom + 1) ctx.DrawLine(pen, new Point(vis.X, sy), new Point(vis.Right, sy));
+        }
+    }
 
     private void DrawGrid(DrawingContext ctx, Rect vis)
     {

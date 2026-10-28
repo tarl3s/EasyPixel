@@ -66,6 +66,51 @@ public sealed class AppDialogs : IDialogs
         return file?.TryGetLocalPath();
     }
 
+    public async Task<int?> AskNumber(string title, string label, int value, int min, int max)
+    {
+        var w = new NumberWindow(title, label, value, min, max);
+        await w.ShowDialog(_owner);
+        return w.Result == 0 ? w.Value : null;
+    }
+
+    public async Task<string?> AskText(string title, string label, string value)
+    {
+        var w = new TextWindow(title, label, value);
+        await w.ShowDialog(_owner);
+        return w.Result == 0 ? w.Value.Trim() : null;
+    }
+
+    public async Task<(int Width, int Height)?> AskSize(string title, int width, int height)
+    {
+        var w = SizeWindow.Simple(title, width, height, offerRatio: true);
+        await w.ShowDialog(_owner);
+        return w.Result == 0 ? w.Size : null;
+    }
+
+    public async Task<CanvasSizeOptions?> AskCanvasSize(int width, int height)
+    {
+        var w = new CanvasSizeWindow(width, height);
+        await w.ShowDialog(_owner);
+        return w.Result == 0 ? w.Options : null;
+    }
+
+    public async Task<OnionOptions?> AskOnion(OnionOptions current)
+    {
+        var w = new OnionWindow(current);
+        await w.ShowDialog(_owner);
+        return w.Result == 0 ? w.Options : null;
+    }
+
+    public async Task<SettingsChoice?> AskSettings(SettingsChoice current)
+    {
+        var w = new SettingsWindow(current);
+        await w.ShowDialog(_owner);
+        return w.Result == 0 ? w.Choice : null;
+    }
+
+    public async Task ShowShortcuts(IReadOnlyList<(string Keys, string Action)> shortcuts) =>
+        await new ShortcutsWindow(shortcuts).ShowDialog(_owner);
+
     private static List<FilePickerFileType> Filters(IReadOnlyList<FileType> types) =>
         types.Select(t => new FilePickerFileType(t.Name) { Patterns = t.Extensions.Select(e => "*" + e).ToList() }).ToList();
 }

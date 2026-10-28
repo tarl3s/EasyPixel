@@ -14,6 +14,13 @@ public sealed record ExportOptions(ExportKind Kind, SheetKind Layout = SheetKind
 /// <summary>A file type offered by a save picker: its name and extensions (with the dot).</summary>
 public sealed record FileType(string Name, string[] Extensions);
 
+public sealed record CanvasSizeOptions(int Width, int Height, Anchor Anchor);
+
+/// <summary>Settings → language code ("auto" or one of <see cref="L.Languages"/>) and theme ("dark" / "light").</summary>
+public sealed record SettingsChoice(string Language, string Theme);
+
+public sealed record OnionOptions(int Before, int After, int Opacity, bool Tint);
+
 /// <summary>
 /// Every question the main window asks the person. The app shows real windows (<see cref="AppDialogs"/>); the UI tests
 /// answer from a script. All texts passed in are already translated.
@@ -35,4 +42,23 @@ public interface IDialogs
     Task<string?> PickOpenFile(IReadOnlyList<FileType> types);
 
     Task<string?> PickSaveFile(string title, string suggestedName, IReadOnlyList<FileType> types);
+
+    /// <summary>One whole number between <paramref name="min"/> and <paramref name="max"/>.</summary>
+    Task<int?> AskNumber(string title, string label, int value, int min, int max);
+
+    /// <summary>A line of text (a name).</summary>
+    Task<string?> AskText(string title, string label, string value);
+
+    /// <summary>A width and height (Sprite → Resize, View → Grid settings).</summary>
+    Task<(int Width, int Height)?> AskSize(string title, int width, int height);
+
+    /// <summary>Sprite → Canvas size: new size and where the picture stays.</summary>
+    Task<CanvasSizeOptions?> AskCanvasSize(int width, int height);
+
+    Task<OnionOptions?> AskOnion(OnionOptions current);
+
+    Task<SettingsChoice?> AskSettings(SettingsChoice current);
+
+    /// <summary>Help → Keyboard shortcuts: keys and what they do (already translated).</summary>
+    Task ShowShortcuts(IReadOnlyList<(string Keys, string Action)> shortcuts);
 }

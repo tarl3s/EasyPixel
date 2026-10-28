@@ -31,7 +31,7 @@ public partial class MainWindow
         foreach (var (kind, glyph) in Strip)
         {
             var b = new ToggleButton { Content = glyph, Classes = { "tool" }, Focusable = false }; // Space and arrows stay with the canvas
-            ToolTip.SetTip(b, L.T(Tools.Get(kind).Name));
+            ToolTip.SetTip(b, ToolKey(kind) is { } key ? L.T(Tools.Get(kind).Name) + " (" + key + ")" : L.T(Tools.Get(kind).Name));
             b.Click += (_, _) => Tools.Current = kind;
             _toolButtons[kind] = b;
             ToolStrip.Children.Add(b);
@@ -49,7 +49,6 @@ public partial class MainWindow
         }
         PrimarySwatch.Background = new SolidColorBrush(ToColor(Tools.Primary));
         SecondarySwatch.Background = new SolidColorBrush(ToColor(Tools.Secondary));
-        if (!HexBox.IsFocused) HexBox.Text = Hex(Tools.Primary);
         Canvas.InvalidateVisual(); // mirror axes
     }
 
@@ -126,20 +125,6 @@ public partial class MainWindow
         new() { Text = text, Classes = { "dim" }, VerticalAlignment = VerticalAlignment.Center };
 
     private void Swap_Click(object? sender, RoutedEventArgs e) => Tools.SwapColors();
-
-    private void HexBox_KeyDown(object? sender, KeyEventArgs e)
-    {
-        if (e.Key != Key.Enter) return;
-        ApplyHex();
-        e.Handled = true;
-        Canvas.Focus();
-    }
-
-    private void ApplyHex()
-    {
-        if (TryParseHex(HexBox.Text, out var c)) Tools.SetPrimary(c);
-        else HexBox.Text = Hex(Tools.Primary);
-    }
 
     /// <summary>Reads "#RRGGBB" or "#RRGGBBAA" (the # is optional).</summary>
     internal static bool TryParseHex(string? text, out Rgba c)

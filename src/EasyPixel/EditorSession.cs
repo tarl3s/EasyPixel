@@ -33,15 +33,46 @@ public sealed class EditorSession
         Doc = doc;
         History = new History(doc);
         Path = path;
-        Layer = doc.Layers.LastOrDefault(l => !l.IsGroup) ?? doc.Layers[0];
+        _layer = doc.Layers.LastOrDefault(l => !l.IsGroup) ?? doc.Layers[0];
         _sel = Selection.None(doc.Width, doc.Height);
     }
 
     public Sprite Doc { get; }
     public History History { get; }
     public string? Path { get; set; }
-    public int Frame { get; set; }
-    public Layer Layer { get; set; }
+
+    /// <summary>The frame being edited (0-based).</summary>
+    public int Frame
+    {
+        get => _frame;
+        set
+        {
+            value = Math.Clamp(value, 0, Doc.Frames.Count - 1);
+            if (value == _frame) return;
+            DropFloating();
+            _frame = value;
+            CurrentChanged?.Invoke();
+            InvalidateAll();
+        }
+    }
+    private int _frame;
+
+    /// <summary>The layer being edited (a group can be current; drawing on it is refused).</summary>
+    public Layer Layer
+    {
+        get => _layer;
+        set
+        {
+            if (value == _layer || !Doc.Layers.Contains(value)) return;
+            DropFloating();
+            _layer = value;
+            CurrentChanged?.Invoke();
+        }
+    }
+    private Layer _layer;
+
+    /// <summary>The current frame or layer changed.</summary>
+    public event Action? CurrentChanged;
 
     /// <summary>Selected canvas pixels; empty when nothing is selected.</summary>
     public Selection Sel
@@ -85,10 +116,33 @@ public sealed class EditorSession
         HistoryChanged?.Invoke();
     }
 
+    /// <summary>Records a change that was already made to the document (a panel or menu command) and redraws everything.</summary>
+    public void Apply(IEdit edit)
+    {
+        History.Push(edit);
+        KeepCurrentValid();
+        InvalidateAll();
+        HistoryChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// After a change to the document's structure (or undoing one): the current frame and layer must still exist, and
+    /// the selection must have the canvas size.
+    /// </summary>
+    private void KeepCurrentValid()
+    {
+        bool changed = false;
+        if (_frame >= Doc.Frames.Count) { _frame = Doc.Frames.Count - 1; changed = true; }
+        if (!Doc.Layers.Contains(_layer)) { _layer = Doc.Layers.LastOrDefault(l => !l.IsGroup) ?? Doc.Layers[0]; changed = true; }
+        if (_sel.Width != Doc.Width || _sel.Height != Doc.Height) Sel = Selection.None(Doc.Width, Doc.Height);
+        if (changed) CurrentChanged?.Invoke();
+    }
+
     public bool Undo()
     {
         DropFloating();
         if (!History.Undo()) return false;
+        KeepCurrentValid();
         InvalidateAll();
         HistoryChanged?.Invoke();
         return true;
@@ -98,6 +152,7 @@ public sealed class EditorSession
     {
         DropFloating();
         if (!History.Redo()) return false;
+        KeepCurrentValid();
         InvalidateAll();
         HistoryChanged?.Invoke();
         return true;

@@ -1,13 +1,17 @@
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using EasyPixel.Core.Model;
 using EasyPixel.Dialogs;
+using EasyPixel.Panels;
 using EasyPixel.Tools;
 
 namespace EasyPixel;
 
 /// <summary>
-/// The editor window: menu, tool options, tool strip, canvas and status bar. Split by area: File (new/open/save/export,
-/// asking to save), Edit (undo, clipboard, selection), Tools (strip, options, colours), Keys, View.
+/// The editor window: menu, tool options, tool strip, canvas, colour/palette/layers panels, timeline and status bar.
+/// One partial per menu or area: File, Edit, Sprite, Layer, Frame, Select, View (also Settings and Help), Tools (strip,
+/// options, colours), Keys (shortcuts). The panels themselves live in Panels/.
 /// </summary>
 public partial class MainWindow : Window
 {
@@ -19,14 +23,24 @@ public partial class MainWindow : Window
         Dialogs = new AppDialogs(this);
         Tools.Changed += OnToolsChanged;
         Canvas.ViewChanged += UpdateStatusBar;
-        Canvas.ShowGrid = App.Settings.ShowGrid;
-        GridItem.IsChecked = App.Settings.ShowGrid;
         BuildToolStrip();
-        HexBox.KeyDown += HexBox_KeyDown;
-        HexBox.LostFocus += (_, _) => ApplyHex();
+        ToolTip.SetTip(SwapButton, L.T("Swap primary and secondary colours") + " (X)");
         BuildRecentMenu();
-        SetSession(new EditorSession(new Sprite(32, 32)));
+        ApplyViewSettings();
+        UpdateThemeMenu(App.Settings.Theme);
+        Colors.Attach(Tools);
+        SetSession(new EditorSession(NewDocument(32, 32, ColorMode.Rgba)));
+        PaletteView.Attach(this);
+        Layers.Attach(this);
+        Timeline.Attach(this);
         OnToolsChanged();
+        // Tab hides the panels (before focus navigation takes it), unless someone is typing.
+        AddHandler(KeyDownEvent, (_, e) =>
+        {
+            if (e.Key != Key.Tab || e.Source is TextBox || e.KeyModifiers != KeyModifiers.None) return;
+            TogglePanels();
+            e.Handled = true;
+        }, RoutingStrategies.Tunnel);
     }
 
     /// <summary>The open document.</summary>
@@ -39,11 +53,46 @@ public partial class MainWindow : Window
 
     internal void SetSession(EditorSession s)
     {
-        if (Session != null) Session.HistoryChanged -= UpdateTitle;
+        StopPlaying();
+        if (Session != null)
+        {
+            Session.HistoryChanged -= OnHistoryChanged;
+            Session.CurrentChanged -= RefreshPanels;
+        }
         Session = s;
-        s.HistoryChanged += UpdateTitle;
+        _rangeAnchor = s.Frame;
+        s.HistoryChanged += OnHistoryChanged;
+        s.CurrentChanged += RefreshPanels;
         Canvas.Attach(s, Tools, ShowStatus);
         UpdateTitle();
+        UpdateStatusBar();
+        RefreshPanels();
+    }
+
+    /// <summary>A new sprite as File → New makes it: RGBA ones get a starting palette to pick colours from.</summary>
+    internal static Sprite NewDocument(int width, int height, ColorMode mode)
+    {
+        var s = new Sprite(width, height, mode);
+        if (mode == ColorMode.Rgba) s.Palette.Colors.AddRange(PalettePanel.DefaultColors);
+        else s.Palette.Colors.AddRange(PalettePanel.DefaultColors.Take(Palette.MaxColors - 1));
+        return s;
+    }
+
+    private void OnHistoryChanged()
+    {
+        UpdateTitle();
+        RefreshPanels();
+    }
+
+    /// <summary>Brings the panels, timeline and menus up to date with the document (after any change).</summary>
+    internal void RefreshPanels()
+    {
+        if (Session == null) return;
+        if (_rangeAnchor >= Session.Doc.Frames.Count) _rangeAnchor = Session.Frame;
+        Layers?.Rebuild();
+        Timeline?.Rebuild();
+        PaletteView?.Rebuild();
+        UpdateModeMenu();
         UpdateStatusBar();
     }
 

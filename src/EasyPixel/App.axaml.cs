@@ -16,10 +16,21 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
         Settings = Settings.Load();
         L.Load(L.Resolve(Settings.Language));
-        bool light = Settings.Theme == "light";
+        ApplyTheme(Settings.Theme == "light");
+    }
+
+    private IResourceProvider? _palette;
+
+    /// <summary>
+    /// Puts the dark or light palette in place. At startup only in the app (open windows keep some colours they already
+    /// took, so a change asks for a restart); the tests also switch it to measure both themes.
+    /// </summary>
+    internal void ApplyTheme(bool light)
+    {
         RequestedThemeVariant = light ? ThemeVariant.Light : ThemeVariant.Dark;
-        var palette = (IResourceProvider)AvaloniaXamlLoader.Load(new Uri($"avares://EasyPixel/Theme/{(light ? "Light" : "Dark")}.axaml"));
-        Resources.MergedDictionaries.Add(palette);
+        if (_palette != null) Resources.MergedDictionaries.Remove(_palette);
+        _palette = (IResourceProvider)AvaloniaXamlLoader.Load(new Uri($"avares://EasyPixel/Theme/{(light ? "Light" : "Dark")}.axaml"));
+        Resources.MergedDictionaries.Add(_palette);
     }
 
     public override void OnFrameworkInitializationCompleted()

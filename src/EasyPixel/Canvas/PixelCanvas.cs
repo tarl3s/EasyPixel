@@ -63,6 +63,16 @@ public sealed partial class PixelCanvas : Control
     public bool ShowGrid { get => _showGrid; set { _showGrid = value; InvalidateVisual(); } }
     private bool _showGrid = true;
 
+    /// <summary>Tiled preview: draws the picture repeated around the canvas.</summary>
+    public bool Tiled { get => _tiled; set { _tiled = value; InvalidateVisual(); } }
+    private bool _tiled;
+
+    /// <summary>Shows the tile grid of <see cref="TileGrid"/> cells.</summary>
+    public bool ShowTileGrid { get => _showTileGrid; set { _showTileGrid = value; InvalidateVisual(); } }
+    private bool _showTileGrid;
+    public (int W, int H) TileGrid { get => _tileGrid; set { _tileGrid = value; InvalidateVisual(); } }
+    private (int W, int H) _tileGrid = (16, 16);
+
     public bool ShowOnion { get => _showOnion; set { _showOnion = value; RefreshAll(); } }
     private bool _showOnion;
     public OnionSettings Onion { get; } = new();
@@ -72,6 +82,9 @@ public sealed partial class PixelCanvas : Control
 
     /// <summary>The pixel under the pointer, or null when the pointer is off the canvas.</summary>
     public (int X, int Y)? Hover { get; private set; }
+
+    /// <summary>The picture was redrawn (a change, another frame, another document): previews follow it.</summary>
+    public event Action? PictureChanged;
 
     /// <summary>Zoom, scroll or hover changed (for the status bar).</summary>
     public event Action? ViewChanged;
@@ -136,6 +149,7 @@ public sealed partial class PixelCanvas : Control
         }
         CopyToBitmap(area, onion);
         InvalidateVisual();
+        PictureChanged?.Invoke();
     }
 
     private unsafe void CopyToBitmap(PixelRect r, bool onion)

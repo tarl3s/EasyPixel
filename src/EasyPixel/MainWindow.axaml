@@ -2,8 +2,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="using:EasyPixel"
         xmlns:canvas="using:EasyPixel.Canvas"
+        xmlns:panels="using:EasyPixel.Panels"
         x:Class="EasyPixel.MainWindow"
-        Title="EasyPixel" Width="1100" Height="700" MinWidth="560" MinHeight="380">
+        Title="EasyPixel" Width="1280" Height="800" MinWidth="720" MinHeight="480">
+  <!-- Aseprite's layout: menu and tool options on top, tools on the left, colour/palette/layers on the right,
+       the timeline under the canvas. Tab hides everything but the menu and the canvas. -->
   <DockPanel>
     <Menu DockPanel.Dock="Top" x:Name="MainMenu">
       <MenuItem Header="{loc:T 'File'}">
@@ -26,20 +29,97 @@
         <MenuItem Header="{loc:T 'Paste'}" InputGesture="Ctrl+V" Click="Paste_Click" />
         <MenuItem Header="{loc:T 'Delete'}" InputGesture="Delete" Click="Delete_Click" />
         <Separator />
+        <MenuItem Header="{loc:T 'Settings…'}" Click="Settings_Click" />
+      </MenuItem>
+      <MenuItem Header="{loc:T 'Sprite'}">
+        <MenuItem Header="{loc:T 'Canvas size…'}" Click="CanvasSize_Click" />
+        <MenuItem Header="{loc:T 'Resize…'}" Click="Resize_Click" />
+        <Separator />
+        <MenuItem Header="{loc:T 'Rotate 90° clockwise'}" Click="RotateCw_Click" />
+        <MenuItem Header="{loc:T 'Rotate 90° counter-clockwise'}" Click="RotateCcw_Click" />
+        <MenuItem Header="{loc:T 'Rotate 180°'}" Click="Rotate180_Click" />
+        <MenuItem Header="{loc:T 'Flip horizontally'}" Click="FlipH_Click" />
+        <MenuItem Header="{loc:T 'Flip vertically'}" Click="FlipV_Click" />
+        <Separator />
+        <MenuItem Header="{loc:T 'Colour mode'}">
+          <MenuItem x:Name="ModeRgbaItem" Header="{loc:T 'RGBA'}" ToggleType="Radio" Click="ModeRgba_Click" />
+          <MenuItem x:Name="ModeIndexedItem" Header="{loc:T 'Indexed (palette)'}" ToggleType="Radio" Click="ModeIndexed_Click" />
+        </MenuItem>
+        <Separator />
+        <MenuItem Header="{loc:T 'Outline'}" Click="Outline_Click" />
+        <MenuItem Header="{loc:T 'Pixelate…'}" Click="Pixelate_Click" />
+        <MenuItem Header="{loc:T 'Reduce colours…'}" Click="ReduceColors_Click" />
+      </MenuItem>
+      <MenuItem Header="{loc:T 'Layer'}">
+        <MenuItem Header="{loc:T 'New layer'}" InputGesture="Shift+N" Click="NewLayer_Click" />
+        <MenuItem Header="{loc:T 'New group'}" Click="NewGroup_Click" />
+        <MenuItem Header="{loc:T 'Duplicate layer'}" Click="DuplicateLayer_Click" />
+        <MenuItem Header="{loc:T 'Remove layer'}" Click="RemoveLayer_Click" />
+        <MenuItem Header="{loc:T 'Rename…'}" Click="RenameLayer_Click" />
+        <Separator />
+        <MenuItem Header="{loc:T 'Move layer up'}" Click="LayerUp_Click" />
+        <MenuItem Header="{loc:T 'Move layer down'}" Click="LayerDown_Click" />
+        <MenuItem Header="{loc:T 'Put in a new group'}" Click="GroupLayer_Click" />
+        <MenuItem Header="{loc:T 'Move out of group'}" Click="MoveOutOfGroup_Click" />
+        <Separator />
+        <MenuItem Header="{loc:T 'Show or hide'}" Click="ToggleVisible_Click" />
+        <MenuItem Header="{loc:T 'Lock or unlock'}" Click="ToggleLock_Click" />
+      </MenuItem>
+      <MenuItem Header="{loc:T 'Frame'}">
+        <MenuItem Header="{loc:T 'New frame'}" InputGesture="Alt+N" Click="NewFrame_Click" />
+        <MenuItem Header="{loc:T 'New empty frame'}" Click="NewEmptyFrame_Click" />
+        <MenuItem Header="{loc:T 'Remove frame'}" Click="RemoveFrame_Click" />
+        <MenuItem Header="{loc:T 'Move frame left'}" Click="FrameLeft_Click" />
+        <MenuItem Header="{loc:T 'Move frame right'}" Click="FrameRight_Click" />
+        <MenuItem Header="{loc:T 'Frame duration…'}" Click="FrameDuration_Click" />
+        <Separator />
+        <MenuItem Header="{loc:T 'New tag from the picked frames…'}" Click="NewTag_Click" />
+        <Separator />
+        <MenuItem Header="{loc:T 'Play / stop'}" InputGesture="Enter" Click="Play_Click" />
+        <MenuItem x:Name="LoopItem" Header="{loc:T 'Loop'}" ToggleType="CheckBox" IsChecked="True" Click="Loop_Click" />
+        <MenuItem Header="{loc:T 'Onion skin settings…'}" Click="OnionSettings_Click" />
+        <Separator />
+        <MenuItem Header="{loc:T 'Preview window'}" Click="Preview_Click" />
+        <MenuItem Header="{loc:T 'Full preview'}" InputGesture="F" Click="FullPreview_Click" />
+      </MenuItem>
+      <MenuItem Header="{loc:T 'Select'}">
         <MenuItem Header="{loc:T 'Select all'}" InputGesture="Ctrl+A" Click="SelectAll_Click" />
         <MenuItem Header="{loc:T 'Deselect'}" InputGesture="Ctrl+D" Click="Deselect_Click" />
+        <MenuItem Header="{loc:T 'Invert selection'}" InputGesture="Ctrl+Shift+I" Click="Invert_Click" />
+        <MenuItem Header="{loc:T 'Select the primary colour'}" Click="SelectColor_Click" />
       </MenuItem>
       <MenuItem Header="{loc:T 'View'}">
         <MenuItem Header="{loc:T 'Zoom in'}" InputGesture="Ctrl+OemPlus" Click="ZoomIn_Click" />
         <MenuItem Header="{loc:T 'Zoom out'}" InputGesture="Ctrl+OemMinus" Click="ZoomOut_Click" />
         <MenuItem Header="{loc:T 'Fit on screen'}" InputGesture="Ctrl+D0" Click="Fit_Click" />
+        <MenuItem Header="{loc:T 'Zoom'}">
+          <MenuItem Header="100%" Tag="100" Click="ZoomPreset_Click" />
+          <MenuItem Header="200%" Tag="200" Click="ZoomPreset_Click" />
+          <MenuItem Header="400%" Tag="400" Click="ZoomPreset_Click" />
+          <MenuItem Header="800%" Tag="800" Click="ZoomPreset_Click" />
+          <MenuItem Header="1600%" Tag="1600" Click="ZoomPreset_Click" />
+          <MenuItem Header="3200%" Tag="3200" Click="ZoomPreset_Click" />
+        </MenuItem>
         <Separator />
         <MenuItem x:Name="GridItem" Header="{loc:T 'Pixel grid'}" ToggleType="CheckBox" Click="Grid_Click" />
+        <MenuItem x:Name="TileGridItem" Header="{loc:T 'Tile grid'}" ToggleType="CheckBox" Click="TileGrid_Click" />
+        <MenuItem Header="{loc:T 'Grid settings…'}" Click="GridSettings_Click" />
+        <MenuItem x:Name="TiledItem" Header="{loc:T 'Tiled preview'}" ToggleType="CheckBox" Click="Tiled_Click" />
         <MenuItem x:Name="OnionItem" Header="{loc:T 'Onion skin'}" ToggleType="CheckBox" Click="Onion_Click" />
+        <Separator />
+        <MenuItem x:Name="PanelsItem" Header="{loc:T 'Panels'}" ToggleType="CheckBox" IsChecked="True" InputGesture="Tab" Click="Panels_Click" />
+        <MenuItem Header="{loc:T 'Theme'}">
+          <MenuItem x:Name="ThemeDarkItem" Header="{loc:T 'Dark'}" ToggleType="Radio" Click="ThemeDark_Click" />
+          <MenuItem x:Name="ThemeLightItem" Header="{loc:T 'Light'}" ToggleType="Radio" Click="ThemeLight_Click" />
+        </MenuItem>
+      </MenuItem>
+      <MenuItem Header="{loc:T 'Help'}">
+        <MenuItem Header="{loc:T 'Keyboard shortcuts'}" Click="Shortcuts_Click" />
+        <MenuItem Header="{loc:T 'About EasyPixel'}" Click="About_Click" />
       </MenuItem>
     </Menu>
 
-    <Border DockPanel.Dock="Top" Classes="bar" BorderThickness="0,1,0,1" Padding="8,4">
+    <Border x:Name="OptionsBorder" DockPanel.Dock="Top" Classes="bar" BorderThickness="0,1,0,1" Padding="8,4">
       <StackPanel x:Name="OptionsBar" Orientation="Horizontal" Spacing="10" Height="32" />
     </Border>
 
@@ -51,7 +131,11 @@
       </DockPanel>
     </Border>
 
-    <Border DockPanel.Dock="Left" Classes="bar" BorderThickness="0,0,1,0" Padding="4">
+    <Border x:Name="TimelineBar" DockPanel.Dock="Bottom" Classes="bar" BorderThickness="0,1,0,0" Height="84">
+      <panels:TimelinePanel x:Name="Timeline" />
+    </Border>
+
+    <Border x:Name="ToolBar" DockPanel.Dock="Left" Classes="bar" BorderThickness="0,0,1,0" Padding="4">
       <DockPanel>
         <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,8,0,4">
           <Canvas Width="44" Height="44" HorizontalAlignment="Center">
@@ -61,9 +145,17 @@
                     BorderBrush="{DynamicResource Text}" BorderThickness="1" />
           </Canvas>
           <Button x:Name="SwapButton" Content="⇄" Focusable="False" HorizontalAlignment="Center" Padding="8,0" Click="Swap_Click" />
-          <TextBox x:Name="HexBox" Width="80" HorizontalAlignment="Center" FontSize="12" />
         </StackPanel>
         <WrapPanel x:Name="ToolStrip" Orientation="Horizontal" Width="80" />
+      </DockPanel>
+    </Border>
+
+    <Border x:Name="RightPanel" DockPanel.Dock="Right" Classes="bar" BorderThickness="1,0,0,0" Width="260">
+      <DockPanel>
+        <panels:ColorPanel x:Name="Colors" DockPanel.Dock="Top" />
+        <panels:PalettePanel x:Name="PaletteView" DockPanel.Dock="Top" MaxHeight="190" />
+        <Border DockPanel.Dock="Top" Height="1" Background="{DynamicResource Border}" />
+        <panels:LayersPanel x:Name="Layers" />
       </DockPanel>
     </Border>
 

@@ -39,6 +39,12 @@ public class LangTests
         var tools = new ToolController();
         foreach (ToolKind k in Enum.GetValues<ToolKind>()) Check(tools.Get(k).Name);
         foreach (var f in FormatRegistry.All) Check(f.Name);
+        foreach (var (_, action) in MainWindow.Shortcuts) Check(action);
+        // What the file formats warn about is shown through L.T too (MainWindow.Bullets).
+        var formats = Path.Combine(dir.FullName, "src", "EasyPixel.Core", "Formats");
+        foreach (var file in Directory.EnumerateFiles(formats, "*.cs"))
+            foreach (Match m in Regex.Matches(File.ReadAllText(file), @"(?:warnings\.Add\(|Warning = )""([^""]+)"""))
+                Check(m.Groups[1].Value);
         Assert.True(missing.Count == 0, "Missing from Lang/en.json (run tools/Update-Strings.sh): " + string.Join(" | ", missing));
 
         void Check(string s)

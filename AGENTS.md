@@ -43,11 +43,12 @@ dotnet run --project src/EasyPixel
 | Path | What |
 |---|---|
 | `Directory.Build.props` | shared version and compiler settings |
-| `src/EasyPixel.Core` | portable model (`Model/Sprite.cs`…), file formats, tools; no UI |
-| `src/EasyPixel` | the Avalonia app: `App.axaml(.cs)` (theme + language from settings), `MainWindow.*.cs` (one partial per area: File, Edit, Tools, Keys), `EditorSession.cs` (open sprite, history, frame, layer, selection, floating pixels), `Settings.cs` (`%APPDATA%/EasyPixel/settings.json`), `Loc.cs` (`L.T`) |
+| `src/EasyPixel.Core` | portable model (`Model/Sprite.cs`, `Model/LayerTree.cs` keeps groups whole), file formats (`Formats/PaletteFormats.cs`: .gpl/.hex/.pal), raster tools (`Raster/SpriteTransforms.cs`: whole-sprite rotate/flip/scale/reduce), undo steps (`History/`: pixel, cel, layer structure/props, frame, tags, palette, whole-sprite); no UI |
+| `src/EasyPixel` | the Avalonia app: `App.axaml(.cs)` (theme + language from settings), `MainWindow.*.cs` (one partial per menu or area: File, Edit, Sprite, Layer, Frame, Select, View (+ Settings, Help), Tools, Keys = Aseprite shortcuts), `EditorSession.cs` (open sprite, history, frame, layer, selection, floating pixels), `Settings.cs` (`%APPDATA%/EasyPixel/settings.json`), `Loc.cs` (`L.T`) |
 | `src/EasyPixel/Tools` | `ToolController` + one class per tool family; `Stroke` turns a gesture into one undo step |
 | `src/EasyPixel/Canvas` | `PixelCanvas`: zoom/pan, dirty-rect render into a `WriteableBitmap`, grid, onion skin, marching ants |
+| `src/EasyPixel/Panels` | one file per panel: `ColorPanel` + `ColorPicker` (HSV), `PalettePanel`, `LayersPanel`, `TimelinePanel` (frames, tags, playback buttons), `Playback` (which frame comes next), `PreviewWindow` (floating 1x-8x and full preview) |
 | `src/EasyPixel/Dialogs` | `IDialogs` (every question the window asks; tests script it) and the real windows |
-| `src/EasyPixel/Theme`, `Lang` | `Dark.axaml`/`Light.axaml` palettes (same keys); `Lang/en.json` written by `tools/Update-Strings.sh` |
+| `src/EasyPixel/Theme`, `Lang` | `Dark.axaml`/`Light.axaml` palettes (same keys); `Lang/en.json` written by `tools/Update-Strings.sh`, the other 8 languages translate its keys (run the script, then add the new keys to every `Lang/<code>.json`; `LangTests` fails under 97% or a lost `{0}`); `L.Keep(control)` marks the person's own content (layer/tag names) as not translated |
 | `tests/EasyPixel.Tests` | portable tests of Core |
 | `tests/EasyPixel.UiTests` | headless UI tests (`InternalsVisibleTo` from the app) |

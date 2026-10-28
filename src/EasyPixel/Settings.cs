@@ -26,6 +26,15 @@ public sealed class Settings
     /// <summary>A language code, or "auto" to follow the system.</summary>
     public string Language { get; set; } = "auto";
     public bool ShowGrid { get; set; } = true;
+    /// <summary>The tile grid (View → Grid settings): shown or not, and its cell size.</summary>
+    public bool ShowTileGrid { get; set; }
+    public int GridWidth { get; set; } = 16;
+    public int GridHeight { get; set; } = 16;
+    /// <summary>Onion skin: frames before and after, opacity of the nearest (0-255), red/blue tint.</summary>
+    public int OnionBefore { get; set; } = 1;
+    public int OnionAfter { get; set; } = 1;
+    public int OnionOpacity { get; set; } = 68;
+    public bool OnionTint { get; set; }
     /// <summary>Recently opened or saved files, newest first.</summary>
     public List<string> Recent { get; set; } = new();
 

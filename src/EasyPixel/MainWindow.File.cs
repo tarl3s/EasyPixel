@@ -46,7 +46,7 @@ public partial class MainWindow
                 L.T("Create"), L.T("Cancel")))
             return;
         Sprite sprite;
-        try { sprite = new Sprite(o.Width, o.Height, o.Mode); }
+        try { sprite = NewDocument(o.Width, o.Height, o.Mode); }
         catch (Exception ex) when (ex is OutOfMemoryException or OverflowException)
         {
             await Dialogs.Tell(L.T("There isn't enough memory for a canvas that big."));
