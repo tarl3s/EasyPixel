@@ -5,4 +5,9 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
+  <!-- Learn pixel art: one markup file per lesson and language (Learn/Lessons/<lang>/NN-slug.md). -->
+  <ItemGroup>
+    <EmbeddedResource Include="Learn\Lessons\**\*.md" LogicalName="Lessons/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>
