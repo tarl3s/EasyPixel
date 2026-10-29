@@ -486,5 +486,6 @@
   "Place it in this canvas": "Le placer dans ce canevas",
   "Place file": "Placer un fichier",
   "Placed {0}: move it, then press Enter": "{0} placé : déplacez-le puis appuyez sur Entrée",
-  "Resize": "Redimensionner"
+  "Resize": "Redimensionner",
+  "The sprite was saved, but its frames could not be written as PNG:\n{0}": "Le sprite a été enregistré, mais ses images n’ont pas pu être écrites en PNG :\n{0}"
 }

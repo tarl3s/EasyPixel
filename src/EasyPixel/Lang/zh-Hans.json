@@ -486,5 +486,6 @@
   "Place it in this canvas": "放到此画布中",
   "Place file": "放置文件",
   "Placed {0}: move it, then press Enter": "已放置 {0}：移动它，然后按 Enter",
-  "Resize": "调整大小"
+  "Resize": "调整大小",
+  "The sprite was saved, but its frames could not be written as PNG:\n{0}": "精灵已保存，但其帧无法写入为 PNG：\n{0}"
 }

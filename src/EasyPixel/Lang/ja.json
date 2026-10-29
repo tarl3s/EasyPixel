@@ -486,5 +486,6 @@
   "Place it in this canvas": "このキャンバスに配置",
   "Place file": "ファイルを配置",
   "Placed {0}: move it, then press Enter": "{0} を配置しました：移動して Enter を押してください",
-  "Resize": "サイズ変更"
+  "Resize": "サイズ変更",
+  "The sprite was saved, but its frames could not be written as PNG:\n{0}": "スプライトは保存されましたが、フレームを PNG として書き出せませんでした：\n{0}"
 }

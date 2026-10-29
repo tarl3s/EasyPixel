@@ -161,8 +161,57 @@ public partial class MainWindow
         var types = writable.Select(f => new FileType(L.T(f.Name), f.Extensions)).ToList();
         var baseName = Session.Path != null ? Path.GetFileNameWithoutExtension(Session.Path) : L.T("Untitled");
         var path = await Dialogs.PickSaveFile(L.T("Save as"), baseName + ".epx", types);
-        return path != null && await SaveToAsync(path);
+        if (path == null) return false;
+        var target = AnimationFolderPath(path);
+        // the picker only asked about the file it showed; the one in the animation's folder may be someone's too
+        if (target != Path.GetFullPath(path) && File.Exists(target)
+            && !await Dialogs.Confirm(L.F("{0} already exists. Replace it?", target), L.T("Replace"), L.T("Cancel")))
+            return false;
+        return await SaveToAsync(target);
     }
+
+    /// <summary>
+    /// An animation (more than one frame) saved in a format that keeps it goes in a folder of its own, named like the
+    /// file: "walk.epx" chosen in Sprites becomes Sprites\walk\walk.epx (its frames as PNGs go next to it). A path
+    /// already inside such a folder, a single frame, or a picture format stays as chosen.
+    /// </summary>
+    internal string AnimationFolderPath(string path)
+    {
+        if (Session.Doc.Frames.Count < 2 || FormatRegistry.ForPath(path) is not { Flattens: false }) return path;
+        var full = Path.GetFullPath(path);
+        var name = Path.GetFileNameWithoutExtension(full);
+        var dir = Path.GetDirectoryName(full)!;
+        if (string.Equals(Path.GetFileName(dir), name, StringComparison.OrdinalIgnoreCase)) return full;
+        return Path.Combine(dir, name, Path.GetFileName(full));
+    }
+
+    /// <summary>
+    /// Next to a saved animation: every frame as a PNG ("walk_001.png"…), all visible layers. Old frame PNGs beyond the
+    /// last frame are removed, so the folder always matches the animation.
+    /// </summary>
+    private async Task WriteFramePngsAsync(string path)
+    {
+        var doc = Session.Doc;
+        var dir = Path.GetDirectoryName(Path.GetFullPath(path))!;
+        var name = Path.GetFileNameWithoutExtension(path);
+        try
+        {
+            var flat = new Image(doc.Width, doc.Height);
+            for (int f = 0; f < doc.Frames.Count; f++)
+            {
+                Compositor.Flatten(doc, f, flat, Session.CanvasRect);
+                WriteAtomically(Path.Combine(dir, FramePngName(name, f)), new MemoryStream(Png.Encode(flat)));
+            }
+            for (int f = doc.Frames.Count; File.Exists(Path.Combine(dir, FramePngName(name, f))); f++)
+                File.Delete(Path.Combine(dir, FramePngName(name, f)));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            await Dialogs.Tell(L.F("The sprite was saved, but its frames could not be written as PNG:\n{0}", ex.Message));
+        }
+    }
+
+    internal static string FramePngName(string name, int frame) => $"{name}_{frame + 1:000}.png";
 
     /// <summary>
     /// Writes the document in the format of <paramref name="path"/>'s extension. The file is first written in memory:
@@ -192,6 +241,7 @@ public partial class MainWindow
             ShowStatus(L.F("Exported {0}; the sprite itself is not saved", Path.GetFileName(path)));
             return false;
         }
+        if (!format.Flattens && doc.Frames.Count > 1 && AnimationFolderPath(path) == Path.GetFullPath(path)) await WriteFramePngsAsync(path); // only in its own folder
         Session.Path = Path.GetFullPath(path);
         Session.History.MarkSaved();
         RememberRecent(path);
@@ -230,6 +280,7 @@ public partial class MainWindow
     internal static void WriteAtomically(string path, MemoryStream data)
     {
         var full = Path.GetFullPath(path);
+        Directory.CreateDirectory(Path.GetDirectoryName(full)!); // an animation's own folder may be new
         var tmp = Path.Combine(Path.GetDirectoryName(full)!, "." + Path.GetFileName(full) + "." + Guid.NewGuid().ToString("N")[..8] + ".tmp");
         try
         {

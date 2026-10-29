@@ -486,5 +486,6 @@
   "Place it in this canvas": "放到此畫布中",
   "Place file": "放置檔案",
   "Placed {0}: move it, then press Enter": "已放置 {0}：移動它，然後按 Enter",
-  "Resize": "調整大小"
+  "Resize": "調整大小",
+  "The sprite was saved, but its frames could not be written as PNG:\n{0}": "精靈已儲存，但其影格無法寫入為 PNG：\n{0}"
 }

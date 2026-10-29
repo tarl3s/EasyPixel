@@ -421,6 +421,7 @@
   "The shape covers {0}% of the canvas: it reads as a blob. Carve out gaps between parts (at most {1}%).": "The shape covers {0}% of the canvas: it reads as a blob. Carve out gaps between parts (at most {1}%).",
   "The shape covers {0}% of the canvas: make it bigger and bolder (at least {1}%).": "The shape covers {0}% of the canvas: make it bigger and bolder (at least {1}%).",
   "The shape is outlined all the way around.": "The shape is outlined all the way around.",
+  "The sprite was saved, but its frames could not be written as PNG:\n{0}": "The sprite was saved, but its frames could not be written as PNG:\n{0}",
   "The surface is almost flat ({0}% of neighbouring pixels differ): add texture like grain, cracks, bricks or folds (at least {1}%).": "The surface is almost flat ({0}% of neighbouring pixels differ): add texture like grain, cracks, bricks or folds (at least {1}%).",
   "The texture is noisy ({0}% of neighbouring pixels differ): group the pixels into clusters and lines instead of scattering them (at most {1}%).": "The texture is noisy ({0}% of neighbouring pixels differ): group the pixels into clusters and lines instead of scattering them (at most {1}%).",
   "The tile repeats without a visible seam.": "The tile repeats without a visible seam.",
