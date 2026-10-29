@@ -34,7 +34,7 @@ public class UpdateUiTests
         }
     }
 
-    private static readonly ReleaseInfo Newer = new(new Version(0, 2, 0), "v0.2.0", "", "https://x/z.zip");
+    private static readonly ReleaseInfo Newer = new(new Version(9, 9, 0), "v9.9.0", "", "https://x/z.zip");
 
     private static Harness Make(FakeUpdates updates, bool check = true)
     {
@@ -51,7 +51,7 @@ public class UpdateUiTests
         using var h = Make(u);
         h.Dialogs.ConfirmAnswers.Enqueue(true);
         Assert.True(await h.Window.CheckForUpdatesAsync());
-        Assert.Contains("0.2.0", h.Dialogs.Confirms.Single());
+        Assert.Contains("9.9.0", h.Dialogs.Confirms.Single());
         Assert.Equal(1, u.Downloads);
         Assert.Empty(u.Swaps);
         h.Window.Close();
