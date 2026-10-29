@@ -38,7 +38,7 @@ Regras para uma boa rampa:
 O jeito preguiçoso de fazer uma rampa é pegar uma cor e acrescentar preto para as sombras e branco para as luzes. Funciona, mas o resultado é sem graça e sujo, porque na vida real sombras e luzes têm cores próprias.
 
 [[example:ramp-flat]] Um único matiz escurecido com preto: as sombras ficam sujas.
-[[example:ramp-hue-shift]] Variação de matiz: as sombras puxam para o azul e o roxo, as luzes para o amarelo.
+[[example:ramp-hue-shift]] Variação de matiz: um roxo-vinho escuro na sombra, depois vermelho, laranja e amarelo na luz, cerca de 25 graus de matiz por degrau.
 
 A **variação de matiz** (*hue shifting*) é mudar um pouco o matiz a cada degrau: em direção às cores **quentes** (amarelo, laranja) conforme a rampa clareia, e em direção às cores **frias** (azul, roxo) conforme escurece. A luz do sol é quente e as sombras pegam o azul do céu, então rampas com variação de matiz parecem iluminadas por um sol de verdade. Uma folha verde vai de um verde-azulado na sombra a um verde-amarelado na luz; uma maçã vermelha vai do roxo ao vermelho e ao laranja.
 

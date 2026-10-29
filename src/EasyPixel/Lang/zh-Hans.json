@@ -295,6 +295,8 @@
   "Some empty or broken cels were skipped": "已跳过一些空的或损坏的单元格",
   "Some pictures are missing and were skipped": "缺少一些图片，已跳过",
   "Something went wrong and was stopped: {0}": "出现问题，操作已停止：{0}",
+  "The drawing layer is hidden: show it again (the eye in the Layers panel), then press Check.": "绘图图层已隐藏：请重新显示它（图层面板中的眼睛图标），然后点击检查。",
+  "The exercise could not be opened:\n{0}": "无法打开练习：\n{0}",
   "Spray": "喷枪",
   "Sprite": "精灵",
   "Sprite sheet (PNG + JSON)": "精灵表（PNG + JSON）",

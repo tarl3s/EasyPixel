@@ -14,7 +14,7 @@ Pick one tile size for the whole game and make your characters fit it:
 - **32×32** — more room for detail and texture, common in modern pixel games. Characters are about one tile wide.
 - **8×8** — very retro, used for tiny games and for detailed tilesets assembled from smaller pieces.
 
-Your tile size and your character size go together: the hero should fit through a one-tile corridor and land on a one-tile platform. In EasyPixel, **View → Grid settings** sets the tile grid to your tile size, and **View → Tile grid** shows it over the canvas.
+Your tile size and your character size go together: the hero should fit through a one-tile corridor and land on a one-tile platform. In EasyPixel, **View → Grid settings…** sets the tile grid to your tile size, and **View → Tile grid** shows it over the canvas.
 
 ## Seamless tiles
 A tile is **seamless** when copies of it placed side by side join without a visible line. What matters is the edges: whatever touches the right edge must continue naturally on the left edge, and whatever touches the bottom must continue at the top, because that is what will sit next to it.

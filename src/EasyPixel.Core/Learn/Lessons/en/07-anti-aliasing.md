@@ -8,7 +8,7 @@ A pixel is a square, so every curve and every slanted line in pixel art is reall
 **Anti-aliasing** (AA for short) softens the steps. Where the line moves from one row to the next, you add a pixel of an **in-between colour** — darker than the background, lighter than the line — in the corner of the step. From a normal distance the eye blends it, and the curve looks smoother than the grid really allows.
 
 [[example:aa-none]] A clean curve with no anti-aliasing: correct, but the steps show.
-[[example:aa-good]] The same curve with one in-between pixel at each step: the curve reads smoother. The straight sides are left alone.
+[[example:aa-good]] The same curve with one in-between pixel at each step: the curve reads smoother. The straight sides and the 45° middle (a 1:1 diagonal) are left alone.
 
 Painting programs do this automatically for every brush stroke. Pixel artists do it **by hand**, only where it helps, because automatic anti-aliasing blurs everything and fills the image with colours you didn't choose.
 

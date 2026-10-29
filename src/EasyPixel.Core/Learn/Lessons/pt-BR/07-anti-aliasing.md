@@ -8,7 +8,7 @@ Um pixel é um quadrado, então toda curva e toda linha inclinada na pixel art �
 O **anti-aliasing** (AA, para abreviar) suaviza os degraus. Onde a linha passa de uma fileira para a seguinte, você acrescenta um pixel de uma **cor intermediária** — mais escura que o fundo, mais clara que a linha — no canto do degrau. De uma distância normal o olho mistura, e a curva parece mais suave do que a grade permite de verdade.
 
 [[example:aa-none]] Uma curva limpa sem anti-aliasing: correta, mas os degraus aparecem.
-[[example:aa-good]] A mesma curva com um pixel intermediário em cada degrau: a curva parece mais suave. Os lados retos ficam como estão.
+[[example:aa-good]] A mesma curva com um pixel intermediário em cada degrau: a curva parece mais suave. Os lados retos e o meio a 45° (uma diagonal 1:1) ficam como estão.
 
 Programas de pintura fazem isso automaticamente em cada pincelada. Artistas de pixel art fazem **à mão**, só onde ajuda, porque o anti-aliasing automático borra tudo e enche a imagem de cores que você não escolheu.
 

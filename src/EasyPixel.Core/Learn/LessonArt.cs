@@ -18,6 +18,9 @@ public static partial class LessonArt
 {
     private sealed record Entry(int Zoom, int Width, int Height, Action<ArtCanvas> Draw);
 
+    /// <summary>The dark end of the hue-shifted ramp (a wine purple next to <see cref="Pal.Red"/> on the colour wheel).</summary>
+    internal static readonly Rgba RampDark = Pal.Hex("5a2445");
+
     private static readonly Lazy<Dictionary<string, Entry>> Registry = new(Build);
 
     public static IReadOnlyCollection<string> Ids => Registry.Value.Keys;
@@ -89,7 +92,8 @@ public static partial class LessonArt
         Add("jaggies-good", 8, 24, 10, c =>
         {
             int x = 0, y = 9;
-            for (int i = 0; i < 8; i++) { c.Line(x, y, x + 2, y, Pal.Black); x += 3; y--; }
+            // The same 24 px across and 10 rows up as the bad line, shared out evenly: 2, 3, 2, 3, 2 twice.
+            foreach (int run in new[] { 2, 3, 2, 3, 2, 2, 3, 2, 3, 2 }) { c.Line(x, y, x + run - 1, y, Pal.Black); x += run; y--; }
         });
         Add("slopes", 6, 52, 13, c =>
         {
@@ -147,7 +151,8 @@ public static partial class LessonArt
         });
         Add("ramp-hue-shift", 12, 24, 6, c =>
         {
-            var ramp = new[] { Pal.Navy, Pal.Red, Pal.Orange, Pal.Yellow };
+            // A deep wine purple (about 323°), red (349°), orange (15°), yellow (38°): about 25° of hue per step.
+            var ramp = new[] { RampDark, Pal.Red, Pal.Orange, Pal.Yellow };
             for (int i = 0; i < 4; i++) c.Rect(i * 6, 0, i * 6 + 5, 5, ramp[i]);
         });
         Add("cube-faces", 7, 24, 24, Cube);

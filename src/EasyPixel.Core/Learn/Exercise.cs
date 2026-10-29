@@ -15,6 +15,11 @@ public sealed class Exercise
     /// drawing, whatever they are called (the person may rename them; .epx keeps the mark).
     /// </summary>
     public const string GuideKey = "easypixel:guide";
+    /// <summary>
+    /// The <see cref="Layer.Extra"/> key, on the guide layer, holding the exercise id (UTF-8): a saved practice document
+    /// (.epx or .aseprite) knows which exercise it is, so opening it again brings the lesson bar back.
+    /// </summary>
+    public const string ExerciseKey = "easypixel:exercise";
     /// <summary>The default (English) layer names; the app passes them in the person's language.</summary>
     public const string GuideLayerName = "Guide";
     public const string WorkLayerName = "Drawing";
@@ -36,7 +41,7 @@ public sealed class Exercise
 
     /// <summary>
     /// True for a guide layer of <paramref name="sprite"/>: one with the <see cref="GuideKey"/> mark. A document with
-    /// no marked layer (an older practice, or one saved where the mark doesn't survive, like .aseprite) falls back to
+    /// no marked layer (an older practice, or one saved where the mark doesn't survive) falls back to
     /// layers named "Guide".
     /// </summary>
     public static bool IsGuide(Sprite sprite, Layer layer)
@@ -58,6 +63,7 @@ public sealed class Exercise
         var guide = s.Layers[0];
         guide.Name = guideName;
         guide.Extra[GuideKey] = new byte[] { 1 };
+        guide.Extra[ExerciseKey] = System.Text.Encoding.UTF8.GetBytes(Id);
         guide.Locked = true;
         guide.Opacity = GuideOpacity;
         var g = new ArtCanvas(Width, Height);
@@ -76,8 +82,45 @@ public sealed class Exercise
         return s;
     }
 
-    /// <summary>Judges the drawing (every layer except the guide) with every rule.</summary>
-    public CheckResult Check(Sprite sprite) => new(Rules.Select(r => r.Check(Input(sprite))).ToList());
+    /// <summary>
+    /// The exercise a practice document was made for (the <see cref="ExerciseKey"/> on its guide layer), or null for an
+    /// ordinary document or an id no exercise has any more.
+    /// </summary>
+    public static Exercise? Of(Sprite sprite)
+    {
+        foreach (var l in sprite.Layers)
+            if (!l.IsGroup && l.Extra.TryGetValue(ExerciseKey, out var b) && b.Length > 0)
+            {
+                var id = System.Text.Encoding.UTF8.GetString(b);
+                return Exercises.Exists(id) ? Exercises.Get(id) : null;
+            }
+        return null;
+    }
+
+    /// <summary>
+    /// Judges the drawing (every layer except the guide) with every rule. When every drawing layer is hidden, the one
+    /// line says so instead (the rules would only see an empty picture).
+    /// </summary>
+    public CheckResult Check(Sprite sprite)
+    {
+        if (DrawingHidden(sprite)) return new CheckResult(new[] { HiddenDrawing.Line });
+        var input = Input(sprite);
+        return new(Rules.Select(r => r.Check(input)).ToList());
+    }
+
+    /// <summary>True when the document has drawing layers (not the guide) and none of them is shown.</summary>
+    public static bool DrawingHidden(Sprite sprite)
+    {
+        var work = sprite.Layers.Where(l => !l.IsGroup && !IsGuide(sprite, l)).ToList();
+        return work.Count > 0 && !work.Any(Shown);
+    }
+
+    /// <summary>The layer and every group above it are visible.</summary>
+    private static bool Shown(Layer l)
+    {
+        for (var p = l; p != null; p = p.Parent) if (!p.Visible) return false;
+        return true;
+    }
 
     /// <summary>The drawing flattened per frame, and the guide flattened apart.</summary>
     public static CheckInput Input(Sprite sprite)

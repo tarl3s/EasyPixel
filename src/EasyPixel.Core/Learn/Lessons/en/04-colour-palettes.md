@@ -38,7 +38,7 @@ Rules for a good ramp:
 The lazy way to make a ramp is to take one colour and add black for the shadows and white for the lights. It works, but the result is dull and muddy, because in real life shadows and light have their own colours.
 
 [[example:ramp-flat]] One hue made darker with black: the shadows look dirty.
-[[example:ramp-hue-shift]] Hue shifting: the shadows lean toward blue and purple, the lights toward yellow.
+[[example:ramp-hue-shift]] Hue shifting: a deep wine purple in the shadow, then red, orange and yellow in the light, about 25 degrees of hue per step.
 
 **Hue shifting** means changing the hue a little at every step: toward **warm** colours (yellow, orange) as the ramp gets lighter, and toward **cool** colours (blue, purple) as it gets darker. Sunlight is warm and the shadows pick up the blue of the sky, so hue-shifted ramps feel like they are lit by a real sun. A green leaf goes from blue-green in the shadow to yellow-green in the light; a red apple goes from purple to red to orange.
 

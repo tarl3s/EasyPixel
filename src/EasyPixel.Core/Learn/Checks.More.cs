@@ -312,3 +312,11 @@ internal sealed class BottomRule : CheckRule
         return Say(true, "The layer reaches the bottom edge all the way across.");
     }
 }
+
+/// <summary>The one line Check gives when every drawing layer is hidden (an empty-looking picture is misleading).</summary>
+internal sealed class HiddenDrawing : CheckRule
+{
+    public static CheckLine Line => Say(false, "The drawing layer is hidden: show it again (the eye in the Layers panel), then press Check.");
+
+    public override CheckLine Check(CheckInput input) => Line;
+}

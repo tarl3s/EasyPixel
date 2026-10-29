@@ -191,6 +191,69 @@ public class LearnUiTests
         Assert.False(h.Window.LessonBar.IsVisible);
     }
 
+    /// <summary>
+    /// Try it → save as .epx → another document → open the file again: the lesson bar is back and Check works; a pass
+    /// shows its ★ in an open Learn window right away.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task SavedPractice_ResumesWhenOpenedAgain()
+    {
+        using var h = new Harness();
+        App.Settings.LessonsPassed.Remove(FirstSprite);
+        Assert.True(await h.Window.StartPracticeAsync(FirstSprite));
+        var path = Harness.TempFile("practice.epx");
+        h.Dialogs.SavePaths.Enqueue(path);
+        Assert.True(await h.Window.SaveAsync());
+
+        Click(h.Window.LessonBar.CloseButton); // ✕: the bar goes, the drawing stays
+        Assert.Null(h.Window.CurrentPractice);
+        h.Window.SetSession(new EditorSession(new Core.Model.Sprite(8, 8)));
+        Assert.False(h.Window.LessonBar.IsVisible);
+
+        Assert.True(await h.Window.OpenPathAsync(path));
+        var p = h.Window.CurrentPractice;
+        Assert.NotNull(p);
+        Assert.Equal("first-sprite", p!.Exercise.Id);
+        Assert.Equal(FirstSprite, p.Lesson.Id);
+        Assert.Same(h.Session, p.Session);
+        Assert.True(h.Window.LessonBar.IsVisible);
+        Assert.False(h.Window.CheckPractice());
+        Assert.Equal(p.Exercise.Rules.Count, h.Window.LessonBar.ResultLines.Count);
+
+        // A passing answer, checked with the Learn window open: its ★ shows at once.
+        var learn = h.Window.ShowLearn(FirstSprite);
+        var c = new ArtCanvas(16, 16);
+        c.Ellipse(3, 3, 12, 12, Pal.Red).Ellipse(5, 5, 7, 7, Pal.Orange).Outline(Pal.Black);
+        h.Doc.Cels[(h.Doc.Layers[1], 0)] = new Core.Model.Cel(c.Image.Clone());
+        foreach (var box in h.Window.LessonBar.SelfChecks) box.IsChecked = true;
+        Assert.True(h.Window.CheckPractice());
+        Assert.Equal("★", ((DockPanel)learn.LessonButtons[FirstSprite].Content!).Children.OfType<TextBlock>().First().Text);
+        learn.Close();
+
+        // The drawing layer hidden: Check says so.
+        h.Doc.Layers[1].Visible = false;
+        Assert.False(h.Window.CheckPractice());
+        Assert.Contains("hidden", Assert.Single(h.Window.LessonBar.ResultLines));
+        h.Doc.Layers[1].Visible = true;
+    }
+
+    /// <summary>An error while opening the exercise is logged and told, not dropped with the task.</summary>
+    [AvaloniaFact]
+    public async Task TryIt_TellsAnError()
+    {
+        using var h = new Harness();
+        var folder = CrashGuard.Folder;
+        CrashGuard.Folder = Path.GetDirectoryName(Harness.TempFile("crash"))!;
+        try
+        {
+            await h.Window.TryItAsync("no-such-lesson");
+            Assert.Contains(h.Dialogs.Told, t => t.Contains("could not be opened"));
+            Assert.Null(h.Window.CurrentPractice);
+            Assert.True(File.Exists(CrashGuard.LogPath));
+        }
+        finally { CrashGuard.Folder = folder; }
+    }
+
     [AvaloniaFact]
     public void TryIt_AsksBeforeDroppingUnsavedWork()
     {

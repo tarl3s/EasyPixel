@@ -161,7 +161,7 @@ public static partial class LessonArt
             WalkerPose(c, 33, 1, 6, 5, 6, -1);   // passing: one leg under the body, the body at its highest
             c.Outline(Pal.Black);
             c.Line(0, 21, 47, 21, Pal.Teal);
-            for (int x = 0; x < 48; x += 2) c.Px(x, 0, Pal.Sky); // the head height of the contact pose
+            for (int x = 0; x < 48; x += 2) if (c.Image.Get(x, 1) >> 24 == 0) c.Px(x, 1, Pal.Sky); // the top of the contact pose's head (the passing head pokes above it)
         });
 
         // ---- 12 Character sprites ----
@@ -312,6 +312,7 @@ public static partial class LessonArt
     /// <summary>
     /// Manual anti-aliasing of a circle arc of radius <paramref name="r"/> around (cx, cy): at each step of the line,
     /// the corner pixel nearest the true curve gets <paramref name="near"/> (almost on it) or <paramref name="far"/>.
+/// Joins inside a 1:1 diagonal (one-pixel steps) are left alone, as lesson 07 teaches.
     /// </summary>
     public static void AntiAlias(ArtCanvas c, Rgba line, double cx, double cy, double r, Rgba near, Rgba far)
     {
@@ -325,6 +326,7 @@ public static partial class LessonArt
                     foreach (int dy in new[] { -1, 1 })
                     {
                         if (!IsLine(x + dx, y + dy) || IsLine(x + dx, y) || IsLine(x, y + dy)) continue;
+                        if (IsLine(x - dx, y - dy) && IsLine(x + 2 * dx, y + 2 * dy)) continue; // inside a 1:1 diagonal: left alone
                         double Off(int px, int py) => Math.Abs(Math.Sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy)) - r);
                         var (px, py) = Off(x + dx, y) < Off(x, y + dy) ? (x + dx, y) : (x, y + dy);
                         c.Px(px, py, Off(px, py) < 0.75 ? near : far);

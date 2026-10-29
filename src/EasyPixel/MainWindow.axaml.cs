@@ -70,6 +70,7 @@ public partial class MainWindow : Window
         UpdateTitle();
         UpdateStatusBar();
         RefreshPanels();
+        ResumePractice(s); // a saved practice document brings its lesson bar back
     }
 
     /// <summary>A new sprite as File → New makes it: RGBA ones get a starting palette to pick colours from.</summary>

@@ -267,7 +267,7 @@ public sealed class LearnWindow : Window
         TryItButton.Background = Res.Brush("Accent");
         TryItButton.Foreground = Res.Brush("AccentText");
         var id = Current!.Lesson.Id;
-        TryItButton.Click += (_, _) => _ = _main.StartPracticeAsync(id);
+        TryItButton.Click += async (_, _) => await _main.TryItAsync(id);
         row.Children.Add(TryItButton);
         if (App.Settings.LessonsPassed.Contains(id))
             row.Children.Add(new TextBlock { Text = L.T("★ Exercise passed"), VerticalAlignment = VerticalAlignment.Center });

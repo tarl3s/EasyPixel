@@ -31,6 +31,17 @@ public partial class MainWindow
         return _learn;
     }
 
+    /// <summary>The Try it button: <see cref="StartPracticeAsync"/>, with any error logged and told (never lost in a dropped task).</summary>
+    internal async Task TryItAsync(string lessonId)
+    {
+        try { await StartPracticeAsync(lessonId); }
+        catch (Exception ex)
+        {
+            CrashGuard.Record(ex);
+            await Dialogs.Tell(L.F("The exercise could not be opened:\n{0}", ex.Message));
+        }
+    }
+
     /// <summary>"Try it": opens the lesson's exercise as a new document (asking to save the current one first) with the lesson bar.</summary>
     internal async Task<bool> StartPracticeAsync(string lessonId)
     {
@@ -60,6 +71,7 @@ public partial class MainWindow
         {
             App.Settings.LessonsPassed.Add(p.Lesson.Id);
             App.Settings.Save();
+            _learn?.RefreshMarks(); // an open lesson window shows the ★ right away
         }
         return passed;
     }
@@ -69,6 +81,21 @@ public partial class MainWindow
     {
         if (CurrentPractice is { } p) ShowLearn(p.Lesson.Id);
         else ShowLearn();
+    }
+
+    /// <summary>
+    /// A practice document that becomes the open one again (opened from a file, saved earlier: it carries its exercise id)
+    /// gets its lesson bar back, so it can still be checked.
+    /// </summary>
+    private void ResumePractice(EditorSession s)
+    {
+        if (CurrentPractice != null || Exercise.Of(s.Doc) is not { } exercise) return;
+        var lesson = LessonLibrary.Ids.Select(id => LessonLibrary.Load(id, L.Language).Lesson)
+            .FirstOrDefault(l => l.TryIt?.ExerciseId == exercise.Id);
+        if (lesson?.TryIt is not { } tryIt) return;
+        CurrentPractice = new Practice(lesson, tryIt, exercise, s);
+        LessonBar.Show(lesson, tryIt);
+        ShowStatus(L.F("Practice: {0}", lesson.Title));
     }
 
     /// <summary>Hides the lesson bar; the drawing stays as an ordinary document.</summary>

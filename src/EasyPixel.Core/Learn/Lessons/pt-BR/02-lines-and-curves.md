@@ -8,7 +8,7 @@ Numa grade não existem diagonais de verdade. Toda linha que não seja perfeitam
 Quando os trechos seguem um padrão regular, o olho os junta numa linha suave. Quando o tamanho muda ao acaso, o olho enxerga cada degrau e a linha parece quebrada. Esses degraus visíveis e desiguais são chamados de **serrilhado** (*jaggies*).
 
 [[example:jaggies-bad]] Serrilhado: trechos de 1, 4, 1, 2, 5, 1… pixels. A linha balança.
-[[example:jaggies-good]] Todos os trechos têm 3 pixels: a mesma inclinação, agora reta.
+[[example:jaggies-good]] Trechos de 2, 3, 2, 3, 2 que se repetem por igual: a mesma inclinação, agora reta.
 
 As duas linhas sobem a mesma altura na mesma largura. A única diferença é como os pixels são divididos entre os trechos. Essa é toda a habilidade desta lição.
 
@@ -55,6 +55,6 @@ Bordas retas e longas ficam mais fáceis com as inclinações limpas, e é por i
 
 ## Experimente
 [[exercise:clean-lines]]
-No guia você vai encontrar pares de pontos vermelhos. Desenhe uma linha entre cada par: a primeira com inclinação 1:1, a segunda 2:1 e a terceira 3:1. Depois, se quiser, siga o arco pontilhado no canto inferior direito com uma curva suave. Use **uma cor**, deixe cada linha com **um pixel de espessura** e **sem duplos**. A ferramenta Linha ou o Lápis com Pixel perfeito ligado ajudam.
+No guia você vai encontrar pares de pontos vermelhos. Desenhe uma linha entre cada par: a primeira com inclinação 1:1, a segunda 2:1 e a terceira 3:1. Depois, se quiser, siga o arco pontilhado no canto inferior direito com uma curva suave. Use **uma cor** (no máximo duas), deixe cada linha com **um pixel de espessura** e **sem duplos**. A ferramenta Linha ou o Lápis com Pixel perfeito ligado ajudam.
 - [ ] Minha linha 2:1 avança exatamente dois pixels para o lado a cada pixel para cima, do começo ao fim.
 - [ ] Os trechos da minha curva ficam mais curtos (ou mais longos) de forma suave, sem calombos.

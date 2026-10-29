@@ -8,7 +8,7 @@ On a grid there are no real diagonal lines. Any line that is not perfectly horiz
 When the runs follow a regular pattern, the eye joins them into a smooth line. When they change length at random, the eye sees every step, and the line looks broken. Those visible, uneven steps are called **jaggies**.
 
 [[example:jaggies-bad]] Jaggies: runs of 1, 4, 1, 2, 5, 1… pixels. The line wobbles.
-[[example:jaggies-good]] Every run is 3 pixels long: the same slope, now straight.
+[[example:jaggies-good]] Runs of 2, 3, 2, 3, 2 that repeat evenly: the same slope, now straight.
 
 Both lines go up the same height across the same width. The only difference is how the pixels are shared out between the runs. That is the whole skill of this lesson.
 
@@ -55,6 +55,6 @@ Long straight edges are easiest when they use the clean slopes, which is why so 
 
 ## Try it
 [[exercise:clean-lines]]
-On the guide you'll find pairs of red dots. Draw a line between each pair: the first is a 1:1 slope, the second 2:1 and the third 3:1. Then, if you want, follow the dotted arc in the bottom-right corner with a smooth curve. Use **one colour**, keep every line **one pixel thick**, and leave **no doubles**. The Line tool or the Pencil with Pixel perfect on will help.
+On the guide you'll find pairs of red dots. Draw a line between each pair: the first is a 1:1 slope, the second 2:1 and the third 3:1. Then, if you want, follow the dotted arc in the bottom-right corner with a smooth curve. Use **one colour** (two at most), keep every line **one pixel thick**, and leave **no doubles**. The Line tool or the Pencil with Pixel perfect on will help.
 - [ ] My 2:1 line steps exactly two pixels across for each pixel up, all the way.
 - [ ] My curve's runs get shorter (or longer) smoothly, with no bumps.

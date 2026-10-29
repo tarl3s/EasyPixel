@@ -88,7 +88,7 @@ Na vista totalmente de cima você só vê o telhado. Para ele ser lido como esco
 
 ## Experimente
 [[exercise:school-front]]
-Desenhe uma **escola** (ou qualquer prédio de que você precise) em **vista lateral**, em pé na linha do chão. Desenhe **uma janela e depois copie**, de modo que pelo menos **três janelas sejam exatamente iguais**. Use **4 a 12 cores**, mantenha o prédio em uma só peça e faça-o apoiar **bem na linha do chão**.
+Desenhe uma **escola** (ou qualquer prédio de que você precise) em **vista lateral**, em pé na linha do chão. Desenhe **uma janela e depois copie**, de modo que pelo menos **três janelas sejam exatamente iguais**. Use **4 a 12 cores**, mantenha o prédio em uma só peça (uma placa ou porta separada pode, até três peças no total) e faça-o apoiar **bem na linha do chão**.
 - [ ] Minhas janelas estão alinhadas numa grade, com o mesmo espaçamento.
 - [ ] A porta é mais alta que um personagem e chega ao chão.
 - [ ] Alguma coisa mostra que é uma escola (uma placa, um relógio, um sino, uma bandeira).

@@ -46,7 +46,7 @@ O jeito óbvio de fazer tons mais escuros, misturando a cor base com preto, dá 
 ## Variação de matiz (hue shifting)
 A luz real raramente é branca pura, e as sombras reais não são pretas. A luz do sol é quente (um pouco amarela), e as sombras pegam o azul frio do céu. Pintores usam isso, e artistas de pixel art contam com isso: **varie o matiz** ao longo da rampa. Leve os tons mais claros para cores **quentes** (amarelo, laranja) e os mais escuros para cores **frias** (azul, roxo). A saturação costuma ser mais alta no meio da rampa e um pouco menor nas duas pontas.
 
-[[example:ramp-hue-shift]] A mesma ideia com variação de matiz: azul profundo, depois vermelho, laranja e um amarelo quente para a luz. Rico e vivo.
+[[example:ramp-hue-shift]] A mesma ideia com variação de matiz: roxo-vinho profundo, depois vermelho, laranja e um amarelo quente para a luz, cada degrau a cerca de 25 graus no círculo cromático. Rico e vivo.
 
 Por exemplo, a rampa de uma maçã vermelha pode ir de um roxo escuro na sombra mais profunda, passando por carmim e vermelho, até o laranja na luz e um amarelo claro no brilho. Uma folha verde: sombras verde-azuladas escuras, verde, depois uma luz verde-amarelada. Uma pedra cinza: sombras cinza-azuladas e luzes quentes, levemente amareladas.
 

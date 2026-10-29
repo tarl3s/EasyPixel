@@ -14,7 +14,7 @@ Escolha um único tamanho de tile para o jogo todo e faça seus personagens cabe
 - **32×32** — mais espaço para detalhe e textura, comum em jogos de pixel art modernos. Os personagens têm cerca de um tile de largura.
 - **8×8** — bem retrô, usado em jogos minúsculos e em tilesets detalhados montados com peças menores.
 
-O tamanho do tile e o tamanho do personagem andam juntos: o herói deve passar por um corredor de um tile e pousar numa plataforma de um tile. No EasyPixel, **Exibir → Configurar grade** ajusta a grade de blocos para o tamanho do seu tile, e **Exibir → Grade de blocos** a mostra sobre a tela.
+O tamanho do tile e o tamanho do personagem andam juntos: o herói deve passar por um corredor de um tile e pousar numa plataforma de um tile. No EasyPixel, **Exibir → Configurar grade…** ajusta a grade de blocos para o tamanho do seu tile, e **Exibir → Grade de blocos** a mostra sobre a tela.
 
 ## Tiles sem emendas
 Um tile é **sem emendas (seamless)** quando cópias dele, lado a lado, se juntam sem uma linha visível. O que importa são as bordas: o que toca a borda direita precisa continuar naturalmente na borda esquerda, e o que toca a borda de baixo precisa continuar no topo, porque é isso que vai ficar ao lado.

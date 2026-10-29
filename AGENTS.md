@@ -138,9 +138,12 @@ Add an `Exercise` to `Exercises.All`: `Id`, `Width`/`Height`, `Frames` (start fr
 the locked guide layer, drawn at `GuideOpacity`), `Start` (what the drawing layer starts with, e.g. a shape to
 outline), `Palette` (the colours offered) and `Rules`. `CreateDocument(guideName, workName)` takes the layer names (the
 app passes `L.T("Guide")` / `L.T("Drawing")`) and marks the guide with `Layer.Extra["easypixel:guide"]`
-(`Exercise.GuideKey`, kept by .epx); `Exercise.Check(sprite)` flattens every layer except the guide (found by the mark,
-so renaming is harmless; a document with no marked layer falls back to a layer named "Guide") — one image per frame —
-and runs each rule; check messages say "the drawing layer", never a layer name; a `CheckResult` passes when every `CheckLine` does. The goal
+(`Exercise.GuideKey`) and the exercise id `Layer.Extra["easypixel:exercise"]` (`Exercise.ExerciseKey`). .epx keeps
+both, and .aseprite keeps every `easypixel:*` layer key as the layer's user-data text (when it has none of its own), so
+a saved practice opened again (`SetSession` → `ResumePractice`, via `Exercise.Of(sprite)`) gets its lesson bar back.
+`Exercise.Check(sprite)` flattens every layer except the guide (found by the mark, so renaming is harmless; a document
+with no marked layer falls back to a layer named "Guide") — one image per frame — and runs each rule (when every
+drawing layer is hidden it says only that); check messages say "the drawing layer", never a layer name; a `CheckResult` passes when every `CheckLine` does. The goal
 text and the self-check items live in the lesson file, so they are translated with it. The rule library (`Rules.*`):
 
 | Rule | Passes when |

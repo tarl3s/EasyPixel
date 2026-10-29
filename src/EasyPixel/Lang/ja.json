@@ -295,6 +295,8 @@
   "Some empty or broken cels were skipped": "空または壊れたセルをいくつかスキップしました",
   "Some pictures are missing and were skipped": "見つからない画像があったためスキップしました",
   "Something went wrong and was stopped: {0}": "問題が発生したため中断しました: {0}",
+  "The drawing layer is hidden: show it again (the eye in the Layers panel), then press Check.": "描画レイヤーが非表示です。もう一度表示してから（レイヤーパネルの目のアイコン）、チェックを押してください。",
+  "The exercise could not be opened:\n{0}": "練習を開けませんでした:\n{0}",
   "Spray": "スプレー",
   "Sprite": "スプライト",
   "Sprite sheet (PNG + JSON)": "スプライトシート（PNG + JSON）",

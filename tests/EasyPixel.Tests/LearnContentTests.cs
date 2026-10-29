@@ -374,7 +374,122 @@ public class LearnContentTests
         Assert.False(Exercise.IsGuide(back, back.Layers[1]));
     }
 
-    /// <summary>A practice saved before the mark existed (or as .aseprite, which drops it) still finds its layer named "Guide".</summary>
+    /// <summary>A practice document knows its exercise, and .epx and .aseprite both keep that (and the guide mark).</summary>
+    [Fact]
+    public void PracticeDocument_RemembersItsExercise_InEpxAndAseprite()
+    {
+        var s = Exercises.Get("clean-lines").CreateDocument("Guia", "Desenho");
+        Assert.Equal("clean-lines", Exercise.Of(s)?.Id);
+        Assert.Null(Exercise.Of(new Sprite(8, 8)));
+
+        foreach (ISpriteFormat format in new ISpriteFormat[] { new EpxFormat(), new AsepriteFormat() })
+        {
+            var warnings = new List<string>();
+            var ms = new MemoryStream();
+            format.Write(s, ms, warnings);
+            Assert.Empty(warnings);
+            var first = ms.ToArray();
+            var back = format.Read(new MemoryStream(first), warnings);
+            Assert.Empty(warnings);
+            Assert.Equal("clean-lines", Exercise.Of(back)?.Id);
+            Assert.True(Exercise.IsGuide(back, back.Layers[0]), format.Name);
+            Assert.False(Exercise.IsGuide(back, back.Layers[1]), format.Name);
+            if (format is AsepriteFormat)
+            {
+                Assert.False(back.Layers[0].Extra.ContainsKey("ase:after")); // read back as keys, not as foreign user data
+                var again = new MemoryStream();
+                format.Write(back, again, warnings);
+                Assert.Equal(first, again.ToArray()); // byte for byte
+            }
+        }
+
+        // An id no exercise has any more: an ordinary document.
+        s.Layers[0].Extra[Exercise.ExerciseKey] = System.Text.Encoding.UTF8.GetBytes("gone");
+        Assert.Null(Exercise.Of(s));
+    }
+
+    /// <summary>A layer with Aseprite user data of its own keeps it as it was (EasyPixel's keys don't take its place).</summary>
+    [Fact]
+    public void Aseprite_LayerUserDataOfItsOwn_IsKept()
+    {
+        var s = new Sprite(4, 4);
+        // A user-data chunk (size 17, type 0x2020) with the text "hello".
+        var userData = new byte[] { 17, 0, 0, 0, 0x20, 0x20, 1, 0, 0, 0, 5, 0, (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o' };
+        s.Layers[0].Extra["ase:after"] = userData;
+        s.Layers[0].Extra[Exercise.GuideKey] = new byte[] { 1 };
+        var ms = new MemoryStream();
+        new AsepriteFormat().Write(s, ms, new List<string>());
+        var back = new AsepriteFormat().Read(new MemoryStream(ms.ToArray()), new List<string>());
+        Assert.Equal(userData, back.Layers[0].Extra["ase:after"]);
+        Assert.False(back.Layers[0].Extra.ContainsKey(Exercise.GuideKey));
+    }
+
+    /// <summary>Every drawing layer hidden: Check says so, instead of "nothing is drawn".</summary>
+    [Fact]
+    public void Check_SaysWhenTheDrawingIsHidden()
+    {
+        var e = Exercises.Get("first-sprite");
+        var s = e.CreateDocument();
+        Assert.False(Exercise.DrawingHidden(s));
+        s.Layers[1].Visible = false;
+        Assert.True(Exercise.DrawingHidden(s));
+        var r = e.Check(s);
+        Assert.False(r.Passed);
+        Assert.Contains("hidden", Assert.Single(r.Lines).English);
+        s.Layers[0].Visible = false; // the guide's visibility doesn't matter
+        s.Layers[1].Visible = true;
+        Assert.False(Exercise.DrawingHidden(s));
+        Assert.Equal(e.Rules.Count, e.Check(s).Lines.Count);
+    }
+
+    /// <summary>What the captions of lessons 02, 04/05 and 11 say about their pictures is true.</summary>
+    [Fact]
+    public void Illustrations_MatchTheirCaptions()
+    {
+        // 02: both lines go up the same height across the same width.
+        Assert.Equal(Bounds(Pixels("jaggies-bad")), Bounds(Pixels("jaggies-good")));
+        Assert.Equal((0, 0, 23, 9), Bounds(Pixels("jaggies-good")));
+
+        // 04/05: the hue-shifted ramp moves 10–30° of hue per step, toward yellow.
+        var ramp = Pixels("ramp-hue-shift");
+        for (int i = 0; i < 3; i++)
+        {
+            double a = HueOf(ramp.Get(i * 6 + 2, 2)), b = HueOf(ramp.Get(i * 6 + 8, 2));
+            Assert.InRange((b - a + 540) % 360 - 180, 10, 30); // the signed step, -180..180
+        }
+
+        // 11: the dotted line sits on the top row of the contact pose's head (the first walker).
+        var poses = Pixels("walk-poses");
+        uint dot = Pal.Sky.Packed;
+        int contactTop = Enumerable.Range(0, poses.Height).First(y => Enumerable.Range(0, 16).Any(x => poses.Get(x, y) >> 24 != 0 && poses.Get(x, y) != dot));
+        int dotsRow = Enumerable.Range(0, poses.Height).First(y => Enumerable.Range(0, poses.Width).Count(x => poses.Get(x, y) == dot) >= 10);
+        Assert.Equal(contactTop, dotsRow);
+    }
+
+    private static Image Pixels(string id)
+    {
+        var s = LessonArt.Build(id).Sprite;
+        return s.Cels[(s.Layers[0], 0)].Image;
+    }
+
+    private static (int, int, int, int) Bounds(Image img)
+    {
+        int x0 = int.MaxValue, y0 = int.MaxValue, x1 = -1, y1 = -1;
+        for (int y = 0; y < img.Height; y++)
+            for (int x = 0; x < img.Width; x++)
+                if (img.Get(x, y) >> 24 != 0) { x0 = Math.Min(x0, x); y0 = Math.Min(y0, y); x1 = Math.Max(x1, x); y1 = Math.Max(y1, y); }
+        return (x0, y0, x1, y1);
+    }
+
+    private static double HueOf(uint packed)
+    {
+        var c = Rgba.FromPacked(packed);
+        double r = c.R / 255.0, g = c.G / 255.0, b = c.B / 255.0, max = Math.Max(r, Math.Max(g, b)), d = max - Math.Min(r, Math.Min(g, b));
+        double h = d == 0 ? 0 : max == r ? 60 * ((g - b) / d) : max == g ? 60 * ((b - r) / d + 2) : 60 * ((r - g) / d + 4);
+        return (h + 360) % 360;
+    }
+
+    /// <summary>A practice saved before the mark existed (or one whose mark was lost) still finds its layer named "Guide".</summary>
     [Fact]
     public void Guide_WithoutAMark_FallsBackToTheName()
     {

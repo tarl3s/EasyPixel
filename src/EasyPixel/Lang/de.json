@@ -295,6 +295,8 @@
   "Some empty or broken cels were skipped": "Einige leere oder beschädigte Zellen wurden übersprungen",
   "Some pictures are missing and were skipped": "Einige Bilder fehlen und wurden übersprungen",
   "Something went wrong and was stopped: {0}": "Etwas ist schiefgelaufen und wurde abgebrochen: {0}",
+  "The drawing layer is hidden: show it again (the eye in the Layers panel), then press Check.": "Die Zeichenebene ist ausgeblendet: Blende sie wieder ein (das Auge im Bereich Ebenen) und klicke dann auf Prüfen.",
+  "The exercise could not be opened:\n{0}": "Die Übung konnte nicht geöffnet werden:\n{0}",
   "Spray": "Sprühdose",
   "Sprite": "Sprite",
   "Sprite sheet (PNG + JSON)": "Sprite-Sheet (PNG + JSON)",

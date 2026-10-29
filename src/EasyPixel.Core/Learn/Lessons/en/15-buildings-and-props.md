@@ -88,7 +88,7 @@ In a straight top-down view you only see the roof. To make it read as a school a
 
 ## Try it
 [[exercise:school-front]]
-Draw a **school** (or any building you need) in **side view**, standing on the ground line. Draw **one window, then copy it** so at least **three windows match exactly**. Use **4 to 12 colours**, keep the building in one piece, and make it rest **right on the ground line**.
+Draw a **school** (or any building you need) in **side view**, standing on the ground line. Draw **one window, then copy it** so at least **three windows match exactly**. Use **4 to 12 colours**, keep the building in one piece (a separate sign or door is fine, up to three pieces in all), and make it rest **right on the ground line**.
 - [ ] My windows are lined up on a grid, with the same spacing.
 - [ ] The door is taller than a character would be, and reaches the ground.
 - [ ] Something tells you it's a school (a sign, a clock, a bell, a flag).

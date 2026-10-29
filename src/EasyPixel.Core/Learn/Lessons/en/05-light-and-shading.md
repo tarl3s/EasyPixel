@@ -46,7 +46,7 @@ The obvious way to make darker shades, mixing the base colour with black, gives 
 ## Hue shifting
 Real light is rarely pure white, and real shadows are not black. Sunlight is warm (a little yellow), and shadows pick up the cool blue of the sky. Painters use this, and pixel artists rely on it: **shift the hue** as you go along the ramp. Move the lighter shades toward **warm** colours (yellow, orange) and the darker shades toward **cool** colours (blue, purple). Saturation is usually highest in the middle of the ramp and a bit lower at both ends.
 
-[[example:ramp-hue-shift]] The same idea with hue shifting: deep blue, then red, orange, and a warm yellow for the light. Rich and alive.
+[[example:ramp-hue-shift]] The same idea with hue shifting: deep wine purple, then red, orange, and a warm yellow for the light, each step about 25 degrees round the colour wheel. Rich and alive.
 
 For example, a red apple's ramp might go from a dark purple in the deepest shadow, through crimson and red, to orange in the light and a pale yellow highlight. A green leaf: dark blue-green shadows, green, then yellow-green light. A grey stone: blue-grey shadows and warm, slightly yellow lights.
 
