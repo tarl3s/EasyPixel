@@ -19,7 +19,7 @@ small own PNG codec in Core (tests must not need a UI).
 
 - Windows only for now; code must not block a later macOS/Linux port (no WPF, no WinForms; Windows-only calls behind one interface).
 - Open source, free for everyone: MIT license, public repo `github.com/tarl3s/EasyPixel`, no paid tiers, accounts or ads.
-- Repo folder: `C:\Users\tarle\OneDrive\Área de Trabalho\Jogos\EasyPixel` (next to `engine` and `EasyVocal`).
+- Repo folder: `Jogos\EasyPixel`, next to `engine` and `EasyVocal`.
 - Versioning X.Y.Z like EasyEngine; this stage ships `0.1.0`; `<Version>` lives in `Directory.Build.props`; each version an annotated tag + GitHub release.
 - UI 100% English, every visible text through `L.T(...)`, translated into the same 9 languages as EasyEngine (`Lang/*.json`).
 - Dark and light themes from palette resources; text contrast ≥ 4.5:1.

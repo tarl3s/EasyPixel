@@ -490,7 +490,8 @@ public class FormatTestsAseprite
     [Fact]
     public void RealAsepriteFile_ReadWriteRead_KeepsEverything()
     {
-        const string path = @"C:\Users\tarle\Downloads\Sprite-0002.ase";
+        // A real file saved by Aseprite, when the developer has one at hand (not shipped: it isn't ours to publish).
+        var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "Sprite-0002.ase");
         if (!File.Exists(path)) return;
         var original = File.ReadAllBytes(path);
         var warnings = new List<string>();
