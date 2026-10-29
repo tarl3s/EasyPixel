@@ -14,7 +14,7 @@ public sealed record ArtExample(string Id, Sprite Sprite, int Zoom)
 /// integer zoom, MIT like the rest). To add one: <c>Add("id", zoom, w, h, c =&gt; …draw on the ArtCanvas…)</c> in
 /// <see cref="Registry"/> (see AGENTS.md, "Lessons").
 /// </summary>
-public static class LessonArt
+public static partial class LessonArt
 {
     private sealed record Entry(int Zoom, int Width, int Height, Action<ArtCanvas> Draw);
 
@@ -178,7 +178,7 @@ public static class LessonArt
             c.Outline(Pal.Black);
         });
 
-        // ---- 08 Dithering (used later) ----
+        // ---- 08 Dithering ----
         Add("dither-checker", 8, 24, 8, c =>
         {
             for (int y = 0; y < 8; y++)
@@ -192,19 +192,19 @@ public static class LessonArt
                     c.Px(x, y, Dither.Pattern(DitherKind.Bayer4, x, y, x / 39.0) ? Pal.Orange : Pal.Plum);
         });
 
-        // ---- 10/11 Animation (used later) ----
+        // ---- 10/11 Animation ----
         Add("idle-bob", 8, 16, 16, c =>
         {
             Slime(c, 1, 3, 14, 13);
             c.Duration(300).NewFrame(durationMs: 300);
             Slime(c, 0, 5, 16, 11);
         });
-        Add("walk-4frame", 8, 14, 20, c =>
+        Add("walk-4frame", 8, 14, 21, c =>
         {
             for (int f = 0; f < 4; f++)
             {
                 if (f > 0) c.NewFrame(durationMs: 150); else c.Duration(150);
-                Walker(c, f);
+                Walker(c, f, 0, 1); // one row of headroom: the body rises on the passing frames
             }
         });
 
@@ -225,7 +225,7 @@ public static class LessonArt
             }
         });
 
-        // ---- 14 Backgrounds and parallax (used later): far moves least ----
+        // ---- 14 Backgrounds and parallax: far moves least ----
         Add("parallax-layers", 4, 64, 32, c =>
         {
             for (int f = 0; f < 16; f++)
@@ -235,6 +235,7 @@ public static class LessonArt
             }
         });
 
+        More(Add);
         return d;
     }
 
@@ -259,7 +260,7 @@ public static class LessonArt
         "................");
 
     /// <summary>A green slime in the box (x, y, w, h): a round dome with a dark rim, a highlight, eyes and an outline inside the box.</summary>
-    private static void Slime(ArtCanvas c, int x, int y, int w, int h)
+    internal static void Slime(ArtCanvas c, int x, int y, int w, int h)
     {
         bool In(int px, int py)
         {
@@ -350,16 +351,25 @@ public static class LessonArt
     private static void Blacken(ArtCanvas c, int x0, int x1) => c.Shade((x, y, col) => x >= x0 && x < x1 ? Pal.Black : null);
 
     /// <summary>A tiny walker facing right, frame 0–3: contact, passing (body up a pixel), contact with the legs swapped, passing.</summary>
-    private static void Walker(ArtCanvas c, int f)
+    internal static void Walker(ArtCanvas c, int f, int ox = 0, int oy = 0)
     {
-        int b = f % 2 == 1 ? -1 : 0;
         int[] front = { 9, 6, 2, 5 }, back = { 2, 5, 9, 6 }, arm = { 3, 6, 9, 6 };
-        c.Line(7, 13 + b, back[f], 18, Pal.Ebony).Line(8, 13 + b, back[f] + 1, 18, Pal.Ebony);   // the far leg, darker
-        c.Rect(4, 7 + b, 9, 12 + b, Pal.Blue);
-        c.Line(5, 13 + b, front[f], 18, Pal.Navy).Line(6, 13 + b, front[f] + 1, 18, Pal.Navy);  // the near leg
-        c.Ellipse(4, 1 + b, 9, 6 + b, Pal.Orange).Line(5, 1 + b, 8, 1 + b, Pal.Plum).Line(4, 2 + b, 7, 2 + b, Pal.Plum).Px(8, 4 + b, Pal.Black);
-        c.Line(6, 8 + b, arm[f], 11 + b, Pal.Sky).Px(arm[f], 12 + b, Pal.Orange);
+        WalkerPose(c, ox, oy, front[f], back[f], arm[f], f % 2 == 1 ? -1 : 0);
         c.Outline(Pal.Black);
+    }
+
+    /// <summary>
+    /// The walker's body at (ox, oy) without its outline: the near and far feet at x = <paramref name="front"/> and
+    /// <paramref name="back"/> (on row 18), the hand at x = <paramref name="arm"/>, the body raised by -<paramref name="b"/>.
+    /// </summary>
+    internal static void WalkerPose(ArtCanvas c, int ox, int oy, int front, int back, int arm, int b)
+    {
+        int y = oy + b;
+        c.Line(ox + 7, y + 13, ox + back, oy + 18, Pal.Ebony).Line(ox + 8, y + 13, ox + back + 1, oy + 18, Pal.Ebony);   // the far leg, darker
+        c.Rect(ox + 4, y + 7, ox + 9, y + 12, Pal.Blue);
+        c.Line(ox + 5, y + 13, ox + front, oy + 18, Pal.Navy).Line(ox + 6, y + 13, ox + front + 1, oy + 18, Pal.Navy);  // the near leg
+        c.Ellipse(ox + 4, y + 1, ox + 9, y + 6, Pal.Orange).Line(ox + 5, y + 1, ox + 8, y + 1, Pal.Plum).Line(ox + 4, y + 2, ox + 7, y + 2, Pal.Plum).Px(ox + 8, y + 4, Pal.Black);
+        c.Line(ox + 6, y + 8, ox + arm, y + 11, Pal.Sky).Px(ox + arm, y + 12, Pal.Orange);
     }
 
     /// <summary>A seamless grass tile at (x, y): every detail is placed with wrap-around, so copies line up.</summary>

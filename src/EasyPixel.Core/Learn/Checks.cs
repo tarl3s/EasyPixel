@@ -108,7 +108,54 @@ public static class Rules
     public static CheckRule HueShift((int X, int Y) dark, (int X, int Y) light, double minDegrees = 8) => new HueShiftRule(dark, light, minDegrees);
     /// <summary>At least <paramref name="minCells"/> 2×2 checkerboard cells (a b / b a) of two different colours.</summary>
     public static CheckRule UsesDither(int minCells = 4) => new DitherRule(minCells);
+    /// <summary>The brightness (luma, 0–255) between the darkest and the lightest colour is within bounds: a value check.</summary>
+    public static CheckRule Contrast(double min = 0, double max = 255) => new ContrastRule(min, max);
+    /// <summary>
+    /// The <paramref name="line"/>-coloured curve on the <paramref name="background"/> has at least <paramref name="minPixels"/>
+    /// in-between pixels (anti-aliasing), each one next to the line, darker than the background and lighter than the line,
+    /// and near a step of the curve (not along straight runs).
+    /// </summary>
+    public static CheckRule AntiAliased(Rgba line, Rgba background, int minPixels = 4) => new AntiAliasRule(line, background, minPixels);
+    /// <summary>The picture gets lighter going <paramref name="toward"/> (four bands, each no darker than the one before).</summary>
+    public static CheckRule GetsLighter(Toward toward = Toward.Down) => new GradientRule(toward);
+    /// <summary>The share of neighbouring pixel pairs with different colours is between <paramref name="min"/> and <paramref name="max"/> (not flat, not noise).</summary>
+    public static CheckRule Texture(double min, double max) => new TextureRule(min, max);
+    /// <summary>The drawing's lowest pixel touches row <paramref name="floorY"/> in some frame and is <paramref name="minHeight"/> above it in another, never below it.</summary>
+    public static CheckRule Bounces(int floorY, int minHeight) => new BounceRule(floorY, minHeight);
+    /// <summary>In every frame the drawing's lowest pixel is on row <paramref name="floorY"/> (feet on the ground).</summary>
+    public static CheckRule OnFloor(int floorY) => new FloorRule(floorY);
+    /// <summary>The centre of the drawing moves sideways by at most <paramref name="maxDrift"/> pixels across the frames (a cycle in place).</summary>
+    public static CheckRule InPlace(double maxDrift = 3) => new InPlaceRule(maxDrift);
+    /// <summary>The top of the drawing changes height by at least <paramref name="minPixels"/> between frames.</summary>
+    public static CheckRule Bobs(int minPixels = 1) => new BobRule(minPixels);
+    /// <summary>At least <paramref name="minCopies"/> identical details (same colour and shape, e.g. copied windows).</summary>
+    public static CheckRule Repeats(int minCopies = 3) => new RepeatRule(minCopies);
+    /// <summary>The drawing spans at least <paramref name="minShare"/> of the canvas width or height (an icon fills its slot).</summary>
+    public static CheckRule UsesTheSpace(double minShare = 0.7) => new SpaceRule(minShare);
+    /// <summary>A one-shot effect: it starts small, grows to a peak after the first frame and ends at half the peak or less.</summary>
+    public static CheckRule GrowsThenFades() => new FadeRule();
+    /// <summary>At least <paramref name="min"/> tags, each with its own name, and every frame inside one.</summary>
+    public static CheckRule HasTags(int min = 2) => new TagsRule(min);
+    /// <summary>Every pixel of the bottom row is filled (a background layer reaches the bottom edge).</summary>
+    public static CheckRule FilledBottom() => new BottomRule();
+
+    /// <summary>The box around the opaque pixels, or null when the image is empty.</summary>
+    internal static (int X0, int Y0, int X1, int Y1)? Bounds(Image img)
+    {
+        int x0 = int.MaxValue, y0 = int.MaxValue, x1 = -1, y1 = -1;
+        for (int y = 0; y < img.Height; y++)
+            for (int x = 0; x < img.Width; x++)
+            {
+                if ((img.Get(x, y) >> 24) == 0) continue;
+                x0 = Math.Min(x0, x); x1 = Math.Max(x1, x);
+                y0 = Math.Min(y0, y); y1 = Math.Max(y1, y);
+            }
+        return x1 < 0 ? null : (x0, y0, x1, y1);
+    }
 }
+
+/// <summary>The direction a gradient check expects the picture to get lighter in.</summary>
+public enum Toward { Down, Up, Right, Left }
 
 internal sealed class NotEmptyRule(int min) : CheckRule
 {

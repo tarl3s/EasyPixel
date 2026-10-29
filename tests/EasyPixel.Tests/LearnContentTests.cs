@@ -119,7 +119,8 @@ public class LearnContentTests
     [Fact]
     public void AnimatedIllustrations_Move()
     {
-        foreach (var (id, frames) in new[] { ("walk-4frame", 4), ("idle-bob", 2), ("parallax-layers", 16) })
+        foreach (var (id, frames) in new[] { ("walk-4frame", 4), ("idle-bob", 2), ("parallax-layers", 16), ("walk-6frame", 6), ("bounce-ball", 8), ("fx-fire", 4),
+            ("fx-smoke", 6), ("fx-explosion", 7), ("fx-sparkle", 4), ("frames-aligned-good", 4), ("frames-aligned-bad", 4) })
         {
             var s = LessonArt.Build(id).Sprite;
             Assert.Equal(frames, s.Frames.Count);
@@ -164,6 +165,37 @@ public class LearnContentTests
         Fails(Rules.HueShift((2, 2), (20, 2)), Art("ramp-flat"));
         Passes(Rules.UsesDither(), Art("dither-checker"));
         Passes(Rules.MaxColors(8), Art("potion-16"));
+        Passes(Rules.Contrast(min: 120), Art("value-good"));
+        Fails(Rules.Contrast(min: 120), Art("value-bad"));
+        var aa = Rules.AntiAliased(Pal.Black, Pal.White, 6);
+        Passes(aa, Art("aa-good"));
+        Fails(aa, Art("aa-none"));
+        Fails(aa, Art("aa-overdone"));
+        Passes(Rules.UsesDither(), Art("dither-smooth"));
+        Fails(Rules.UsesDither(), Art("dither-banding"));
+        Passes(Rules.GetsLighter(Toward.Right), Art("dither-smooth"));
+        Passes(Rules.GetsLighter(Toward.Right), Art("dither-banding"));
+        Passes(Rules.Texture(0.1, 0.45), Art("texture-clusters"));
+        Fails(Rules.Texture(0.1, 0.45), Art("texture-noise"));
+        foreach (var walk in new[] { "walk-4frame", "walk-6frame" })
+        {
+            Passes(Rules.OnFloor(20), Art(walk));
+            Passes(Rules.InPlace(3), Art(walk));
+            Passes(Rules.Bobs(1), Art(walk));
+        }
+        Passes(Rules.OnFloor(20), Art("frames-aligned-good"));
+        Fails(Rules.OnFloor(20), Art("frames-aligned-bad"));
+        Passes(Rules.Seamless(horizontal: true, vertical: false), Art("hills-strip"));
+        Passes(Rules.FilledBottom(), Art("hills-strip"));
+        Fails(Rules.Seamless(horizontal: true, vertical: false), Art("hills-strip-bad"));
+        Passes(Rules.Repeats(3), Art("windows-good"));
+        Fails(Rules.Repeats(3), Art("windows-bad"));
+        Passes(Rules.Repeats(3), Art("school-side"));
+        Passes(Rules.HasOutline(), Art("icon-detail-good"));
+        Passes(Rules.MaxColors(8), Art("icon-detail-good"));
+        Fails(Rules.HasOutline(), Art("icon-detail-bad"));
+        Fails(Rules.MaxColors(8), Art("icon-detail-bad"));
+        Passes(Rules.GrowsThenFades(), Art("fx-explosion"));
     }
 
     // ---- exercises ----
@@ -192,22 +224,17 @@ public class LearnContentTests
     }
 
     /// <summary>A good answer to each exercise passes its check.</summary>
+    public static IEnumerable<object[]> ExerciseIds => Exercises.All.Select(e => new object[] { e.Id });
+
     [Theory]
-    [InlineData("first-sprite")]
-    [InlineData("clean-lines")]
-    [InlineData("silhouette")]
-    [InlineData("shade-ball")]
-    [InlineData("outline-apple")]
-    [InlineData("seamless-tile")]
+    [MemberData(nameof(ExerciseIds))]
     public void EveryExercise_HasAPassingAnswer(string id)
     {
         var e = Exercises.Get(id);
         var s = e.CreateDocument();
         var work = s.Layers[1];
-        var cel = s.GetOrCreateCel(work, 0);
         var c = new ArtCanvas(s.Width, s.Height);
-        c.Image.Pixels.AsSpan().Clear();
-        cel.Image.Pixels.CopyTo(c.Image.Pixels, 0);
+        s.GetOrCreateCel(work, 0).Image.Pixels.CopyTo(c.Image.Pixels, 0);
         switch (id)
         {
             case "first-sprite": c.Ellipse(3, 3, 12, 12, Pal.Red).Ellipse(5, 5, 7, 7, Pal.Orange).Outline(Pal.Black); break;
@@ -221,8 +248,90 @@ public class LearnContentTests
             case "seamless-tile":
                 for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) c.Px(x, y, ((x + 2 * y) % 4) switch { 0 => Pal.Lime, 1 => Pal.Green, _ => Pal.Teal });
                 break;
+            case "palette-ramp":
+                var ramp = new[] { Pal.Black, Pal.Plum, Pal.Red, Pal.Orange, Pal.Yellow };
+                for (int i = 0; i < 5; i++) c.Rect(2 + i * 8, 2, 7 + i * 8, 7, ramp[i]);
+                break;
+            case "aa-curve": LessonArt.AntiAlias(c, Pal.Black, 28, 28, 23, Pal.Slate, Pal.Silver); break;
+            case "dither-sky":
+                var sky = new[] { Pal.Navy, Pal.Blue, Pal.Sky };
+                for (int y = 0; y < 24; y++)
+                    for (int x = 0; x < 32; x++)
+                    {
+                        double t = y / 23.0 * 2;
+                        int i = Math.Min(1, (int)t);
+                        c.Px(x, y, Dither.Pattern(DitherKind.Bayer4, x, y, t - i) ? sky[i + 1] : sky[i]);
+                    }
+                break;
+            case "material-block": // bricks: mortar rows, staggered joints, a few light chips
+                c.Rect(0, 0, 15, 15, Pal.Red);
+                for (int y = 3; y < 16; y += 4)
+                {
+                    c.Line(0, y, 15, y, Pal.Plum);
+                    int off = (y / 4) % 2 == 0 ? 5 : 1;
+                    c.Line(off, y - 3, off, y - 1, Pal.Plum).Line(off + 8, y - 3, off + 8, y - 1, Pal.Plum);
+                }
+                c.Px(2, 0, Pal.Orange).Px(10, 4, Pal.Orange).Px(6, 8, Pal.Orange).Px(13, 12, Pal.Orange);
+                break;
+            case "bouncing-ball":
+                int[] bottoms = { 29, 22, 16, 22, 29 };
+                for (int f = 0; f < bottoms.Length; f++)
+                {
+                    if (f > 0) c.NewFrame();
+                    c.Ellipse(13, bottoms[f] - 5, 18, bottoms[f], Pal.Red).Px(14, bottoms[f] - 4, Pal.Yellow);
+                }
+                break;
+            case "walk-cycle":
+                int[] near = { 8, 11, 14, 11 }, far = { 14, 11, 8, 12 };
+                for (int f = 0; f < 4; f++)
+                {
+                    if (f > 0) c.NewFrame();
+                    int top = f % 2 == 1 ? 9 : 10;
+                    c.Ellipse(9, top, 14, top + 5, Pal.Orange).Rect(9, top + 6, 14, 20, Pal.Blue);
+                    c.Line(10, 21, near[f], 29, Pal.Navy).Line(13, 21, far[f], 29, Pal.Ebony);
+                }
+                break;
+            case "hero-sprite":
+                c.Ellipse(7, 6, 16, 15, Pal.Yellow).Rect(7, 6, 16, 8, Pal.Plum).Rect(8, 16, 15, 23, Pal.Blue)
+                    .Rect(9, 24, 10, 28, Pal.Navy).Rect(13, 24, 14, 28, Pal.Navy).Outline(Pal.Black);
+                break;
+            case "parallax-hills":
+                for (int x = 0; x < 64; x++)
+                {
+                    int t = (int)Math.Round(16 + 4 * Math.Sin(2 * Math.PI * x / 64));
+                    c.Line(x, t, x, 31, Pal.Teal).Px(x, t, Pal.Green);
+                }
+                break;
+            case "school-front":
+                c.Rect(4, 10, 43, 45, Pal.Red).Rect(2, 7, 45, 9, Pal.Slate).Rect(20, 34, 27, 45, Pal.Navy);
+                for (int i = 0; i < 4; i++) c.Rect(7 + i * 9, 14, 11 + i * 9, 19, Pal.Sky);
+                break;
+            case "item-icon":
+                c.Ellipse(2, 2, 13, 13, Pal.Yellow).Shade((x, y, _) => x + y > 17 ? Pal.Orange : null).Px(5, 5, Pal.White).Outline(Pal.Black);
+                break;
+            case "explosion":
+                int[] radius = { 2, 6, 9, 6, 2 };
+                for (int f = 0; f < radius.Length; f++)
+                {
+                    if (f > 0) c.NewFrame();
+                    int rad = radius[f];
+                    c.Ellipse(12 - rad, 12 - rad, 12 + rad, 12 + rad, f < 3 ? Pal.Orange : Pal.Slate);
+                    if (f < 3) c.Ellipse(12 - rad / 2, 12 - rad / 2, 12 + rad / 2, 12 + rad / 2, Pal.Yellow);
+                    if (f == 4) c.Rect(0, 0, 23, 23, Rgba.Transparent).Px(6, 6, Pal.Slate).Px(17, 15, Pal.Slate);
+                }
+                break;
+            case "game-ready":
+                s.Tags.Add(new Tag { Name = "idle", From = 0, To = 1 });
+                s.Tags.Add(new Tag { Name = "walk", From = 2, To = 5 });
+                for (int f = 1; f < s.Frames.Count; f++) { c.NewFrame(); s.GetOrCreateCel(work, f).Image.Pixels.CopyTo(c.Image.Pixels, 0); }
+                break;
+            default: throw new Xunit.Sdk.XunitException("Write a passing answer for the new exercise '" + id + "' here.");
         }
-        c.Image.Pixels.CopyTo(cel.Image.Pixels, 0);
+        for (int f = 0; f < c.Frames.Count; f++)
+        {
+            while (s.Frames.Count <= f) s.Frames.Add(new Frame());
+            c.Frames[f].Pixels.CopyTo(s.GetOrCreateCel(work, f).Image.Pixels, 0);
+        }
         var r = e.Check(s);
         Assert.True(r.Passed, id + ": " + string.Join(" | ", r.Lines.Where(l => !l.Ok).Select(l => l.English)));
     }

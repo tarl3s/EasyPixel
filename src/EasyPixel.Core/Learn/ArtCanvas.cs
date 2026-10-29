@@ -100,6 +100,29 @@ public sealed class ArtCanvas
         return this;
     }
 
+    /// <summary>
+    /// A pixel-perfect arc (no L-shaped corners) of the ellipse centred on (<paramref name="cx"/>, <paramref name="cy"/>)
+    /// with radii <paramref name="rx"/>, <paramref name="ry"/>, from <paramref name="fromDeg"/> to <paramref name="toDeg"/>
+    /// (0 = right, 90 = down).
+    /// </summary>
+    public ArtCanvas Arc(double cx, double cy, double rx, double ry, double fromDeg, double toDeg, Rgba c)
+    {
+        var pts = new List<(int X, int Y)>();
+        int steps = (int)Math.Ceiling(Math.Abs(toDeg - fromDeg) * Math.Max(rx, ry) / 8) + 8;
+        for (int i = 0; i <= steps; i++)
+        {
+            double a = (fromDeg + (toDeg - fromDeg) * i / steps) * Math.PI / 180;
+            var p = ((int)Math.Round(cx + rx * Math.Cos(a)), (int)Math.Round(cy + ry * Math.Sin(a)));
+            if (pts.Count > 0 && pts[^1] == p) continue;
+            pts.Add(p);
+            // The pixel before last is a corner when the new one already touches the one before it.
+            while (pts.Count >= 3 && Math.Abs(pts[^3].X - pts[^1].X) <= 1 && Math.Abs(pts[^3].Y - pts[^1].Y) <= 1) pts.RemoveAt(pts.Count - 2);
+        }
+        foreach (var (x, y) in pts)
+            if ((uint)x < (uint)Width && (uint)y < (uint)Height) Px(x, y, c);
+        return this;
+    }
+
     /// <summary>A rectangle with both corners included.</summary>
     public ArtCanvas Rect(int x0, int y0, int x1, int y1, Rgba c, bool filled = true)
     {
