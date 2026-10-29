@@ -56,6 +56,8 @@ internal sealed class FakeDialogs : IDialogs
         ChoiceLists.Add(options);
         return Task.FromResult(Choices.Count > 0 ? Choices.Dequeue() : null);
     }
+    public Queue<SliceOptions?> Slices { get; } = new();
+    public Task<SliceOptions?> AskSlice(int cellWidth, int cellHeight) => Task.FromResult(Slices.Count > 0 ? Slices.Dequeue() : null);
     public Task<OnionOptions?> AskOnion(OnionOptions current) => Task.FromResult(Onions.Count > 0 ? Onions.Dequeue() : null);
     public Task<SettingsChoice?> AskSettings(SettingsChoice current) => Task.FromResult(SettingsChoices.Count > 0 ? SettingsChoices.Dequeue() : null);
 

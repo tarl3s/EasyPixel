@@ -87,6 +87,13 @@ public sealed class AppDialogs : IDialogs
         return w.Result == 0 ? w.Size : null;
     }
 
+    public async Task<SliceOptions?> AskSlice(int cellWidth, int cellHeight)
+    {
+        var w = new SliceWindow(cellWidth, cellHeight);
+        await w.ShowDialog(_owner);
+        return w.Result == 0 ? w.Options : null;
+    }
+
     public async Task<CanvasSizeOptions?> AskCanvasSize(int width, int height)
     {
         var w = new CanvasSizeWindow(width, height);

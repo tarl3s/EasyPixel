@@ -19,6 +19,7 @@ public partial class MainWindow
     private void SaveAs_Click(object? sender, RoutedEventArgs e) => _ = SaveAsAsync();
     private void Export_Click(object? sender, RoutedEventArgs e) => _ = ExportAsync();
     private void Exit_Click(object? sender, RoutedEventArgs e) => Close();
+    private void ImportSheet_Click(object? sender, RoutedEventArgs e) => _ = ImportSheetAsync();
 
     /// <summary>
     /// Before the document is replaced or the window closes: when it has unsaved changes, asks Save / Don't save /
@@ -101,11 +102,25 @@ public partial class MainWindow
         return true;
     }
 
-    /// <summary>Saves to the document's file, or asks where when it has none. True when saved.</summary>
+    /// <summary>
+    /// Saves to the document's file, or asks where when it has none or when that file is a picture (PNG, GIF) that
+    /// can't keep the sprite as it is now (layers, frames, tags…). True when saved.
+    /// </summary>
     internal async Task<bool> SaveAsync()
     {
-        if (Session.Path is { } p && FormatRegistry.ForPath(p) is { CanWrite: true }) return await SaveToAsync(p);
+        if (Session.Path is { } p && FormatRegistry.ForPath(p) is { CanWrite: true } f && !(f.Flattens && WouldLoseSomething(f)))
+            return await SaveToAsync(p);
         return await SaveAsAsync();
+    }
+
+    private bool WouldLoseSomething(ISpriteFormat format)
+    {
+        Session.DropFloating();
+        var warnings = new List<string>();
+        try { format.Write(Session.Doc, Stream.Null, warnings); }
+        catch (Exception) { return true; }
+        FlatPicture.Warn(Session.Doc, warnings);
+        return warnings.Count > 0;
     }
 
     internal async Task<bool> SaveAsAsync()
@@ -120,7 +135,8 @@ public partial class MainWindow
     /// <summary>
     /// Writes the document in the format of <paramref name="path"/>'s extension. The file is first written in memory:
     /// when the format can't keep everything, the person sees what would be lost and decides; only then is the file
-    /// replaced (through a temp file, so a failure never leaves half a file).
+    /// replaced (through a temp file, so a failure never leaves half a file). A picture format (PNG, GIF) that loses
+    /// something works like an export: the document keeps its own file and stays unsaved.
     /// </summary>
     internal async Task<bool> SaveToAsync(string path)
     {
@@ -132,7 +148,18 @@ public partial class MainWindow
             return false;
         }
         var doc = Session.Doc;
-        if (!await WriteCheckedAsync(path, format.Name, (s, w) => format.Write(doc, s, w), L.T("Save anyway"))) return false;
+        var warnings = new List<string>();
+        void Write(Stream s, List<string> w)
+        {
+            format.Write(doc, s, w);
+            if (format.Flattens) FlatPicture.Warn(doc, w);
+        }
+        if (!await WriteCheckedAsync(path, format.Name, Write, L.T("Save anyway"), warnings)) return false;
+        if (format.Flattens && warnings.Count > 0)
+        {
+            ShowStatus(L.F("Exported {0}; the sprite itself is not saved", Path.GetFileName(path)));
+            return false;
+        }
         Session.Path = Path.GetFullPath(path);
         Session.History.MarkSaved();
         RememberRecent(path);
@@ -142,9 +169,9 @@ public partial class MainWindow
     }
 
     /// <summary>Runs <paramref name="write"/> into memory, asks about its warnings, then writes the file atomically.</summary>
-    private async Task<bool> WriteCheckedAsync(string path, string formatName, Action<Stream, List<string>> write, string goOn)
+    private async Task<bool> WriteCheckedAsync(string path, string formatName, Action<Stream, List<string>> write, string goOn, List<string>? warnings = null)
     {
-        var warnings = new List<string>();
+        warnings ??= new List<string>();
         var ms = new MemoryStream();
         try { write(ms, warnings); }
         catch (Exception ex)
@@ -186,6 +213,34 @@ public partial class MainWindow
         {
             if (File.Exists(tmp)) File.Delete(tmp);
         }
+    }
+
+    /// <summary>
+    /// File → Import sprite sheet: cuts a PNG into equal cells, left to right and top to bottom, and opens them as the
+    /// frames of a new, unsaved sprite (the open one is not changed; it is offered to be saved first).
+    /// </summary>
+    internal async Task ImportSheetAsync(string? path = null)
+    {
+        if (!await ConfirmDiscardAsync()) return;
+        path ??= await Dialogs.PickOpenFile(new[] { new FileType(L.T("PNG image"), new[] { ".png" }) });
+        if (path == null) return;
+        Image sheet;
+        try { sheet = Png.Decode(await File.ReadAllBytesAsync(path)); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException)
+        {
+            await Dialogs.Tell(L.F("{0} could not be opened:\n{1}", Path.GetFileName(path), ex.Message));
+            return;
+        }
+        if (await Dialogs.AskSlice(Math.Min(sheet.Width, sheet.Height), sheet.Height) is not { } o) return;
+        if (o.CellWidth < 1 || o.CellHeight < 1 || o.CellWidth > sheet.Width || o.CellHeight > sheet.Height)
+        {
+            await Dialogs.Tell(L.T("The cell is larger than the picture."));
+            return;
+        }
+        var sprite = SpriteSheet.Slice(sheet, o.CellWidth, o.CellHeight, o.Padding);
+        sprite.Palette.Colors.AddRange(Panels.PalettePanel.DefaultColors);
+        SetSession(new EditorSession(sprite));
+        ShowStatus(L.F("Imported {0} frames from {1}", sprite.Frames.Count, Path.GetFileName(path)));
     }
 
     internal async Task ExportAsync()

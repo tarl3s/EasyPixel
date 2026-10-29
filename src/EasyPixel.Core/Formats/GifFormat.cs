@@ -18,6 +18,7 @@ public sealed class GifFormat : ISpriteFormat
     public string[] Extensions { get; } = { ".gif" };
     public bool CanRead => true;
     public bool CanWrite => true;
+    public bool Flattens => true;
 
     // ---- reading ----
 

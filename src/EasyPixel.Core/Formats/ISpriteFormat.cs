@@ -10,6 +10,8 @@ public interface ISpriteFormat
     string[] Extensions { get; }
     bool CanRead { get; }
     bool CanWrite { get; }
+    /// <summary>True for picture formats (PNG, GIF) that keep only the flattened image: saving to one is an export.</summary>
+    bool Flattens => false;
     Sprite Read(Stream s, List<string> warnings);
     void Write(Sprite sp, Stream s, List<string> warnings);
 }

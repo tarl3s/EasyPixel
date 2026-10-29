@@ -139,9 +139,10 @@ public class EditorTests
         Assert.True(h.Session.History.IsDirty);
 
         h.Dialogs.ConfirmAnswers.Enqueue(true);
-        Assert.True(await h.Window.SaveToAsync(path));
+        Assert.False(await h.Window.SaveToAsync(path)); // written, but it is an export: the sprite itself isn't saved
         Assert.Equal(0x89, File.ReadAllBytes(path)[0]); // a PNG now
-        Assert.False(h.Session.History.IsDirty);
+        Assert.True(h.Session.History.IsDirty);
+        Assert.Null(h.Session.Path);
     }
 
     [AvaloniaFact]

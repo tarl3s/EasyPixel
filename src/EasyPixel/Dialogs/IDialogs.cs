@@ -19,6 +19,9 @@ public sealed record CanvasSizeOptions(int Width, int Height, Anchor Anchor);
 /// <summary>Settings: language code ("auto" or one of <see cref="L.Languages"/>), theme ("dark" / "light") and whether to check for updates.</summary>
 public sealed record SettingsChoice(string Language, string Theme, bool CheckForUpdates = true);
 
+/// <summary>File → Import sprite sheet: the size of one cell and the gap between cells.</summary>
+public sealed record SliceOptions(int CellWidth, int CellHeight, int Padding);
+
 public sealed record OnionOptions(int Before, int After, int Opacity, bool Tint);
 
 /// <summary>
@@ -57,6 +60,9 @@ public interface IDialogs
 
     /// <summary>Pick one of <paramref name="options"/> (shown as given); the index, or null when cancelled.</summary>
     Task<int?> Choose(string title, string message, IReadOnlyList<string> options);
+
+    /// <summary>File → Import sprite sheet: how to cut the picture into frames.</summary>
+    Task<SliceOptions?> AskSlice(int cellWidth, int cellHeight);
 
     Task<OnionOptions?> AskOnion(OnionOptions current);
 

@@ -6,13 +6,15 @@ namespace EasyPixel.Core.Formats;
 
 /// <summary>
 /// EasyPixel's own format: a zip with <c>sprite.json</c> (every model field, <c>"format":1</c>) and one PNG per cel in
-/// <c>cels/&lt;layer&gt;_&lt;frame&gt;.png</c>. Layers (and a layer's parent) are referenced by their index in the layer list.
+/// <c>cels/&lt;layer&gt;_&lt;frame&gt;.png</c>. A linked cel (one cel shown in several frames of a layer) is written once; the other frames
+/// say <c>"linkTo": &lt;first frame&gt;</c> instead of naming a picture (optional key, still format 1). Layers (and a layer's parent) are referenced by their index in the layer list.
 /// RGBA cels are stored as 8-bit RGBA PNGs; indexed cels as 8-bit greyscale PNGs whose value is the palette index
 /// (<see cref="Png.EncodeGrey8"/>), so indices stay lossless. Unknown keys in the JSON are ignored; unknown chunks are kept as base64.
 /// </summary>
 public sealed class EpxFormat : ISpriteFormat
 {
     public const int Version = 1;
+    public const string UnknownValueWarning = "Some settings had values this version doesn't know; defaults were used";
     private const long MaxEntryBytes = 512L * 1024 * 1024;
 
     public string Name => "EasyPixel sprite";
@@ -27,6 +29,10 @@ public sealed class EpxFormat : ISpriteFormat
             .Select(kv => (layer: sp.Layers.IndexOf(kv.Key.Item1), frame: kv.Key.Item2, cel: kv.Value))
             .Where(c => c.layer >= 0)
             .OrderBy(c => c.layer).ThenBy(c => c.frame).ToList();
+        // A cel object stored under several frames of a layer is linked: it is written once, at its first frame.
+        var firstFrame = new Dictionary<(int Layer, Cel Cel), int>();
+        foreach (var (layer, frame, cel) in celList) firstFrame.TryAdd((layer, cel), frame);
+        bool IsLink(int layer, int frame, Cel cel) => firstFrame[(layer, cel)] != frame;
 
         using (var es = zip.CreateEntry("sprite.json").Open())
         using (var w = new Utf8JsonWriter(es, new JsonWriterOptions { Indented = true }))
@@ -79,6 +85,12 @@ public sealed class EpxFormat : ISpriteFormat
                 w.WriteStartObject();
                 w.WriteNumber("layer", layer);
                 w.WriteNumber("frame", frame);
+                if (IsLink(layer, frame, cel))
+                {
+                    w.WriteNumber("linkTo", firstFrame[(layer, cel)]);
+                    w.WriteEndObject();
+                    continue;
+                }
                 w.WriteNumber("x", cel.X);
                 w.WriteNumber("y", cel.Y);
                 w.WriteNumber("opacity", cel.Opacity);
@@ -95,6 +107,7 @@ public sealed class EpxFormat : ISpriteFormat
 
         foreach (var (layer, frame, cel) in celList)
         {
+            if (IsLink(layer, frame, cel)) continue;
             byte[] png = sp.Mode == ColorMode.Indexed ? Png.EncodeGrey8(cel.Image) : Png.Encode(cel.Image);
             using var es = zip.CreateEntry(CelFile(layer, frame)).Open();
             es.Write(png);
@@ -105,7 +118,7 @@ public sealed class EpxFormat : ISpriteFormat
 
     public Sprite Read(Stream s, List<string> warnings)
     {
-        try { return ReadCore(s); }
+        try { return ReadCore(s, warnings); }
         catch (FormatException) { throw; }
         catch (Exception e) when (e is InvalidDataException or JsonException or InvalidOperationException or KeyNotFoundException
                                       or ArgumentException or OverflowException or EndOfStreamException or IOException or IndexOutOfRangeException)
@@ -114,7 +127,7 @@ public sealed class EpxFormat : ISpriteFormat
         }
     }
 
-    private static Sprite ReadCore(Stream input)
+    private static Sprite ReadCore(Stream input, List<string> warnings)
     {
         var buf = new MemoryStream();
         input.CopyTo(buf);
@@ -150,7 +163,7 @@ public sealed class EpxFormat : ISpriteFormat
                 Visible = l.GetProperty("visible").GetBoolean(),
                 Locked = l.GetProperty("locked").GetBoolean(),
                 Opacity = l.GetProperty("opacity").GetByte(),
-                Blend = Enum.Parse<BlendMode>(l.GetProperty("blend").GetString()!),
+                Blend = ReadEnum(l.GetProperty("blend").GetString(), BlendMode.Normal, warnings),
                 IsGroup = l.GetProperty("isGroup").GetBoolean(),
             });
             parents.Add(l.GetProperty("parent").GetInt32());
@@ -178,18 +191,21 @@ public sealed class EpxFormat : ISpriteFormat
             sp.Tags.Add(new Tag
             {
                 Name = t.GetProperty("name").GetString() ?? "",
-                From = t.GetProperty("from").GetInt32(),
-                To = t.GetProperty("to").GetInt32(),
-                Dir = Enum.Parse<LoopDir>(t.GetProperty("dir").GetString()!),
+                From = Math.Clamp(t.GetProperty("from").GetInt32(), 0, sp.Frames.Count - 1),
+                To = Math.Clamp(t.GetProperty("to").GetInt32(), 0, sp.Frames.Count - 1),
+                Dir = ReadEnum(t.GetProperty("dir").GetString(), LoopDir.Forward, warnings),
                 Color = Rgba.FromPacked(Convert.ToUInt32(t.GetProperty("color").GetString(), 16)),
             });
+            if (sp.Tags[^1].From > sp.Tags[^1].To) (sp.Tags[^1].From, sp.Tags[^1].To) = (sp.Tags[^1].To, sp.Tags[^1].From);
             ReadExtra(t, sp.Tags[^1].Extra);
         }
 
+        var links = new List<(Layer Layer, int Frame, int To)>();
         foreach (var c in root.GetProperty("cels").EnumerateArray())
         {
             int li = c.GetProperty("layer").GetInt32(), fi = c.GetProperty("frame").GetInt32();
             if (li < 0 || li >= sp.Layers.Count || fi < 0 || fi >= sp.Frames.Count) throw new FormatException("A cel points at a missing layer or frame.");
+            if (c.TryGetProperty("linkTo", out var link)) { links.Add((sp.Layers[li], fi, link.GetInt32())); continue; }
             var png = ReadEntry(zip, c.GetProperty("file").GetString() ?? "") ?? throw new FormatException("A cel picture is missing from the file.");
             var image = mode == ColorMode.Indexed ? Png.DecodeGrey8(png) : Png.Decode(png);
             sp.Cels[(sp.Layers[li], fi)] = new Cel(image, c.GetProperty("x").GetInt32(), c.GetProperty("y").GetInt32())
@@ -198,10 +214,27 @@ public sealed class EpxFormat : ISpriteFormat
             };
             ReadExtra(c, sp.Cels[(sp.Layers[li], fi)].Extra);
         }
+        foreach (var (layer, frame, to) in links) // linked cels share the cel object of the frame they point at
+            sp.Cels[(layer, frame)] = sp.Cels.TryGetValue((layer, to), out var shared) ? shared
+                : throw new FormatException("A linked cel points at a missing cel.");
+
+        if (mode == ColorMode.Indexed) // an indexed sprite always has a transparent entry (the eraser and holes use it)
+        {
+            if (sp.Palette.TransparentIndex >= sp.Palette.Colors.Count) sp.Palette.TransparentIndex = -1;
+            if (sp.Palette.TransparentIndex < 0) sp.EnsureTransparentIndex();
+        }
 
         if (root.TryGetProperty("unknownChunks", out var uc) && uc.ValueKind == JsonValueKind.Object)
             foreach (var p in uc.EnumerateObject()) sp.UnknownChunks[p.Name] = Convert.FromBase64String(p.Value.GetString() ?? "");
         return sp;
+    }
+
+    /// <summary>A named enum value; an unknown name or a number (which <c>Enum.Parse</c> would accept) falls back with a warning.</summary>
+    private static T ReadEnum<T>(string? name, T fallback, List<string> warnings) where T : struct, Enum
+    {
+        if (name != null && Enum.GetNames<T>().Contains(name)) return Enum.Parse<T>(name);
+        if (!warnings.Contains(UnknownValueWarning)) warnings.Add(UnknownValueWarning);
+        return fallback;
     }
 
     /// <summary>Format-specific data of a layer, frame, tag or cel, as base64 under "extra" (left out when empty).</summary>

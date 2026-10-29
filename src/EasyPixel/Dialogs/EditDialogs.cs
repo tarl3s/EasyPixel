@@ -89,6 +89,20 @@ internal class SizeWindow : DialogWindow
     }
 }
 
+/// <summary>File → Import sprite sheet: cell width and height, and the gap between cells.</summary>
+internal sealed class SliceWindow : SizeWindow
+{
+    private readonly NumericUpDown _padding = NewSpriteWindow.Number(0, 0, 1024);
+
+    public SliceWindow(int width, int height) : base(L.T("Import sprite sheet"), width, height, offerRatio: false)
+    {
+        AddRow(L.T("Gap between cells"), _padding);
+        AddOkCancel();
+    }
+
+    public SliceOptions Options => new(Size.Width, Size.Height, (int)(_padding.Value ?? 0));
+}
+
 /// <summary>Sprite → Canvas size: width, height and a 3×3 anchor (where the old picture stays).</summary>
 internal sealed class CanvasSizeWindow : SizeWindow
 {
