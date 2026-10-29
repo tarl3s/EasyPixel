@@ -21,7 +21,7 @@ namespace EasyPixel.Core.Formats;
 /// Everything else is kept as raw chunks (6-byte chunk header included) on the object that owns it, so it follows that
 /// object through edits and goes away with it:
 /// <see cref="Layer.Extra"/> — <c>ase:after</c> (user data), <c>ase:flags</c> (all layer flags, type, tileset index),
-/// <c>ase:uuid</c>, <c>ase:id</c> (file index at reading; names the layer for its tilemap cels);
+/// <c>ase:uuid</c>, <c>ase:id</c> (file index at reading; names the layer for its tilemap cels), and EasyPixel's own <c>easypixel:*</c> keys (as the layer's user-data text when it has none of its own);
 /// <see cref="Cel.Extra"/> — <c>ase:after</c> (user data, cel extra), <c>ase:z</c> (z-index);
 /// <see cref="Tag.Extra"/> — <c>ase:userdata</c> (user-data body with text/properties), <c>ase:repeat</c>;
 /// <see cref="Frame.Extra"/> — <c>ase:chunks</c> (the frame's other chunks — slices, palettes of later frames… — each
@@ -124,7 +124,7 @@ public sealed class AsepriteFormat : ISpriteFormat
     private abstract record Owner;
     private sealed record PaletteOwner : Owner;
     /// <summary>Following chunks are appended to <c>Dict[Key]</c>.</summary>
-    private sealed record ExtraOwner(Dictionary<string, byte[]> Dict, string Key) : Owner;
+    private sealed record ExtraOwner(Dictionary<string, byte[]> Dict, string Key, bool IsLayer = false) : Owner;
     private sealed record LinkedCelOwner(Cel Cel) : Owner;
     private sealed record TagsOwner(int First, int Count) : Owner { public int Next { get; set; } }
 
@@ -221,7 +221,7 @@ public sealed class AsepriteFormat : ISpriteFormat
                         owner = new PaletteOwner();
                         break;
                     case ChunkLayer:
-                        owner = new ExtraOwner(ReadLayer(body).Extra, KeyAfter);
+                        owner = new ExtraOwner(ReadLayer(body).Extra, KeyAfter, IsLayer: true);
                         break;
                     case ChunkCel:
                         owner = ReadCel(body, frame, raw);
@@ -255,6 +255,7 @@ public sealed class AsepriteFormat : ISpriteFormat
             switch (owner)
             {
                 case ExtraOwner e:
+                    if (e.IsLayer && type == ChunkUserData && !e.Dict.ContainsKey(KeyAfter) && EasyPixelKeys.TryRead(body.Rest(), e.Dict)) return true;
                     Append(e.Dict, e.Key, raw);
                     return true;
                 case PaletteOwner when type == ChunkUserData:
@@ -478,6 +479,46 @@ public sealed class AsepriteFormat : ISpriteFormat
         }
     }
 
+    /// <summary>
+    /// EasyPixel's own layer keys (<c>easypixel:*</c> in <see cref="Layer.Extra"/>, e.g. a practice's guide mark and exercise
+    /// id) travel as the layer's user-data text, one <c>key=base64</c> per line, written only when the layer has no user
+    /// data of its own. Reading turns such a text back into the keys (keeping no raw chunk), so the file round-trips byte
+    /// for byte.
+    /// </summary>
+    private static class EasyPixelKeys
+    {
+        private const string Prefix = "easypixel:";
+
+        public static string? Text(Dictionary<string, byte[]> extra)
+        {
+            var lines = extra.Where(kv => kv.Key.StartsWith(Prefix, StringComparison.Ordinal) && !kv.Key.Contains('=') && !kv.Key.Contains('\n'))
+                .OrderBy(kv => kv.Key, StringComparer.Ordinal)
+                .Select(kv => kv.Key + "=" + Convert.ToBase64String(kv.Value)).ToList();
+            return lines.Count == 0 ? null : string.Join("\n", lines);
+        }
+
+        public static bool TryRead(byte[] body, Dictionary<string, byte[]> into)
+        {
+            try
+            {
+                var r = new Cursor(body, 0, body.Length);
+                if (r.U32() != UserText) return false;
+                var text = r.Str();
+                if (r.Remaining != 0 || !text.StartsWith(Prefix, StringComparison.Ordinal)) return false;
+                var found = new Dictionary<string, byte[]>();
+                foreach (var line in text.Split('\n'))
+                {
+                    int eq = line.IndexOf('=');
+                    if (eq <= Prefix.Length || !line.StartsWith(Prefix, StringComparison.Ordinal)) return false;
+                    found[line[..eq]] = Convert.FromBase64String(line[(eq + 1)..]);
+                }
+                foreach (var (k, v) in found) into[k] = v;
+                return true;
+            }
+            catch (FormatException) { return false; } // not ours (Damaged() and bad base64 are both FormatException)
+        }
+    }
+
     // ───────────────────────────── writing ─────────────────────────────
 
     private sealed class Out
@@ -627,6 +668,8 @@ public sealed class AsepriteFormat : ISpriteFormat
                 if (uuids) body.Bytes(l.Extra.TryGetValue(KeyUuid, out var u) && u.Length == 16 ? u : NewUuid(i, l.Name));
                 var chunks = new List<byte[]> { Chunk(ChunkLayer, body) };
                 chunks.AddRange(Chunks(l.Extra, KeyAfter));
+                if (!l.Extra.ContainsKey(KeyAfter) && EasyPixelKeys.Text(l.Extra) is { } mine)
+                    chunks.Add(Chunk(ChunkUserData, new Out().U32(UserText).Str(mine)));
                 result.Add(chunks);
             }
             return result;

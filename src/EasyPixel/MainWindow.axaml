@@ -3,6 +3,7 @@
         xmlns:loc="using:EasyPixel"
         xmlns:canvas="using:EasyPixel.Canvas"
         xmlns:panels="using:EasyPixel.Panels"
+        xmlns:learn="using:EasyPixel.Learn"
         x:Class="EasyPixel.MainWindow"
         Icon="avares://EasyPixel/Assets/EasyPixel.ico" Title="EasyPixel" Width="1280" Height="800" MinWidth="720" MinHeight="480">
   <!-- Aseprite's layout: menu and tool options on top, tools on the left, colour/palette/layers on the right,
@@ -124,6 +125,8 @@
         </MenuItem>
       </MenuItem>
       <MenuItem Header="{loc:T 'Help'}">
+        <MenuItem Header="{loc:T 'Learn pixel art'}" Click="Learn_Click" />
+        <Separator />
         <MenuItem Header="{loc:T 'Keyboard shortcuts'}" Click="Shortcuts_Click" />
         <MenuItem Header="{loc:T 'About EasyPixel'}" Click="About_Click" />
       </MenuItem>
@@ -168,6 +171,9 @@
         <panels:LayersPanel x:Name="Layers" />
       </DockPanel>
     </Border>
+
+    <!-- Shown while a lesson's exercise is open: goal, self-checks, Check, Back to lesson. -->
+    <learn:LessonStrip x:Name="LessonBar" DockPanel.Dock="Top" />
 
     <canvas:PixelCanvas x:Name="Canvas" />
   </DockPanel>

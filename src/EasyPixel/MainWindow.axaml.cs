@@ -34,6 +34,7 @@ public partial class MainWindow : Window
         PaletteView.Attach(this);
         Layers.Attach(this);
         Timeline.Attach(this);
+        AttachLessonStrip();
         OnToolsChanged();
         // Tab hides the panels (before focus navigation takes it), unless someone is typing.
         AddHandler(KeyDownEvent, (_, e) =>
@@ -54,6 +55,7 @@ public partial class MainWindow : Window
 
     internal void SetSession(EditorSession s)
     {
+        if (CurrentPractice != null && s != CurrentPractice.Session) EndPractice(); // another document: the lesson bar goes
         StopPlaying();
         if (Session != null)
         {
@@ -68,6 +70,7 @@ public partial class MainWindow : Window
         UpdateTitle();
         UpdateStatusBar();
         RefreshPanels();
+        ResumePractice(s); // a saved practice document brings its lesson bar back
     }
 
     /// <summary>A new sprite as File → New makes it: RGBA ones get a starting palette to pick colours from.</summary>

@@ -52,6 +52,13 @@ são tocados. Dá para desligar a verificação em **Editar → Configurações*
     algo que ele não entende), **`.piskel`** e o formato próprio **`.epx`**.
   - Abre PNG e GIF animado; **Arquivo → Importar sprite sheet…** corta uma sprite sheet PNG em quadros.
   - Exporta **PNG**, **GIF** animado e **sprite sheet** (PNG + JSON, horizontal / vertical / grade).
+- **Aprender pixel art** — **Ajuda → Aprender pixel art** abre 18 lições, do primeiro sprite até folhas prontas para
+  o jogo: pixels e tamanho da tela, linhas e curvas, formas, paletas de cores, luz e sombra, contornos, anti-aliasing,
+  pontilhado (dithering), texturas, animação, ciclo de caminhada, personagens, tilesets, cenários, prédios, itens e
+  ícones, efeitos, e como levar os sprites para um jogo. Cada lição tem figuras desenhadas pelo próprio EasyPixel e um
+  exercício **Experimente** que abre uma tela de prática; **Verificar** diz o que está certo e o que corrigir, e a lição
+  aprovada ganha uma ★. Salve a prática e abra depois: a barra da lição volta. As lições estão em inglês e em português
+  (Brasil); os outros idiomas mostram o texto em inglês.
 - **9 idiomas** — inglês, alemão, espanhol, francês, japonês, português (Brasil e Portugal), chinês (simplificado e tradicional).
 - **Temas escuro e claro.**
 
@@ -73,8 +80,7 @@ O EasyPixel nunca escreve dentro de um projeto da EasyEngine — só lê para im
 ## Roteiro
 
 1. Modo tilemap; importação de arquivos PSD, `.pyxel` e `.ora`.
-2. **Aprenda pixel art** — lições do zero até ficar bom.
-3. **Geração com IA** — descreva um sprite, ou peça mudanças e mais quadros; provedores locais (grátis, no seu PC) e na nuvem,
+2. **Geração com IA** — descreva um sprite, ou peça mudanças e mais quadros; provedores locais (grátis, no seu PC) e na nuvem,
    com resultado limpo em pixels de verdade, que você continua editando à mão.
 
 ## Compilando do código-fonte
