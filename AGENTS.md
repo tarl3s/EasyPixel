@@ -25,7 +25,7 @@ dotnet run --project src/EasyPixel
 
 - Windows only for now; no WPF/WinForms; Windows-only calls go behind one interface.
 - MIT, free for everyone: no paid tiers, accounts or ads.
-- Versioning X.Y.Z; `<Version>` lives in `Directory.Build.props` (stage 1 ships 0.1.0).
+- Versioning X.Y.Z; `<Version>` lives in `Directory.Build.props` (0.1.0 = stage 1, 0.2.0 = Learn pixel art).
 - .NET 8 (SDK 8.0.425), Avalonia 11.3.22, xUnit 2.5.3, Avalonia.Headless.XUnit 11.3.22; no other NuGet packages.
 - UI 100% English, every visible text through `L.T(...)`, translated into 9 languages: en, de, es, fr, ja, pt-BR,
   pt-PT, zh-Hans, zh-Hant (`Lang/*.json`).
@@ -192,8 +192,8 @@ Every version is an annotated `vX.Y.Z` tag plus a GitHub release (the in-app upd
 `powershell -ExecutionPolicy Bypass -File tools/Publish-Release.ps1 -NotesFile docs/release-notes/vX.Y.Z.md`.
 Only with the owner's word; try the packaging first with `-DryRun -OutDir <scratch>`.
 
-## Last known green (v0.2.0 in progress, branch feat/learn)
+## Last known green (v0.2.0)
 
-`dotnet test`: EasyPixel.Tests 322/322, EasyPixel.UiTests 104/104 (includes the contrast audit, the 9-language check,
+`dotnet test`: EasyPixel.Tests 344/344, EasyPixel.UiTests 106/106 (includes the contrast audit, the 9-language check,
 the end-to-end draw-animate-export test and every lesson and exercise of Learn pixel art). Last packaging check (v0.1.0): `Publish-Release.ps1 -DryRun` builds a 37.7 MB zip with `EasyPixel.exe` +
 `easypixel-files.txt`, and the published exe starts.

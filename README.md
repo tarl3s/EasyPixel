@@ -52,6 +52,13 @@ never touched. You can turn the check off in **Edit → Settings**.
     holds something it doesn't), **`.piskel`** and EasyPixel's own **`.epx`**.
   - Open PNG and animated GIF; **File → Import sprite sheet…** cuts a PNG sheet into frames.
   - Export **PNG**, animated **GIF** and **sprite sheet** (PNG + JSON, horizontal / vertical / grid).
+- **Learn pixel art** — **Help → Learn pixel art** opens 18 lessons, from your first sprite to game-ready sheets:
+  pixels and canvas size, lines and curves, shapes, colour palettes, light and shading, outlines, anti-aliasing,
+  dithering, textures, animation, walk cycles, characters, tilesets, backgrounds, buildings, items and icons, effects,
+  and getting sprites into a game. Each lesson has pictures drawn by EasyPixel itself and a **Try it** exercise that
+  opens a practice canvas; **Check** tells you what's right and what to fix, and a passed lesson gets a ★. Save a
+  practice and open it later: the lesson bar comes back. Lessons are in English and Português (Brasil); the other
+  languages show the English text.
 - **9 languages** — English, German, Spanish, French, Japanese, Portuguese (Brazil and Portugal), Chinese (simplified and traditional).
 - **Dark and light themes.**
 
@@ -74,8 +81,7 @@ EasyEngine's side.
 ## Roadmap
 
 1. Tilemap mode; import of PSD, `.pyxel` and `.ora` files.
-2. **Learn pixel art** — lessons from zero to good.
-3. **AI generation** — describe a sprite, or ask for changes and more frames; local (free, on your PC) and cloud
+2. **AI generation** — describe a sprite, or ask for changes and more frames; local (free, on your PC) and cloud
    providers, with clean real-pixel results you can keep editing by hand.
 
 ## Build from source
