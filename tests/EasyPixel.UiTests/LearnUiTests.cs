@@ -138,6 +138,25 @@ public class LearnUiTests
         Assert.Null(h.Window.CheckPractice());
     }
 
+    /// <summary>The practice layers are named in the person's language; the guide is still found by its mark.</summary>
+    [AvaloniaFact]
+    public void PracticeLayers_AreNamedInTheUiLanguage()
+    {
+        using var h = new Harness();
+        try
+        {
+            L.Load("pt-BR");
+            Assert.True(h.Window.StartPracticeAsync(Lines).Result);
+            Assert.Equal("Guia", h.Doc.Layers[0].Name);
+            Assert.Equal("Desenho", h.Doc.Layers[1].Name);
+            Assert.True(Exercise.IsGuide(h.Doc, h.Doc.Layers[0]));
+            Assert.Same(h.Doc.Layers[1], h.Session.Layer);
+            Assert.False(h.Window.CheckPractice());
+            Assert.Contains(h.Window.LessonBar.ResultLines, l => l.Contains("camada de desenho"));
+        }
+        finally { L.Load("en"); }
+    }
+
     [AvaloniaFact]
     public void AnotherDocument_EndsThePractice()
     {

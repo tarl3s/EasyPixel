@@ -127,9 +127,12 @@ there for a new pair.
 ### Exercises and check rules
 
 Add an `Exercise` to `Exercises.All`: `Id`, `Width`/`Height`, `Frames` (start frame count), `Guide` (reference marks on
-the locked "Guide" layer, drawn at `GuideOpacity`), `Start` (what the "Drawing" layer starts with, e.g. a shape to
-outline), `Palette` (the colours offered) and `Rules`. `Exercise.Check(sprite)` flattens every layer except layers
-named "Guide" (one image per frame) and runs each rule; a `CheckResult` passes when every `CheckLine` does. The goal
+the locked guide layer, drawn at `GuideOpacity`), `Start` (what the drawing layer starts with, e.g. a shape to
+outline), `Palette` (the colours offered) and `Rules`. `CreateDocument(guideName, workName)` takes the layer names (the
+app passes `L.T("Guide")` / `L.T("Drawing")`) and marks the guide with `Layer.Extra["easypixel:guide"]`
+(`Exercise.GuideKey`, kept by .epx); `Exercise.Check(sprite)` flattens every layer except the guide (found by the mark,
+so renaming is harmless; a document with no marked layer falls back to a layer named "Guide") — one image per frame —
+and runs each rule; check messages say "the drawing layer", never a layer name; a `CheckResult` passes when every `CheckLine` does. The goal
 text and the self-check items live in the lesson file, so they are translated with it. The rule library (`Rules.*`):
 
 | Rule | Passes when |

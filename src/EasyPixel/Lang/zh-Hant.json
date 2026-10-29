@@ -398,7 +398,6 @@
   "The automatic checks pass. Tick the self-check items that are true for your drawing, then press Check again.": "自動檢查已通過。勾選符合你圖畫的自我檢查項目，然後再按「檢查」。",
   "The drawing fits inside the canvas with a margin.": "圖畫留有邊距，完整地在畫布內。",
   "The drawing is in {0} separate pieces (at most {1}): look for stray pixels, e.g. at {2}, {3}.": "圖畫分成了 {0} 個部分（最多 {1} 個）：找找零散像素，例如在 {2}, {3}。",
-  "The drawing layer is empty: draw on the \"Drawing\" layer, not on the guide.": "繪畫圖層是空的：請畫在「Drawing」圖層上，而不是參考圖層上。",
   "The drawing touches the canvas border (at {0}, {1}): leave a margin so nothing gets cut off.": "圖畫碰到了畫布邊緣（在 {0}, {1}）：留出邊距，以免被裁掉。",
   "The left and right edges don't match: a seam shows when the tile repeats side by side. Try View → Tiled preview.": "左右邊緣對不上：並排重複時會看到接縫。試試「檢視 → 並排預覽」。",
   "The light end isn't warmer than the dark end. Nudge the lights toward yellow and the shadows toward blue or purple.": "亮端並不比暗端更暖。把亮部往黃色調整，陰影往藍色或紫色調整。",
@@ -430,5 +429,8 @@
   "{0} of {1} edge pixels have no outline. Close the gaps, e.g. at {2}, {3}.": "{1} 個邊緣像素中有 {0} 個沒有輪廓線。把缺口補上，例如在 {2}, {3}。",
   "{0} pixels are still empty (e.g. at {1}, {2}): a ground tile has no holes.": "還有 {0} 個像素是空的（例如在 {1}, {2}）：地面圖塊不能有洞。",
   "← Previous lesson": "← 上一課",
-  "★ Exercise passed": "★ 練習已通過"
+  "★ Exercise passed": "★ 練習已通過",
+  "Guide": "參考",
+  "Drawing": "繪畫",
+  "Nothing is drawn yet: draw on the drawing layer, not on the guide.": "還沒有畫任何東西：請畫在繪畫圖層上，而不是參考圖層上。"
 }

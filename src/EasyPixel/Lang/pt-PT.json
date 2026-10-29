@@ -398,7 +398,6 @@
   "The automatic checks pass. Tick the self-check items that are true for your drawing, then press Check again.": "As verificações automáticas passaram. Assinale os itens de autoavaliação que se aplicam ao seu desenho e carregue em Verificar de novo.",
   "The drawing fits inside the canvas with a margin.": "O desenho cabe na tela com uma margem.",
   "The drawing is in {0} separate pieces (at most {1}): look for stray pixels, e.g. at {2}, {3}.": "O desenho está em {0} partes separadas (no máximo {1}): procure píxeis soltos, por exemplo em {2}, {3}.",
-  "The drawing layer is empty: draw on the \"Drawing\" layer, not on the guide.": "A camada de desenho está vazia: desenhe na camada «Drawing», não no guia.",
   "The drawing touches the canvas border (at {0}, {1}): leave a margin so nothing gets cut off.": "O desenho toca na borda da tela (em {0}, {1}): deixe uma margem para nada ficar cortado.",
   "The left and right edges don't match: a seam shows when the tile repeats side by side. Try View → Tiled preview.": "As margens esquerda e direita não coincidem: vê-se uma junta quando o mosaico se repete lado a lado. Experimente Ver → Pré-visualização em mosaico.",
   "The light end isn't warmer than the dark end. Nudge the lights toward yellow and the shadows toward blue or purple.": "A ponta clara não é mais quente do que a escura. Puxe as luzes para o amarelo e as sombras para o azul ou roxo.",
@@ -430,5 +429,8 @@
   "{0} of {1} edge pixels have no outline. Close the gaps, e.g. at {2}, {3}.": "{0} de {1} píxeis da borda não têm contorno. Feche as falhas, por exemplo em {2}, {3}.",
   "{0} pixels are still empty (e.g. at {1}, {2}): a ground tile has no holes.": "{0} píxeis ainda estão vazios (por exemplo em {1}, {2}): um mosaico de chão não tem buracos.",
   "← Previous lesson": "← Lição anterior",
-  "★ Exercise passed": "★ Exercício concluído"
+  "★ Exercise passed": "★ Exercício concluído",
+  "Guide": "Guia",
+  "Drawing": "Desenho",
+  "Nothing is drawn yet: draw on the drawing layer, not on the guide.": "Ainda não há nada desenhado: desenhe na camada de desenho, não no guia."
 }

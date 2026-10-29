@@ -115,7 +115,7 @@ internal sealed class NotEmptyRule(int min) : CheckRule
     public override CheckLine Check(CheckInput input)
     {
         int least = input.Frames.Min(CountOpaque);
-        if (least == 0) return Say(false, "The drawing layer is empty: draw on the \"Drawing\" layer, not on the guide.");
+        if (least == 0) return Say(false, "Nothing is drawn yet: draw on the drawing layer, not on the guide.");
         return least >= min
             ? Say(true, "You drew {0} pixels.", least)
             : Say(false, "Only {0} pixels so far: draw a bit more (at least {1}).", least, min);
@@ -265,7 +265,7 @@ internal sealed class OutlineRule(Rgba? color, double share) : CheckRule
                 if (EdgeOk(img, x, y)) ok++;
                 else firstGap ??= (x, y);
             }
-        if (edges == 0) return Say(false, "The drawing layer is empty: draw on the \"Drawing\" layer, not on the guide.");
+        if (edges == 0) return Say(false, "Nothing is drawn yet: draw on the drawing layer, not on the guide.");
         if (interior == 0) return Say(false, "There's no fill inside the outline: an outline goes around a filled shape.");
         if (ok >= edges * share) return Say(true, "The shape is outlined all the way around.");
         return Say(false, "{0} of {1} edge pixels have no outline. Close the gaps, e.g. at {2}, {3}.",

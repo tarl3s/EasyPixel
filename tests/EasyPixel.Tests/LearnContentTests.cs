@@ -176,7 +176,8 @@ public class LearnContentTests
             var s = e.CreateDocument();
             Assert.Equal((e.Width, e.Height), (s.Width, s.Height));
             Assert.Equal(2, s.Layers.Count);
-            Assert.True(Exercise.IsGuide(s.Layers[0]));
+            Assert.True(Exercise.IsGuide(s, s.Layers[0]));
+            Assert.False(Exercise.IsGuide(s, s.Layers[1]));
             Assert.True(s.Layers[0].Locked);
             Assert.Equal(Exercise.WorkLayerName, s.Layers[1].Name);
             Assert.False(s.Layers[1].Locked);
@@ -235,6 +236,45 @@ public class LearnContentTests
         var input = Exercise.Input(s);
         Assert.All(input.Work.Pixels, p => Assert.Equal(0u, p));
         Assert.Contains(input.Guide.Pixels, p => p != 0);
+    }
+
+
+    /// <summary>The guide is found by its mark, not its name: renaming either layer changes nothing, and the names can be translated.</summary>
+    [Fact]
+    public void Guide_IsFoundByItsMark_NotItsName()
+    {
+        var e = Exercises.Get("first-sprite");
+        var s = e.CreateDocument("Guia", "Desenho");
+        Assert.Equal(("Guia", "Desenho"), (s.Layers[0].Name, s.Layers[1].Name));
+        Assert.True(Exercise.IsGuide(s, s.Layers[0]));
+        Assert.False(Exercise.IsGuide(s, s.Layers[1]));
+
+        s.Layers[0].Name = "My reference";
+        s.Layers[1].Name = "Guide"; // the old guide name on the drawing layer doesn't make it a guide
+        Assert.True(Exercise.IsGuide(s, s.Layers[0]));
+        Assert.False(Exercise.IsGuide(s, s.Layers[1]));
+        Assert.All(Exercise.Input(s).Work.Pixels, p => Assert.Equal(0u, p)); // the guide's marks still don't count
+
+        // .epx keeps the mark.
+        var ms = new MemoryStream();
+        new EpxFormat().Write(s, ms, new List<string>());
+        ms.Position = 0;
+        var back = new EpxFormat().Read(ms, new List<string>());
+        Assert.True(Exercise.IsGuide(back, back.Layers[0]));
+        Assert.False(Exercise.IsGuide(back, back.Layers[1]));
+    }
+
+    /// <summary>A practice saved before the mark existed (or as .aseprite, which drops it) still finds its layer named "Guide".</summary>
+    [Fact]
+    public void Guide_WithoutAMark_FallsBackToTheName()
+    {
+        var s = Exercises.Get("first-sprite").CreateDocument();
+        s.Layers[0].Extra.Remove(Exercise.GuideKey);
+        Assert.True(Exercise.IsGuide(s, s.Layers[0]));
+        Assert.False(Exercise.IsGuide(s, s.Layers[1]));
+        Assert.All(Exercise.Input(s).Work.Pixels, p => Assert.Equal(0u, p));
+        s.Layers[0].Name = "Renamed";
+        Assert.False(Exercise.IsGuide(s, s.Layers[0])); // no mark and not named Guide: an ordinary layer
     }
 
     [Fact]

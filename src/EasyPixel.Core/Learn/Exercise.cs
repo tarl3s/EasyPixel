@@ -4,13 +4,18 @@ using EasyPixel.Core.Render;
 namespace EasyPixel.Core.Learn;
 
 /// <summary>
-/// A lesson's practice: a prepared document (a locked "Guide" layer with reference marks under a "Drawing" layer,
+/// A lesson's practice: a prepared document (a locked "Guide" layer with reference marks under the drawing layer,
 /// optionally with something already drawn to work on) and the rules <see cref="Check"/> judges the drawing with.
 /// The goal text and the self-check items live in the lesson file (they are translated with it).
 /// </summary>
 public sealed class Exercise
 {
-    /// <summary>The guide layer's name: <see cref="Check"/> leaves layers with this name out of the drawing.</summary>
+    /// <summary>
+    /// The <see cref="Layer.Extra"/> key that marks the guide layer: <see cref="Check"/> leaves marked layers out of the
+    /// drawing, whatever they are called (the person may rename them; .epx keeps the mark).
+    /// </summary>
+    public const string GuideKey = "easypixel:guide";
+    /// <summary>The default (English) layer names; the app passes them in the person's language.</summary>
     public const string GuideLayerName = "Guide";
     public const string WorkLayerName = "Drawing";
 
@@ -29,16 +34,30 @@ public sealed class Exercise
     /// <summary>The guide layer's opacity (0–255).</summary>
     public byte GuideOpacity { get; init; } = 128;
 
-    public static bool IsGuide(Layer layer) => !layer.IsGroup && layer.Name == GuideLayerName;
+    /// <summary>
+    /// True for a guide layer of <paramref name="sprite"/>: one with the <see cref="GuideKey"/> mark. A document with
+    /// no marked layer (an older practice, or one saved where the mark doesn't survive, like .aseprite) falls back to
+    /// layers named "Guide".
+    /// </summary>
+    public static bool IsGuide(Sprite sprite, Layer layer)
+    {
+        if (layer.IsGroup) return false;
+        if (layer.Extra.ContainsKey(GuideKey)) return true;
+        return layer.Name == GuideLayerName && !sprite.Layers.Any(l => l.Extra.ContainsKey(GuideKey));
+    }
 
-    /// <summary>A new practice document: the guide (locked, faint) at the bottom, the drawing layer on top.</summary>
-    public Sprite CreateDocument()
+    /// <summary>
+    /// A new practice document: the guide (locked, faint, marked with <see cref="GuideKey"/>) at the bottom, the drawing
+    /// layer on top. The names are the person's to read (the app passes them translated); nothing depends on them.
+    /// </summary>
+    public Sprite CreateDocument(string guideName = GuideLayerName, string workName = WorkLayerName)
     {
         var s = new Sprite(Width, Height);
         s.Palette.Colors.AddRange(Palette);
         for (int i = 1; i < Frames; i++) s.Frames.Add(new Frame());
         var guide = s.Layers[0];
-        guide.Name = GuideLayerName;
+        guide.Name = guideName;
+        guide.Extra[GuideKey] = new byte[] { 1 };
         guide.Locked = true;
         guide.Opacity = GuideOpacity;
         var g = new ArtCanvas(Width, Height);
@@ -46,7 +65,7 @@ public sealed class Exercise
         var guideCel = new Cel(g.Image.Clone()); // one picture, linked into every frame
         for (int f = 0; f < s.Frames.Count; f++) s.Cels[(guide, f)] = guideCel;
 
-        var work = new Layer { Name = WorkLayerName };
+        var work = new Layer { Name = workName };
         s.Layers.Add(work);
         if (Start != null)
         {
@@ -66,10 +85,10 @@ public sealed class Exercise
         var visible = sprite.Layers.ToDictionary(l => l, l => l.Visible);
         try
         {
-            foreach (var l in sprite.Layers) if (IsGuide(l)) l.Visible = false;
+            foreach (var l in sprite.Layers) if (IsGuide(sprite, l)) l.Visible = false;
             var frames = new List<Image>();
             for (int f = 0; f < sprite.Frames.Count; f++) frames.Add(Flat(sprite, f));
-            foreach (var l in sprite.Layers) l.Visible = IsGuide(l);
+            foreach (var l in sprite.Layers) l.Visible = IsGuide(sprite, l);
             var guide = Flat(sprite, 0);
             return new CheckInput(sprite, frames, guide);
         }

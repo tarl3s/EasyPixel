@@ -398,7 +398,6 @@
   "The automatic checks pass. Tick the self-check items that are true for your drawing, then press Check again.": "Las comprobaciones automáticas están bien. Marca los puntos de autoevaluación que se cumplan en tu dibujo y pulsa Comprobar otra vez.",
   "The drawing fits inside the canvas with a margin.": "El dibujo cabe en el lienzo con margen.",
   "The drawing is in {0} separate pieces (at most {1}): look for stray pixels, e.g. at {2}, {3}.": "El dibujo está en {0} piezas separadas (como máximo {1}): busca píxeles sueltos, p. ej. en {2}, {3}.",
-  "The drawing layer is empty: draw on the \"Drawing\" layer, not on the guide.": "La capa de dibujo está vacía: dibuja en la capa «Drawing», no en la guía.",
   "The drawing touches the canvas border (at {0}, {1}): leave a margin so nothing gets cut off.": "El dibujo toca el borde del lienzo (en {0}, {1}): deja un margen para que no se corte nada.",
   "The left and right edges don't match: a seam shows when the tile repeats side by side. Try View → Tiled preview.": "Los bordes izquierdo y derecho no encajan: se ve una costura cuando el tile se repite de lado. Prueba Ver → Vista en mosaico.",
   "The light end isn't warmer than the dark end. Nudge the lights toward yellow and the shadows toward blue or purple.": "El extremo claro no es más cálido que el oscuro. Lleva las luces hacia el amarillo y las sombras hacia el azul o el morado.",
@@ -430,5 +429,8 @@
   "{0} of {1} edge pixels have no outline. Close the gaps, e.g. at {2}, {3}.": "{0} de {1} píxeles del borde no tienen contorno. Cierra los huecos, p. ej. en {2}, {3}.",
   "{0} pixels are still empty (e.g. at {1}, {2}): a ground tile has no holes.": "{0} píxeles siguen vacíos (p. ej. en {1}, {2}): un tile de suelo no tiene huecos.",
   "← Previous lesson": "← Lección anterior",
-  "★ Exercise passed": "★ Ejercicio superado"
+  "★ Exercise passed": "★ Ejercicio superado",
+  "Guide": "Guía",
+  "Drawing": "Dibujo",
+  "Nothing is drawn yet: draw on the drawing layer, not on the guide.": "Aún no hay nada dibujado: dibuja en la capa de dibujo, no en la guía."
 }

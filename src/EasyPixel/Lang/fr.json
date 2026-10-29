@@ -398,7 +398,6 @@
   "The automatic checks pass. Tick the self-check items that are true for your drawing, then press Check again.": "Les vérifications automatiques sont bonnes. Coche les points d'auto-évaluation vrais pour ton dessin, puis appuie à nouveau sur Vérifier.",
   "The drawing fits inside the canvas with a margin.": "Le dessin tient dans le canevas avec une marge.",
   "The drawing is in {0} separate pieces (at most {1}): look for stray pixels, e.g. at {2}, {3}.": "Le dessin est en {0} morceaux séparés (au plus {1}) : cherche les pixels isolés, par ex. en {2}, {3}.",
-  "The drawing layer is empty: draw on the \"Drawing\" layer, not on the guide.": "Le calque de dessin est vide : dessine sur le calque « Drawing », pas sur le guide.",
   "The drawing touches the canvas border (at {0}, {1}): leave a margin so nothing gets cut off.": "Le dessin touche le bord du canevas (en {0}, {1}) : laisse une marge pour que rien ne soit coupé.",
   "The left and right edges don't match: a seam shows when the tile repeats side by side. Try View → Tiled preview.": "Les bords gauche et droit ne correspondent pas : une couture apparaît quand la tuile se répète côte à côte. Essaie Affichage → Aperçu en mosaïque.",
   "The light end isn't warmer than the dark end. Nudge the lights toward yellow and the shadows toward blue or purple.": "Le côté clair n'est pas plus chaud que le côté sombre. Pousse les lumières vers le jaune et les ombres vers le bleu ou le violet.",
@@ -430,5 +429,8 @@
   "{0} of {1} edge pixels have no outline. Close the gaps, e.g. at {2}, {3}.": "{0} pixels de bord sur {1} n'ont pas de contour. Bouche les trous, par ex. en {2}, {3}.",
   "{0} pixels are still empty (e.g. at {1}, {2}): a ground tile has no holes.": "{0} pixels sont encore vides (par ex. en {1}, {2}) : une tuile de sol n'a pas de trous.",
   "← Previous lesson": "← Leçon précédente",
-  "★ Exercise passed": "★ Exercice réussi"
+  "★ Exercise passed": "★ Exercice réussi",
+  "Guide": "Guide",
+  "Drawing": "Dessin",
+  "Nothing is drawn yet: draw on the drawing layer, not on the guide.": "Rien n’est encore dessiné : dessine sur le calque de dessin, pas sur le guide."
 }

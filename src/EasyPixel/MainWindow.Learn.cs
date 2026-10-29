@@ -38,7 +38,7 @@ public partial class MainWindow
         if (lesson.TryIt is not { } tryIt || !Exercises.Exists(tryIt.ExerciseId)) return false;
         if (!await ConfirmDiscardAsync()) return false;
         var exercise = Exercises.Get(tryIt.ExerciseId);
-        var session = new EditorSession(exercise.CreateDocument());
+        var session = new EditorSession(exercise.CreateDocument(L.T("Guide"), L.T("Drawing")));
         SetSession(session);
         CurrentPractice = new Practice(lesson, tryIt, exercise, session);
         LessonBar.Show(lesson, tryIt);
