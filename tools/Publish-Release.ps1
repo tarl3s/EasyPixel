@@ -30,7 +30,12 @@ if (-not $DryRun) {
 
 $out = Join-Path $OutDir 'EasyPixel'
 $zip = Join-Path $OutDir 'EasyPixel-win-x64.zip'
-if (Test-Path $OutDir) { Remove-Item $OutDir -Recurse -Force }
+if (Test-Path -LiteralPath $OutDir) {
+    # Only ever wipe a folder this script made: a wrong -OutDir (a home or desktop folder) must not be deleted.
+    $foreign = @(Get-ChildItem -LiteralPath $OutDir -Force | Where-Object { $_.Name -notin @('EasyPixel', 'EasyPixel-win-x64.zip') })
+    if ($foreign.Count -gt 0) { throw "$OutDir holds other files ($($foreign[0].Name)...): pass an empty folder or a previous -OutDir of this script." }
+    Remove-Item -LiteralPath $OutDir -Recurse -Force
+}
 New-Item -ItemType Directory -Force $OutDir | Out-Null
 
 # the native libraries (Skia, HarfBuzz, ANGLE) go inside EasyPixel.exe, so the zip is one file plus the manifest

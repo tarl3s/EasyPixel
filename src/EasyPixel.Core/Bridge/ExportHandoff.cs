@@ -35,10 +35,9 @@ public static class ExportHandoff
     /// <summary>Writes every tag as its own export, or the whole timeline when the sprite has no tags. Returns the folders.</summary>
     public static IReadOnlyList<string> WriteAll(Sprite s, string name, string? root = null, string? source = null, DateTime? when = null)
     {
-        if (s.Tags.Count == 0) return new[] { Write(s, null, root, name, source, when) };
-        var folders = new List<string>();
-        foreach (var t in s.Tags) folders.Add(Write(s, t.Name, root, t.Name, source, when));
-        return folders;
+        if (s.Tags.Count == 0) return new[] { WriteFrames(s, null, root, name, source, when) };
+        // Each tag object, not its name: two tags with the same name are two exports (the folder gets a "-2").
+        return s.Tags.Select(t => WriteFrames(s, t, root, t.Name, source, when)).ToList();
     }
 
     /// <summary>
@@ -47,21 +46,36 @@ public static class ExportHandoff
     /// </summary>
     public static string Write(Sprite s, string? tag, string? root = null, string? name = null, string? source = null, DateTime? when = null)
     {
-        int from = 0, to = s.Frames.Count - 1;
-        if (tag != null)
-        {
-            var t = s.Tags.FirstOrDefault(x => x.Name == tag) ?? throw new ArgumentException("No such tag: " + tag, nameof(tag));
-            from = Math.Clamp(Math.Min(t.From, t.To), 0, s.Frames.Count - 1);
-            to = Math.Clamp(Math.Max(t.From, t.To), 0, s.Frames.Count - 1);
-        }
-        name = string.IsNullOrWhiteSpace(name) ? tag ?? "sprite" : name;
+        var t = tag == null ? null : s.Tags.FirstOrDefault(x => x.Name == tag) ?? throw new ArgumentException("No such tag: " + tag, nameof(tag));
+        return WriteFrames(s, t, root, name, source, when);
+    }
+
+    /// <summary>
+    /// The frames a tag plays, in order: Forward from..to, Reverse to..from, ping-pong from..to and back without
+    /// repeating either end (the whole timeline when <paramref name="t"/> is null).
+    /// </summary>
+    public static List<int> FrameOrder(Sprite s, Tag? t)
+    {
+        int last = s.Frames.Count - 1;
+        int from = t == null ? 0 : Math.Clamp(Math.Min(t.From, t.To), 0, last);
+        int to = t == null ? last : Math.Clamp(Math.Max(t.From, t.To), 0, last);
+        var order = Enumerable.Range(from, to - from + 1).ToList();
+        if (t?.Dir == LoopDir.Reverse) order.Reverse();
+        else if (t?.Dir == LoopDir.PingPong) for (int f = to - 1; f > from; f--) order.Add(f);
+        return order;
+    }
+
+    private static string WriteFrames(Sprite s, Tag? tag, string? root, string? name, string? source, DateTime? when)
+    {
+        name = string.IsNullOrWhiteSpace(name) ? tag?.Name ?? "sprite" : name;
+        if (string.IsNullOrWhiteSpace(name)) name = "sprite";
 
         var folder = NewFolder(root ?? DefaultRoot, name, when ?? DateTime.Now);
         var files = new List<string>();
         var flat = new Image(s.Width, s.Height);
         var area = new PixelRect(0, 0, s.Width, s.Height);
         var durations = new List<int>();
-        for (int f = from; f <= to; f++)
+        foreach (int f in FrameOrder(s, tag))
         {
             Compositor.Flatten(s, f, flat, area);
             var file = "frame_" + files.Count.ToString("000", CultureInfo.InvariantCulture) + ".png";
@@ -118,14 +132,30 @@ public static class ExportHandoff
                     using var doc = JsonDocument.Parse(File.ReadAllText(manifest), new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip });
                     var r = doc.RootElement;
                     if (r.ValueKind != JsonValueKind.Object || !r.TryGetProperty("frames", out var frames) || frames.ValueKind != JsonValueKind.Array) continue;
-                    var name = r.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String ? n.GetString()! : Path.GetFileName(dir);
-                    int fps = r.TryGetProperty("fps", out var fp) && fp.TryGetInt32(out var fv) ? fv : 10;
-                    found.Add(new HandoffInfo(dir, name, fps, frames.GetArrayLength(), File.GetLastWriteTime(manifest)));
+                    found.Add(new HandoffInfo(dir, NameOf(r, dir), FpsOf(r), frames.GetArrayLength(), File.GetLastWriteTime(manifest)));
                 }
                 catch (Exception e) when (e is JsonException or IOException or UnauthorizedAccessException or InvalidOperationException) { }
             }
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
         return found.OrderByDescending(i => i.When).Take(Math.Max(0, max)).ToList();
+    }
+
+    // The same rules as EasyEngine's copy (EasyPixelBridge.NameOf / FpsOf); BridgeTests.Reader_MatchesEngineRules checks them.
+
+    /// <summary>The export's name; a missing or blank one is the folder's name.</summary>
+    private static string NameOf(JsonElement r, string dir) =>
+        r.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(n.GetString()) ? n.GetString()! : Path.GetFileName(dir);
+
+    /// <summary>The speed: a number or a numeric string ("6", "6.5", "6,5"); at least 1, rounded, at most 60; 10 when unusable.</summary>
+    private static int FpsOf(JsonElement r) =>
+        r.TryGetProperty("fps", out var fp) && TryNumber(fp, out var v) && v >= 1 ? (int)Math.Min(60, Math.Round(v)) : 10;
+
+    private static bool TryNumber(JsonElement e, out double v)
+    {
+        v = 0;
+        if (e.ValueKind == JsonValueKind.Number) return e.TryGetDouble(out v);
+        return e.ValueKind == JsonValueKind.String
+            && double.TryParse(e.GetString()?.Trim().Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out v);
     }
 }

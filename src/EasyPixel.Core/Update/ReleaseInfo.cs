@@ -89,11 +89,12 @@ public static class UpdateLogic
     public static List<string> FilesToRemove(string installDir, string manifestText)
     {
         var root = Path.GetFullPath(installDir);
+        var inside = Path.EndsInDirectorySeparator(root) ? root : root + Path.DirectorySeparatorChar; // "C:\App" must not match "C:\App2"
         var result = new List<string>();
         foreach (var rel in ManifestEntries(manifestText))
         {
             var full = Path.GetFullPath(Path.Combine(root, rel));
-            if (full.StartsWith(root, StringComparison.OrdinalIgnoreCase) && File.Exists(full)) result.Add(full);
+            if (full.StartsWith(inside, StringComparison.OrdinalIgnoreCase) && File.Exists(full)) result.Add(full);
         }
         return result;
     }

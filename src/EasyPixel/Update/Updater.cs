@@ -19,6 +19,18 @@ public interface IUpdateService
     void ScheduleSwap(string newDir);
 }
 
+/// <summary>The updater's log, <c>%TEMP%\easypixel_update.log</c> (the swap script writes to it too).</summary>
+public static class UpdateLog
+{
+    public static string File => Path.Combine(Path.GetTempPath(), "easypixel_update.log");
+
+    public static void Write(string line)
+    {
+        try { System.IO.File.AppendAllText(File, $"{DateTime.Now:O} {line}\n"); }
+        catch (Exception) { } // logging must never fail the caller
+    }
+}
+
 /// <summary>
 /// Updates a downloaded EasyPixel from the GitHub releases: asks GitHub for the latest release, downloads its zip to
 /// %TEMP% and, after EasyPixel closes, a small hidden script removes the old version's files (only those listed in its
@@ -101,23 +113,33 @@ public sealed class GitHubUpdater : IUpdateService
     }
 
     private const string SwapScript = @"
-param([int]$WaitPid, [string]$NewDir, [string]$InstallDir, [string]$RemoveList)
+param([int]$WaitPid, [string]$NewDir, [string]$InstallDir, [string]$RemoveList, [int]$WaitSeconds = 60)
 $log = Join-Path $env:TEMP 'easypixel_update.log'
-""$(Get-Date) updating $InstallDir from $NewDir"" | Out-File $log
-$deadline = (Get-Date).AddSeconds(60)
+function Log($m) { [IO.File]::AppendAllText($log, ""$(Get-Date -Format o) $m`n"") }
+Log ""updating $InstallDir from $NewDir""
+$deadline = (Get-Date).AddSeconds($WaitSeconds)
 while ($WaitPid -gt 0 -and (Get-Process -Id $WaitPid -ErrorAction SilentlyContinue) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 100 }
+if ($WaitPid -gt 0 -and (Get-Process -Id $WaitPid -ErrorAction SilentlyContinue)) {
+    Log ""EasyPixel did not close within $WaitSeconds seconds; nothing was changed""
+    exit 1
+}
 Start-Sleep -Milliseconds 500
+$failed = 0
 foreach ($f in @(Get-Content -LiteralPath $RemoveList)) {
-    if ($f -and (Test-Path -LiteralPath $f -PathType Leaf)) { Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue }
+    if ($f -and (Test-Path -LiteralPath $f -PathType Leaf)) {
+        try { Remove-Item -LiteralPath $f -Force -ErrorAction Stop } catch { $failed++; Log ""could not remove ${f}: $_"" }
+    }
 }
 $src = (Resolve-Path -LiteralPath $NewDir).Path.TrimEnd('\')
 foreach ($file in Get-ChildItem -LiteralPath $src -Recurse -File) {
     $dest = Join-Path $InstallDir $file.FullName.Substring($src.Length + 1)
-    $dir = Split-Path -Parent $dest
-    if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
-    Copy-Item -LiteralPath $file.FullName -Destination $dest -Force
+    try {
+        $dir = Split-Path -Parent $dest
+        if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir -ErrorAction Stop | Out-Null }
+        Copy-Item -LiteralPath $file.FullName -Destination $dest -Force -ErrorAction Stop
+    } catch { $failed++; Log ""could not copy ${dest}: $_"" }
 }
-""$(Get-Date) copied"" | Out-File $log -Append
+Log ""copied ($failed problems)""
 Start-Process (Join-Path $InstallDir 'EasyPixel.exe') -WorkingDirectory $InstallDir
 ";
 }

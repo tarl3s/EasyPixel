@@ -121,7 +121,7 @@ public static class EasyEngineBridge
         foreach (var a in source.Animations)
         {
             int from = images.Count;
-            int duration = (int)Math.Round(1000.0 / a.Fps, MidpointRounding.AwayFromZero);
+            int duration = Math.Max(1, (int)Math.Round(1000.0 / a.Fps, MidpointRounding.AwayFromZero)); // over 2000 fps would round to 0 ms
             foreach (var path in a.Frames)
             {
                 if (!cache.TryGetValue(path, out var img)) cache[path] = img = Load(path);

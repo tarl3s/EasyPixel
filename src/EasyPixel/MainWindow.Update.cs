@@ -23,12 +23,16 @@ public partial class MainWindow
         if (!await Dialogs.Confirm(question, L.T("Download"), L.T("Not now"))) return false;
         string newDir;
         try { newDir = await Updates.DownloadAsync(release); }
-        catch (Exception e) when (e is IOException or HttpRequestException or InvalidDataException or TaskCanceledException)
+        catch (Exception e) when (e is IOException or HttpRequestException or InvalidDataException or TaskCanceledException or UnauthorizedAccessException)
         {
             await Dialogs.Tell(L.T("The update could not be downloaded. Try again later."));
             return false;
         }
-        Closed += (_, _) => Updates.ScheduleSwap(newDir);
+        Closed += (_, _) =>
+        {
+            try { Updates.ScheduleSwap(newDir); }
+            catch (Exception e) { UpdateLog.Write("The update could not be started: " + e); } // the window is gone: nobody to tell
+        };
         await Dialogs.Tell(L.T("The update is ready. It installs when you close EasyPixel."));
         return true;
     }

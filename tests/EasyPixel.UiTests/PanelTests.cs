@@ -539,6 +539,7 @@ public class PanelTests
     public void CrashGuard_LogsKeepsWorkAndTells()
     {
         using var h = new Harness();
+        CrashGuard.Reset();
         var folder = Path.Combine(TestAppBuilder.TempRoot, "crash");
         CrashGuard.Folder = folder;
         CrashGuard.Window = h.Window;

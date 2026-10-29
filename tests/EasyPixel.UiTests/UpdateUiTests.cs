@@ -15,16 +15,23 @@ public class UpdateUiTests
         public int Checks, Downloads;
         public List<string> Swaps { get; } = new();
         public bool DownloadFails { get; init; }
+        public Exception? DownloadError { get; init; }
+        public bool SwapFails { get; init; }
 
         public Task<ReleaseInfo?> CheckAsync() { Checks++; return Task.FromResult(Release); }
 
         public Task<string> DownloadAsync(ReleaseInfo release)
         {
             Downloads++;
+            if (DownloadError != null) throw DownloadError;
             return DownloadFails ? throw new IOException("offline") : Task.FromResult("new-dir");
         }
 
-        public void ScheduleSwap(string newDir) => Swaps.Add(newDir);
+        public void ScheduleSwap(string newDir)
+        {
+            if (SwapFails) throw new System.ComponentModel.Win32Exception("no powershell");
+            Swaps.Add(newDir);
+        }
     }
 
     private static readonly ReleaseInfo Newer = new(new Version(0, 2, 0), "v0.2.0", "", "https://x/z.zip");
@@ -50,6 +57,29 @@ public class UpdateUiTests
         h.Window.Close();
         Harness.Pump();
         Assert.Equal(new[] { "new-dir" }, u.Swaps);
+    }
+
+    [AvaloniaFact]
+    public async Task Update_SwapThatCannotStart_IsLogged_AndClosingStillWorks()
+    {
+        var u = new FakeUpdates { Release = Newer, SwapFails = true };
+        using var h = Make(u);
+        h.Dialogs.ConfirmAnswers.Enqueue(true);
+        Assert.True(await h.Window.CheckForUpdatesAsync());
+        h.Window.Close(); // must not throw from Closed
+        Harness.Pump();
+        Assert.False(h.Window.IsVisible);
+        Assert.Contains("no powershell", File.ReadAllText(UpdateLog.File));
+    }
+
+    [AvaloniaFact]
+    public async Task Update_DownloadWithoutPermission_TellsInsteadOfCrashing()
+    {
+        var u = new FakeUpdates { Release = Newer, DownloadError = new UnauthorizedAccessException("denied") };
+        using var h = Make(u);
+        h.Dialogs.ConfirmAnswers.Enqueue(true);
+        Assert.False(await h.Window.CheckForUpdatesAsync());
+        Assert.Single(h.Dialogs.Told);
     }
 
     [AvaloniaFact]
