@@ -47,7 +47,7 @@ public sealed class Sprite
         return cel;
     }
 
-    /// <summary>The value to store in an image to draw <paramref name="c"/>. Indexed: finds or adds a palette entry (nearest when full).</summary>
+    /// <summary>The value to store in an image to draw <paramref name="c"/>. Indexed: finds or adds a palette entry (nearest opaque one when full).</summary>
     public uint ColorToPixel(Rgba c)
     {
         if (Mode == ColorMode.Rgba) return c.Packed;
@@ -55,35 +55,61 @@ public sealed class Sprite
         int i = Palette.IndexOf(c);
         if (i >= 0) return (uint)i;
         if (Palette.Colors.Count < Palette.MaxColors) return (uint)Palette.Add(c);
-        return (uint)Palette.Nearest(c);
+        int near = Palette.Nearest(c, Palette.TransparentIndex);
+        return (uint)(near >= 0 ? near : Palette.Nearest(c));
+    }
+
+    /// <summary>The RGBA value (<see cref="Rgba.Packed"/>) a stored pixel shows: itself in RGBA mode, its palette colour in indexed mode.</summary>
+    public uint ToPacked(uint value) => Mode == ColorMode.Rgba ? value : Palette.ToPacked(value);
+
+    /// <summary>
+    /// Indexed sprites need a transparent palette entry for the eraser, holes and new cels. When there is none, an entry
+    /// with alpha 0 becomes it, or a transparent entry is added (when the palette has room). Returns true when the
+    /// palette changed; callers record that with the edit that needed it.
+    /// </summary>
+    public bool EnsureTransparentIndex()
+    {
+        if (Mode != ColorMode.Indexed || Palette.TransparentIndex >= 0) return false;
+        int i = Palette.Colors.FindIndex(c => c.A == 0);
+        if (i < 0)
+        {
+            if (Palette.Colors.Count >= Palette.MaxColors) return false;
+            i = Palette.Add(Rgba.Transparent);
+        }
+        Palette.TransparentIndex = i;
+        return true;
     }
 
     /// <summary>
-    /// Removes a palette entry of an indexed sprite. Pixels using it are remapped to the nearest remaining colour
-    /// (squared RGBA distance); indices above it shift down.
+    /// Removes a palette entry. In an indexed sprite, pixels using it are remapped to the nearest remaining opaque colour
+    /// (squared RGBA distance) and indices above it shift down; the transparent entry can't be removed there. In an RGBA
+    /// sprite only the list changes.
     /// </summary>
     public void RemovePaletteEntry(int index)
     {
-        if (Mode != ColorMode.Indexed) throw new InvalidOperationException("Only indexed sprites have palette indices.");
         var colors = Palette.Colors;
         ArgumentOutOfRangeException.ThrowIfNegative(index);
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, colors.Count);
-        if (colors.Count == 1) throw new InvalidOperationException("The last palette entry cannot be removed.");
-
-        int replacement = Palette.Nearest(colors[index], skip: index);
-        int shifted = replacement > index ? replacement - 1 : replacement;
-        foreach (var cel in Cels.Values.Distinct())
+        int t = Palette.TransparentIndex;
+        if (Mode == ColorMode.Indexed)
         {
-            var px = cel.Image.Pixels;
-            for (int i = 0; i < px.Length; i++)
+            if (colors.Count == 1) throw new InvalidOperationException("The last palette entry cannot be removed.");
+            if (index == t) throw new InvalidOperationException("The transparent palette entry of an indexed sprite cannot be removed.");
+            int replacement = Palette.Nearest(colors[index], index, t);
+            if (replacement < 0) replacement = t; // only the transparent entry is left
+            int shifted = replacement > index ? replacement - 1 : replacement;
+            foreach (var cel in Cels.Values.Distinct())
             {
-                uint v = px[i];
-                if (v == (uint)index) px[i] = (uint)shifted;
-                else if (v > (uint)index) px[i] = v - 1;
+                var px = cel.Image.Pixels;
+                for (int i = 0; i < px.Length; i++)
+                {
+                    uint v = px[i];
+                    if (v == (uint)index) px[i] = (uint)shifted;
+                    else if (v > (uint)index) px[i] = v - 1;
+                }
             }
         }
         colors.RemoveAt(index);
-        int t = Palette.TransparentIndex;
         Palette.TransparentIndex = t == index ? -1 : t > index ? t - 1 : t;
     }
 
@@ -129,17 +155,20 @@ public sealed class Sprite
         var c = colors[from];
         colors.RemoveAt(from);
         colors.Insert(to, c);
-        int Map(int i) => i == from ? to : from < to ? (i > from && i <= to ? i - 1 : i) : (i >= to && i < from ? i + 1 : i);
-        if (Palette.TransparentIndex >= 0) Palette.TransparentIndex = Map(Palette.TransparentIndex);
+        if (Palette.TransparentIndex >= 0) Palette.TransparentIndex = MoveIndex(Palette.TransparentIndex, from, to);
         if (Mode != ColorMode.Indexed) return;
         var map = new uint[colors.Count];
-        for (int i = 0; i < map.Length; i++) map[i] = (uint)Map(i);
+        for (int i = 0; i < map.Length; i++) map[i] = (uint)MoveIndex(i, from, to);
         foreach (var cel in Cels.Values.Distinct())
         {
             var px = cel.Image.Pixels;
             for (int i = 0; i < px.Length; i++) if (px[i] < (uint)map.Length) px[i] = map[px[i]];
         }
     }
+
+    /// <summary>Where item <paramref name="i"/> of a list ends up after the item at <paramref name="from"/> moves to <paramref name="to"/> (frames, palette entries).</summary>
+    public static int MoveIndex(int i, int from, int to) =>
+        i == from ? to : from < to ? (i > from && i <= to ? i - 1 : i) : (i >= to && i < from ? i + 1 : i);
 
     public void ConvertMode(ColorMode to)
     {
@@ -193,16 +222,10 @@ public sealed class Sprite
 
     private void IndexedToRgba()
     {
-        var colors = Palette.Colors;
-        int t = Palette.TransparentIndex;
         foreach (var cel in Cels.Values.Distinct())
         {
             var px = cel.Image.Pixels;
-            for (int i = 0; i < px.Length; i++)
-            {
-                uint v = px[i];
-                px[i] = (int)v == t || v >= (uint)colors.Count ? 0u : colors[(int)v].Packed;
-            }
+            for (int i = 0; i < px.Length; i++) px[i] = Palette.ToPacked(px[i]);
         }
     }
 }

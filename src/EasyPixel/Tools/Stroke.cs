@@ -18,15 +18,19 @@ internal sealed class Stroke
     private readonly EditorSession _s;
     private readonly string _name;
     private readonly CelState? _grownFrom;
+    private readonly PaletteSnapshot? _paletteBefore; // indexed sprites: the palette may grow while drawing
+    private readonly CelAddedEdit? _celAdded;           // the layer had no cel in this frame
     private readonly Func<int, int, bool>? _clip;
     private PixelRect _dirty; // image coordinates
 
-    private Stroke(EditorSession s, Cel cel, string name, CelState? grownFrom)
+    private Stroke(EditorSession s, Cel cel, string name, CelState? grownFrom, PaletteSnapshot? paletteBefore, CelAddedEdit? celAdded)
     {
         _s = s;
         Cel = cel;
         _name = name;
         _grownFrom = grownFrom;
+        _paletteBefore = paletteBefore;
+        _celAdded = celAdded;
         var px = cel.Image.Pixels;
         if (_backupBuffer.Length < px.Length) _backupBuffer = new uint[px.Length];
         Array.Copy(px, _backupBuffer, px.Length);
@@ -46,22 +50,14 @@ internal sealed class Stroke
         var s = c.Session;
         if (s.WhyNotEditable() is { } why) { c.Status(why); return null; }
         s.DropFloating();
-        var cel = s.CelForDrawing();
-        CelState? grownFrom = null;
-        var canvas = s.CanvasRect;
-        var celRect = new PixelRect(cel.X, cel.Y, cel.Image.Width, cel.Image.Height);
-        if (celRect.Union(canvas) != celRect)
-        {
-            grownFrom = CelReplaceEdit.Begin(cel);
-            var need = celRect.Union(canvas);
-            var grown = new Image(need.W, need.H, s.Doc.TransparentPixel);
-            for (int y = 0; y < cel.Image.Height; y++)
-                Array.Copy(cel.Image.Pixels, y * cel.Image.Width, grown.Pixels, (y + cel.Y - need.Y) * need.W + (cel.X - need.X), cel.Image.Width);
-            cel.Image = grown;
-            cel.X = need.X;
-            cel.Y = need.Y;
-        }
-        var st = new Stroke(s, cel, name, grownFrom);
+        var doc = s.Doc;
+        // Colours a stroke adds to an indexed palette (and the transparent entry it may need) belong to its undo step.
+        var paletteBefore = doc.Mode == ColorMode.Indexed ? PaletteSnapshot.Take(doc) : null;
+        doc.EnsureTransparentIndex();
+        var cel = s.CelForDrawing(out var celAdded);
+        var old = new CelState(cel.Image, cel.X, cel.Y); // growing replaces the image, so the old one stays as it was
+        CelState? grownFrom = cel.GrowToCover(s.CanvasRect, doc.TransparentPixel) ? old : null;
+        var st = new Stroke(s, cel, name, grownFrom, paletteBefore, celAdded);
         var t = c.Tools;
         st.Symmetry!.H = t.MirrorH;
         st.Symmetry.V = t.MirrorV;
@@ -103,26 +99,31 @@ internal sealed class Stroke
             Array.Copy(_backupBuffer, y * Image.Width + r.X, Image.Pixels, y * Image.Width + r.X, r.W);
     }
 
-    /// <summary>Records the stroke as one undo step (nothing when it drew nothing and didn't grow the cel).</summary>
+    /// <summary>
+    /// Records the stroke as one undo step, together with any palette entries it added (nothing when it drew nothing
+    /// and didn't grow the cel).
+    /// </summary>
     public void Commit()
     {
-        if (_grownFrom != null)
+        IEdit edit;
+        if (_grownFrom != null) edit = CelReplaceEdit.Capture(Cel, _grownFrom, _name);
+        else if (_dirty.IsEmpty) { Discard(); return; }
+        else
         {
-            _s.Push(CelReplaceEdit.Capture(Cel, _grownFrom, _name));
-            return;
+            var r = _dirty.Intersect(new PixelRect(0, 0, Image.Width, Image.Height));
+            var before = new uint[r.W * r.H];
+            for (int y = 0; y < r.H; y++)
+                Array.Copy(_backupBuffer, (r.Y + y) * Image.Width + r.X, before, y * r.W, r.W);
+            edit = PixelEdit.Capture(Cel, r, before, _name);
         }
-        if (_dirty.IsEmpty) return;
-        var r = _dirty.Intersect(new PixelRect(0, 0, Image.Width, Image.Height));
-        var before = new uint[r.W * r.H];
-        for (int y = 0; y < r.H; y++)
-            Array.Copy(_backupBuffer, (r.Y + y) * Image.Width + r.X, before, y * r.W, r.W);
-        _s.Push(PixelEdit.Capture(Cel, r, before, _name));
+        _s.Push(CompoundEdit.WithPalette(edit, _paletteBefore, _s.Doc, _celAdded));
     }
 
-    /// <summary>Undoes the stroke without recording anything.</summary>
+    /// <summary>Undoes the stroke (and any palette entries it added) without recording anything.</summary>
     public void Cancel()
     {
         RestoreAll();
+        Discard();
         if (_grownFrom != null)
         {
             Cel.Image = _grownFrom.Image;
@@ -130,6 +131,13 @@ internal sealed class Stroke
             Cel.Y = _grownFrom.Y;
             _s.InvalidateAll();
         }
+    }
+
+    /// <summary>Takes back what beginning the stroke changed outside the picture: palette entries, a new cel.</summary>
+    private void Discard()
+    {
+        _paletteBefore?.Restore(_s.Doc);
+        _celAdded?.Undo(_s.Doc);
     }
 
     private PixelRect ToCanvas(PixelRect r) => r.IsEmpty ? r : new PixelRect(r.X + Cel.X, r.Y + Cel.Y, r.W, r.H);

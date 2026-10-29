@@ -84,6 +84,9 @@ public sealed class PaletteEdit : IEdit
     public string Name { get; }
     public long Bytes => 64 + (_before.Count + _after.Count) * 4L;
 
+    internal static PaletteEdit Create(string name, List<Rgba> before, int tBefore, Sprite s) =>
+        new(name, before, tBefore, s.Palette.Colors.ToList(), s.Palette.TransparentIndex);
+
     public static PaletteEdit Perform(Sprite s, string name, Action change)
     {
         var before = s.Palette.Colors.ToList();
@@ -101,4 +104,76 @@ public sealed class PaletteEdit : IEdit
         s.Palette.Colors.AddRange(colors);
         s.Palette.TransparentIndex = t;
     }
+}
+
+/// <summary>The palette at one moment (colours and transparent index), to tell whether a gesture changed it.</summary>
+public sealed class PaletteSnapshot
+{
+    private readonly Rgba[] _colors;
+    private readonly int _transparent;
+
+    private PaletteSnapshot(Rgba[] colors, int transparent) { _colors = colors; _transparent = transparent; }
+
+    public static PaletteSnapshot Take(Sprite s) => new(s.Palette.Colors.ToArray(), s.Palette.TransparentIndex);
+
+    public bool Matches(Sprite s) => s.Palette.TransparentIndex == _transparent && s.Palette.Colors.SequenceEqual(_colors);
+
+    /// <summary>Puts the palette back as it was (for a gesture that is abandoned).</summary>
+    public void Restore(Sprite s)
+    {
+        s.Palette.Colors.Clear();
+        s.Palette.Colors.AddRange(_colors);
+        s.Palette.TransparentIndex = _transparent;
+    }
+
+    /// <summary>The palette change from this snapshot to the sprite's palette now, or null when nothing changed.</summary>
+    public PaletteEdit? EditSince(Sprite s, string name) =>
+        Matches(s) ? null : PaletteEdit.Create(name, _colors.ToList(), _transparent, s);
+}
+
+/// <summary>
+/// Several edits recorded as one undo step, in the order they were made (undo runs them backwards). Used when a gesture
+/// also grew the palette of an indexed sprite, so undo removes the new entries together with the pixels.
+/// </summary>
+public sealed class CompoundEdit : IEdit
+{
+    private readonly IEdit[] _parts;
+
+    public CompoundEdit(string name, params IEdit[] parts) { Name = name; _parts = parts; }
+
+    public string Name { get; }
+    public long Bytes => 32 + _parts.Sum(p => p.Bytes);
+
+    public void Undo(Sprite s) { for (int i = _parts.Length - 1; i >= 0; i--) _parts[i].Undo(s); }
+    public void Redo(Sprite s) { foreach (var p in _parts) p.Redo(s); }
+
+    /// <summary>
+    /// <paramref name="edit"/> as one step together with what the gesture also changed: the palette since
+    /// <paramref name="paletteBefore"/> and a cel it had to create (<paramref name="celAdded"/>). Just <paramref name="edit"/>
+    /// when there is nothing else.
+    /// </summary>
+    public static IEdit WithPalette(IEdit edit, PaletteSnapshot? paletteBefore, Sprite s, CelAddedEdit? celAdded = null)
+    {
+        var parts = new List<IEdit>();
+        if (paletteBefore?.EditSince(s, edit.Name) is { } pal) parts.Add(pal);
+        if (celAdded != null) parts.Add(celAdded);
+        if (parts.Count == 0) return edit;
+        parts.Add(edit);
+        return new CompoundEdit(edit.Name, parts.ToArray());
+    }
+}
+
+/// <summary>A cel made for a gesture on an empty layer/frame: undo takes it away again (so whole-sprite undo steps don't lose it).</summary>
+public sealed class CelAddedEdit : IEdit
+{
+    private readonly Layer _layer;
+    private readonly int _frame;
+    private readonly Cel _cel;
+
+    public CelAddedEdit(Layer layer, int frame, Cel cel) { _layer = layer; _frame = frame; _cel = cel; }
+
+    public string Name => "Add cel";
+    public long Bytes => 48;
+    public void Undo(Sprite s) => s.Cels.Remove((_layer, _frame));
+    public void Redo(Sprite s) => s.Cels[(_layer, _frame)] = _cel;
 }

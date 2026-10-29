@@ -9,14 +9,15 @@ using EasyPixel.Tools;
 
 namespace EasyPixel;
 
-// Edit menu: undo/redo, cut/copy/paste (system clipboard as PNG, with an in-app copy as fallback), delete, select all/none.
+// Edit menu: undo/redo, cut/copy/paste (system clipboard as PNG, with an in-app copy as fallback), delete, flip / rotate /
+// scale the selection (or the layer), select all/none.
 public partial class MainWindow
 {
     // "PNG" is the clipboard format other image apps on Windows read and write.
     private static readonly DataFormat<byte[]> PngFormat = DataFormat.CreateBytesPlatformFormat("PNG");
 
     /// <summary>The last copied picture (RGBA), used when the system clipboard has no picture for us.</summary>
-    internal static Image? InternalClipboard { get; private set; }
+    internal static Image? InternalClipboard { get; set; }
 
     private void Undo_Click(object? sender, RoutedEventArgs e) => Undo();
     private void Redo_Click(object? sender, RoutedEventArgs e) => Redo();
@@ -26,6 +27,11 @@ public partial class MainWindow
     private void Delete_Click(object? sender, RoutedEventArgs e) => DeleteSelection();
     private void SelectAll_Click(object? sender, RoutedEventArgs e) => SelectAll();
     private void Deselect_Click(object? sender, RoutedEventArgs e) => Deselect();
+    private void FlipSelH_Click(object? sender, RoutedEventArgs e) => FlipSelection(horizontal: true);
+    private void FlipSelV_Click(object? sender, RoutedEventArgs e) => FlipSelection(horizontal: false);
+    private void RotateSelCw_Click(object? sender, RoutedEventArgs e) => RotateSelection(clockwise: true);
+    private void RotateSelCcw_Click(object? sender, RoutedEventArgs e) => RotateSelection(clockwise: false);
+    private void ScaleSel_Click(object? sender, RoutedEventArgs e) => _ = ScaleSelectionAsync();
 
     internal void Undo()
     {
@@ -65,6 +71,44 @@ public partial class MainWindow
         st.Commit();
     }
 
+    // ---- transforms (Aseprite's Edit → Flip / Rotate / Scale) ----
+
+    internal void FlipSelection(bool horizontal) =>
+        TransformSelection(L.N("Flip"), f => { if (horizontal) f.FlipH(); else f.FlipV(); });
+
+    internal void RotateSelection(bool clockwise) => TransformSelection(L.N("Rotate"), f => f.Rotate90(clockwise));
+
+    internal async Task ScaleSelectionAsync()
+    {
+        if (await Dialogs.AskNumber(L.T("Scale"), L.T("Size (%)"), 100, 1, 1000) is not { } percent || percent == 100) return;
+        TransformSelection(L.N("Scale"), f => f.Scale(
+            Math.Max(1, (int)Math.Round(f.Pixels.Width * percent / 100.0)), Math.Max(1, (int)Math.Round(f.Pixels.Height * percent / 100.0))));
+    }
+
+    /// <summary>
+    /// Changes the floating pixels, lifting the selection first (they stay floating: move them, then Enter drops them).
+    /// With nothing selected the whole layer changes at once, as one undo step.
+    /// </summary>
+    private void TransformSelection(string editName, Action<Floating> change)
+    {
+        Canvas.FinishGesture();
+        bool wholeLayer = false;
+        if (Session.Float == null)
+        {
+            if (Session.WhyNotEditable() is { } why) { ShowStatus(why); return; }
+            wholeLayer = Session.Sel.IsEmpty;
+            if (wholeLayer) Session.Sel = Selection.All(Session.Doc.Width, Session.Doc.Height);
+            Session.LiftSelection(editName);
+        }
+        Session.TransformFloating(change);
+        if (wholeLayer)
+        {
+            Session.DropFloating();
+            Session.Sel = Selection.None(Session.Doc.Width, Session.Doc.Height);
+        }
+        UpdateTitle();
+    }
+
     internal async Task CopyAsync()
     {
         var img = SelectedPicture();
@@ -94,7 +138,10 @@ public partial class MainWindow
         if (Session.WhyNotEditable() is { } why) { ShowStatus(why); return; }
         Session.DropFloating();
         var doc = Session.Doc;
-        var cel = Session.CelForDrawing();
+        // Colours the picture adds to an indexed palette become part of the paste's undo step.
+        var paletteBefore = doc.Mode == ColorMode.Indexed ? PaletteSnapshot.Take(doc) : null;
+        doc.EnsureTransparentIndex();
+        var cel = Session.CelForDrawing(out var added);
         var before = CelReplaceEdit.Begin(cel);
         uint clear = doc.TransparentPixel;
         var pixels = new Image(img.Width, img.Height, clear);
@@ -107,7 +154,7 @@ public partial class MainWindow
         int y = Session.Sel.IsEmpty ? (doc.Height - img.Height) / 2 : Session.Sel.Bounds.Y;
         var selectionBefore = Session.Sel;
         Session.Sel = Selectors.Rect(doc.Width, doc.Height, new PixelRect(x, y, img.Width, img.Height));
-        Session.BeginFloating(new Floating(pixels, x, y, clear), cel, before, "Paste", selectionBefore);
+        Session.BeginFloating(new Floating(pixels, x, y, clear), cel, before, "Paste", selectionBefore, paletteBefore, added);
         Tools.Current = ToolKind.Move;
         UpdateTitle();
     }
@@ -130,7 +177,7 @@ public partial class MainWindow
         {
             var src = fs.Pixels.Pixels;
             var copy = new Image(src.Width, src.Height);
-            for (int i = 0; i < src.Pixels.Length; i++) copy.Pixels[i] = src.Pixels[i] == fs.Pixels.Clear ? 0 : ToRgba(doc, src.Pixels[i]);
+            for (int i = 0; i < src.Pixels.Length; i++) copy.Pixels[i] = src.Pixels[i] == fs.Pixels.Clear ? 0 : doc.ToPacked(src.Pixels[i]);
             return copy;
         }
         if (!doc.Cels.TryGetValue((Session.Layer, Session.Frame), out var cel)) return null;
@@ -143,15 +190,8 @@ public partial class MainWindow
                 if (!sel.IsEmpty && !sel.Contains(x, y)) continue;
                 int cx = x - cel.X, cy = y - cel.Y;
                 if ((uint)cx >= (uint)cel.Image.Width || (uint)cy >= (uint)cel.Image.Height) continue;
-                img.Pixels[(y - b.Y) * b.W + (x - b.X)] = ToRgba(doc, cel.Image.Pixels[cy * cel.Image.Width + cx]);
+                img.Pixels[(y - b.Y) * b.W + (x - b.X)] = doc.ToPacked(cel.Image.Pixels[cy * cel.Image.Width + cx]);
             }
         return img;
-    }
-
-    private static uint ToRgba(Sprite doc, uint v)
-    {
-        if (doc.Mode == ColorMode.Rgba) return v;
-        var pal = doc.Palette;
-        return (int)v == pal.TransparentIndex || v >= (uint)pal.Colors.Count ? 0 : pal.Colors[(int)v].Packed;
     }
 }

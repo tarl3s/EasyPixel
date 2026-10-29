@@ -13,6 +13,7 @@
         <MenuItem Header="{loc:T 'New…'}" InputGesture="Ctrl+N" Click="New_Click" />
         <MenuItem Header="{loc:T 'Open…'}" InputGesture="Ctrl+O" Click="Open_Click" />
         <MenuItem x:Name="RecentMenu" Header="{loc:T 'Open recent'}" />
+        <MenuItem Header="{loc:T 'Import sprite sheet…'}" Click="ImportSheet_Click" />
         <Separator />
         <MenuItem Header="{loc:T 'Save'}" InputGesture="Ctrl+S" Click="Save_Click" />
         <MenuItem Header="{loc:T 'Save as…'}" InputGesture="Ctrl+Shift+S" Click="SaveAs_Click" />
@@ -31,6 +32,12 @@
         <MenuItem Header="{loc:T 'Copy'}" InputGesture="Ctrl+C" Click="Copy_Click" />
         <MenuItem Header="{loc:T 'Paste'}" InputGesture="Ctrl+V" Click="Paste_Click" />
         <MenuItem Header="{loc:T 'Delete'}" InputGesture="Delete" Click="Delete_Click" />
+        <Separator />
+        <MenuItem Header="{loc:T 'Flip horizontally'}" InputGesture="Shift+H" Click="FlipSelH_Click" />
+        <MenuItem Header="{loc:T 'Flip vertically'}" InputGesture="Shift+V" Click="FlipSelV_Click" />
+        <MenuItem Header="{loc:T 'Rotate 90° clockwise'}" Click="RotateSelCw_Click" />
+        <MenuItem Header="{loc:T 'Rotate 90° counter-clockwise'}" Click="RotateSelCcw_Click" />
+        <MenuItem Header="{loc:T 'Scale…'}" Click="ScaleSel_Click" />
         <Separator />
         <MenuItem Header="{loc:T 'Settings…'}" Click="Settings_Click" />
       </MenuItem>

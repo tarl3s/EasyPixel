@@ -20,6 +20,7 @@ public partial class MainWindow
         ("Enter", "Play / stop (drops moved pixels first)"), ("Esc", "Cancel"), ("Tab", "Hide / show panels"), ("F", "Full preview"),
         ("Space + drag", "Scroll the canvas"), ("Ctrl++ / Ctrl+-", "Zoom in / out"), ("Ctrl+0", "Fit on screen"),
         ("Shift + arrows", "Move pixels 10 at a time (Move tool)"),
+        ("Shift+H / Shift+V", "Flip the selection (or the layer) horizontally / vertically"),
     };
 
     protected override void OnKeyDown(KeyEventArgs e)
@@ -107,6 +108,8 @@ public partial class MainWindow
             case Key.Down: StepLayer(-1); return true;
             case Key.Tab: TogglePanels(); return true;
             case Key.N when shift: NewLayer(); return true;
+            case Key.H when shift: FlipSelection(horizontal: true); return true;
+            case Key.V when shift: FlipSelection(horizontal: false); return true;
         }
         if (shift) return false;
         switch (key)

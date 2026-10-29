@@ -144,15 +144,10 @@ public sealed class PalettePanel : DockPanel
         if (Doc.Mode == ColorMode.Indexed)
         {
             if (Doc.Palette.Colors.Count == 1) { _w.ShowStatus(L.T("The last colour can't be removed")); return; }
+            if (i == Doc.Palette.TransparentIndex) { _w.ShowStatus(L.T("The transparent colour of an indexed sprite can't be removed")); return; }
             _w.Session.Apply(SpriteStateEdit.Perform(Doc, L.N("Remove colour"), () => Doc.RemovePaletteEntry(i)));
         }
-        else
-            _w.Session.Apply(PaletteEdit.Perform(Doc, L.N("Remove colour"), () =>
-            {
-                var pal = Doc.Palette;
-                pal.Colors.RemoveAt(i);
-                pal.TransparentIndex = pal.TransparentIndex == i ? -1 : pal.TransparentIndex > i ? pal.TransparentIndex - 1 : pal.TransparentIndex;
-            }));
+        else _w.Session.Apply(PaletteEdit.Perform(Doc, L.N("Remove colour"), () => Doc.RemovePaletteEntry(i)));
         Select(Math.Min(i, Doc.Palette.Colors.Count - 1));
     }
 
@@ -199,6 +194,7 @@ public sealed class PalettePanel : DockPanel
             doc.Palette.Colors.Clear();
             doc.Palette.Colors.AddRange(colors);
             doc.Palette.TransparentIndex = t < colors.Count ? t : -1;
+            doc.EnsureTransparentIndex(); // an indexed sprite keeps a transparent entry
         }));
         _selected = -1;
         Rebuild();

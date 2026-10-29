@@ -28,7 +28,7 @@ public sealed class MoveTool : Tool
         if (!s.Sel.IsEmpty)
         {
             if (!s.Sel.Contains(p.X, p.Y)) return;
-            Lift(s);
+            s.LiftSelection("Move");
             Grab(p, s.Float!.Pixels.X, s.Float.Pixels.Y);
             return;
         }
@@ -86,18 +86,10 @@ public sealed class MoveTool : Tool
                 s.Invalidate(old.Union(new PixelRect(cel.X, cel.Y, old.W, old.H)));
                 return;
             }
-            Lift(s);
+            s.LiftSelection("Move");
         }
         var f = s.Float!.Pixels;
         s.MoveFloating(f.X + dx, f.Y + dy);
-    }
-
-    private static void Lift(EditorSession s)
-    {
-        var cel = s.CelForDrawing();
-        var before = CelReplaceEdit.Begin(cel);
-        var f = Floating.Lift(cel, s.Sel, s.Doc.TransparentPixel);
-        s.BeginFloating(f, cel, before, "Move");
     }
 
     private void Grab(ToolInput p, int originX, int originY)

@@ -77,17 +77,7 @@ public sealed class Floating
         if (maxX < 0) return default;
 
         var canvasRect = new PixelRect(X + minX, Y + minY, maxX - minX + 1, maxY - minY + 1);
-        var celRect = new PixelRect(c.X, c.Y, c.Image.Width, c.Image.Height);
-        var need = celRect.Union(canvasRect);
-        if (need != celRect)
-        {
-            var grown = new Image(need.W, need.H, Clear);
-            for (int y = 0; y < c.Image.Height; y++)
-                Array.Copy(c.Image.Pixels, y * c.Image.Width, grown.Pixels, (y + c.Y - need.Y) * need.W + (c.X - need.X), c.Image.Width);
-            c.Image = grown;
-            c.X = need.X;
-            c.Y = need.Y;
-        }
+        c.GrowToCover(canvasRect, Clear);
         var img = c.Image;
         for (int y = minY; y <= maxY; y++)
             for (int x = minX; x <= maxX; x++)
@@ -100,6 +90,20 @@ public sealed class Floating
 
     public void FlipH() => Pixels = Transform.FlipH(Pixels);
     public void FlipV() => Pixels = Transform.FlipV(Pixels);
-    public void Rotate90() => Pixels = Transform.Rotate90(Pixels);
-    public void Scale(int w, int h) => Pixels = Transform.ScaleNearest(Pixels, w, h);
+    /// <summary>Turns the pixels a quarter turn (clockwise by default) around their centre.</summary>
+    public void Rotate90(bool clockwise = true)
+    {
+        int w = Pixels.Width, h = Pixels.Height;
+        Pixels = clockwise ? Transform.Rotate90(Pixels) : Transform.Rotate180(Transform.Rotate90(Pixels));
+        X += (w - h) / 2;
+        Y += (h - w) / 2;
+    }
+
+    /// <summary>Scales the pixels to <paramref name="w"/> x <paramref name="h"/> (nearest neighbour) around their centre.</summary>
+    public void Scale(int w, int h)
+    {
+        X += (Pixels.Width - w) / 2;
+        Y += (Pixels.Height - h) / 2;
+        Pixels = Transform.ScaleNearest(Pixels, w, h);
+    }
 }
