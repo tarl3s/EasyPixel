@@ -52,6 +52,10 @@ public class LangTests
         foreach (var file in Directory.EnumerateFiles(Path.Combine(dir.FullName, "src", "EasyPixel.Core", "History"), "*.cs"))
             foreach (Match m in Regex.Matches(File.ReadAllText(file), @"public string Name => ""([^""]+)"""))
                 Check(m.Groups[1].Value);
+        // The feedback of the Learn check rules (shown through L.F in the lesson bar).
+        foreach (var file in Directory.EnumerateFiles(Path.Combine(dir.FullName, "src", "EasyPixel.Core", "Learn"), "*.cs"))
+            foreach (Match m in Regex.Matches(File.ReadAllText(file), @"Say\((?:true|false), ""((?:[^""\\]|\\.)*)"""))
+                Check(Regex.Unescape(m.Groups[1].Value));
         Assert.True(missing.Count == 0, "Missing from Lang/en.json (run tools/Update-Strings.sh): " + string.Join(" | ", missing));
 
         void Check(string s)
@@ -82,7 +86,7 @@ public class LangTests
             var want = Regex.Matches(key, @"\{\d+\}").Select(m => m.Value).OrderBy(v => v);
             var got = Regex.Matches(value, @"\{\d+\}").Select(m => m.Value).OrderBy(v => v);
             if (!want.SequenceEqual(got)) { broken.Add(key); continue; }
-            try { _ = string.Format(value, "a", "b", "c"); }
+            try { _ = string.Format(value, "a", "b", "c", "d", "e", "f"); }
             catch (FormatException) { broken.Add(key); }
         }
         Assert.True(broken.Count == 0, $"{code} breaks the placeholders of: " + string.Join(" | ", broken));

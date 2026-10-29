@@ -20,5 +20,7 @@
   <SolidColorBrush x:Key="GridLine" Color="#40000000" />
   <SolidColorBrush x:Key="AntsDark" Color="#000000" />
   <SolidColorBrush x:Key="AntsLight" Color="#FFFFFF" />
+  <!-- Behind lesson illustrations: mid-light so black outlines and white highlights both show. -->
+  <SolidColorBrush x:Key="ArtBackdrop" Color="#A9B1BC" />
   <Color x:Key="SystemAccentColor">#4ADE80</Color>
 </ResourceDictionary>

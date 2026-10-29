@@ -152,6 +152,93 @@ public class UiAuditTests
         }
     }
 
+    /// <summary>
+    /// Learn pixel art on screen: the main window practising an exercise (lesson bar with a check result) and the Learn
+    /// window on a lesson with every kind of block.
+    /// </summary>
+    private static (MainWindow Main, Learn.LearnWindow Learn) LearnScene()
+    {
+        var w = FullWindow();
+        var lesson = Core.Learn.LessonLibrary.Ids.First(i => i.StartsWith("05-"));
+        Assert.True(w.StartPracticeAsync(lesson).Result);
+        w.CheckPractice();
+        var learn = w.ShowLearn(lesson);
+        Harness.Pump();
+        return (w, learn);
+    }
+
+    [AvaloniaFact]
+    public void Learn_AllTexts_GoThroughLoc()
+    {
+        var en = JsonSerializer.Deserialize<Dictionary<string, string>>(L.ReadEmbedded("en")!)!;
+        L.UseTable(en.Where(kv => !kv.Key.StartsWith('_')).ToDictionary(kv => kv.Key, kv => "⟦" + kv.Value + "⟧"), "test");
+        MainWindow? w = null;
+        try
+        {
+            var (main, learn) = LearnScene();
+            w = main;
+            var bad = new List<string>();
+            int seen = 0;
+            foreach (var root in new StyledElement[] { learn, main.LessonBar })
+                foreach (var e in Everything(root))
+                {
+                    if (Kept(e)) continue;
+                    foreach (var (text, where) in Texts(e))
+                    {
+                        if (!text.Any(char.IsLetter)) continue;
+                        seen++;
+                        if (!text.Contains('⟦')) bad.Add($"{where}: \"{text}\"");
+                    }
+                }
+            Assert.True(seen > 15, $"only {seen} texts found");
+            Assert.True(bad.Count == 0, "Texts that don't go through L.T:\n" + string.Join("\n", bad.Distinct()));
+            learn.Close();
+        }
+        finally
+        {
+            L.Load("en");
+            if (w != null) { w.Session.History.MarkSaved(); w.Close(); }
+        }
+    }
+
+    [AvaloniaTheory]
+    [InlineData("dark")]
+    [InlineData("light")]
+    public void Learn_Contrast_AtLeast4_5(string theme)
+    {
+        var app = (App)Application.Current!;
+        app.ApplyTheme(theme == "light");
+        MainWindow? w = null;
+        try
+        {
+            var (main, learn) = LearnScene();
+            w = main;
+            learn.CaptureRenderedFrame()?.Save(Path.Combine(Path.GetTempPath(), $"easypixel_snap_learn_{theme}.png"));
+            main.CaptureRenderedFrame()?.Save(Path.Combine(Path.GetTempPath(), $"easypixel_snap_lessonbar_{theme}.png"));
+            var bad = new List<string>();
+            int checkedTexts = 0;
+            foreach (var root in new Visual[] { learn, main.LessonBar })
+                foreach (var tb in root.GetVisualDescendants().OfType<TextBlock>())
+                {
+                    if (string.IsNullOrWhiteSpace(tb.Text) || !tb.IsEffectivelyVisible || !tb.IsEffectivelyEnabled || tb.Bounds.Width <= 0) continue;
+                    if (tb.Foreground is not ISolidColorBrush fg) continue;
+                    var bg = Background(tb);
+                    var text = Contrast.Over(fg.Color, fg.Opacity * tb.Opacity, bg);
+                    double ratio = Contrast.Ratio(text, bg);
+                    checkedTexts++;
+                    if (ratio < 4.5) bad.Add($"\"{tb.Text}\" {text} on {bg}: {ratio:0.00}");
+                }
+            Assert.True(checkedTexts > 30, $"only {checkedTexts} texts measured");
+            Assert.True(bad.Count == 0, $"Texts under 4.5:1 ({theme}):\n" + string.Join("\n", bad.Distinct()));
+            learn.Close();
+        }
+        finally
+        {
+            if (w != null) { w.Session.History.MarkSaved(); w.Close(); }
+            app.ApplyTheme(false);
+        }
+    }
+
     /// <summary>The colour behind a visual: the backgrounds of its ancestors, the farthest opaque one first, blended down.</summary>
     private static Color Background(Visual v)
     {

@@ -231,7 +231,7 @@ public class LearnContentTests
     {
         var e = Exercises.Get("first-sprite");
         var s = e.CreateDocument();
-        Assert.True(s.Cels[(s.Layers[0], 0)].Image.Pixels.Any(p => p != 0)); // the guide has marks
+        Assert.Contains(s.Cels[(s.Layers[0], 0)].Image.Pixels, p => p != 0); // the guide has marks
         var input = Exercise.Input(s);
         Assert.All(input.Work.Pixels, p => Assert.Equal(0u, p));
         Assert.Contains(input.Guide.Pixels, p => p != 0);

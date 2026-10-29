@@ -58,6 +58,103 @@ dotnet run --project src/EasyPixel
 | `docs/release-notes/vX.Y.Z.md` | player-facing release notes, passed to `Publish-Release.ps1 -NotesFile` |
 | `tests/EasyPixel.Tests` | portable tests of Core |
 | `tests/EasyPixel.UiTests` | headless UI tests (`InternalsVisibleTo` from the app) |
+| `src/EasyPixel.Core/Learn` | Learn pixel art (see *Lessons*): `Lessons/<lang>/NN-slug.md` (embedded), `LessonParser`, `LessonLibrary` (language → English fallback), `LessonArt` (illustrations), `ArtCanvas` + `Pal` (drawing helpers, the 16 lesson colours), `Exercises` + `Exercise` (practice documents), `Checks.cs` (`Rules`, the check rule library) |
+| `src/EasyPixel/Learn`, `MainWindow.Learn.cs` | `LearnWindow` (Help → Learn pixel art: lesson list + page), `ArtView` (an illustration at integer zoom, animated ones play), `LessonStrip` (the bar above the canvas during an exercise: goal, self-checks, Check, Back to lesson); progress in `Settings.LessonsRead` / `LessonsPassed` |
+
+## Lessons
+
+Help → **Learn pixel art** opens the Learn window. Each lesson is a page of text with illustrations drawn by EasyPixel
+itself and a **Try it** exercise that opens a practice document in the editor; **Check** judges it with simple rules plus
+self-check items the person ticks. Design: `docs/superpowers/specs/2026-10-29-learn-pixel-art-design.md`.
+
+### Writing a lesson
+
+One file per lesson and language: `src/EasyPixel.Core/Learn/Lessons/<lang>/NN-slug.md` (e.g. `en/07-anti-aliasing.md`).
+The file name (without `.md`) is the lesson id, the same in every language; `NN` sets the order and the number shown.
+English is the master list: every lesson needs `en/`; another language (`pt-BR/`, `de/`… the folder name is the `L`
+language code) shows its own file when there is one and otherwise English with the note "This lesson isn't translated
+yet". New files are embedded automatically (`EasyPixel.Core.csproj` globs `Learn/Lessons/**/*.md`). UTF-8, no BOM.
+
+```text
+# Anti-aliasing                         ← title (the first "# " line)
+group: fundamentals                     ← or "styles"; metadata lines go right after the title
+summary: One line for the lesson list.
+
+## A section heading                    ← "##" (or "###")
+A paragraph. Lines join until a blank line. **Bold** works inline.
+
+[[example:jaggies-bad]] Caption under the picture
+[[example:jaggies-good|Another caption]]   ← consecutive examples sit side by side
+> A tip (consecutive ">" lines join).
+! A common mistake (consecutive "!" lines join).
+- a bullet item ("-", "*" or "+"; an indented next line continues it)
+1. a numbered item (a list is numbered when its first item is)
+<!-- a comment, ignored (may span lines) -->
+
+## Try it
+[[exercise:clean-lines]]               ← names an Exercises entry; everything until the next heading is the goal
+Goal text, as paragraphs or bullets.
+- [ ] A self-check item the person ticks before Check passes.
+```
+
+The parser never throws: an unknown marker (`[[foo:x]]`), an empty one or an unknown `group` is skipped and listed in
+`Lesson.Warnings`. `LearnContentTests` fails when a shipped lesson file (any language) has a warning, a missing title or
+summary, no illustration, no Try it, an `[[example:id]]` that `LessonArt` doesn't have or an `[[exercise:id]]` that
+`Exercises` doesn't have; a translation must keep the English file's group, exercise and number of self-checks. Written
+lessons (01, 02, 03, 05, 06, 13) also need 600+ words, a tip, a common mistake and 3+ illustrations — hold new lessons to
+the same bar. Teach like a tutor: concrete numbers, why, common mistakes, then practice. Refer to real menu paths
+(View → Tiled preview, Sprite → Outline, Frame → Preview window, the Pencil's Pixel perfect option).
+
+### Illustrations (`LessonArt`)
+
+Add an entry in `LessonArt.Build()`: `Add("id", zoom, width, height, c => …)` draws on an `ArtCanvas` (RGBA):
+`Px`, `Line` (pixel-perfect by default), `Rect`/`Ellipse` (filled or not), `Rows(x, y, "..kk..", …)` (one character per
+pixel: the letters of `Pal.Letters` — k black, e ebony, n navy, d slate, s silver, w white, p plum, r red, o orange,
+y yellow, l lime, g green, t teal, b blue, c sky, a aqua; `.` or space = untouched; an optional legend overrides
+letters), `Sphere` (a ball shaded from a light direction with a dark→light ramp), `Outline`, `SelOut` (outline pixels
+pick a colour from what they touch), `Shade` (recolour by a function), `Copy`, and `NewFrame(copy, durationMs)` for an
+animation (several frames play in the lesson). Use the `Pal` colours, keep good/bad pairs the same size and drawn by the
+same code with one difference, and make the zoom so the picture is about 100–300 px wide. Ids in use:
+`potion-16/-1x/-2x`, `canvas-sizes`, `mixels-bad/-good`, `orphans-bad/-good`, `jaggies-bad/-good`, `slopes`,
+`doubles-bad/-good`, `curve-bad/-good`, `silhouette-good/-bad`, `shape-language`, `pillow-shading`, `light-source`,
+`cast-shadow`, `ramp-flat`, `ramp-hue-shift`, `cube-faces`, `outline-none/-black/-colored/-selout`, `inner-lines`,
+`dither-checker`, `dither-gradient`, `idle-bob`, `walk-4frame`, `tile-seam-bad/-good`, `tile-repeat-bad`, `tile-single`,
+`tileset-edges`, `parallax-layers` (`dither-*`, `idle-bob`, `walk-4frame` and `parallax-layers` aren't used yet: they were drawn for lessons 8, 10, 11 and 14). To look at them as
+PNGs: set `EASYPIXEL_ART_DUMP=<folder>` and run `dotnet test --filter EveryIllustration_Builds`.
+`LearnContentTests.Illustrations_AgreeWithTheRules` checks that good/bad pairs pass/fail the matching rule; add a line
+there for a new pair.
+
+### Exercises and check rules
+
+Add an `Exercise` to `Exercises.All`: `Id`, `Width`/`Height`, `Frames` (start frame count), `Guide` (reference marks on
+the locked "Guide" layer, drawn at `GuideOpacity`), `Start` (what the "Drawing" layer starts with, e.g. a shape to
+outline), `Palette` (the colours offered) and `Rules`. `Exercise.Check(sprite)` flattens every layer except layers
+named "Guide" (one image per frame) and runs each rule; a `CheckResult` passes when every `CheckLine` does. The goal
+text and the self-check items live in the lesson file, so they are translated with it. The rule library (`Rules.*`):
+
+| Rule | Passes when |
+|---|---|
+| `NotEmpty(min)` | every frame has at least `min` opaque pixels |
+| `MaxColors(n)` / `MinColors(n)` | distinct opaque colours (all frames) ≤ n / ≥ n |
+| `KeepsMargin(m)` | nothing within `m` px of the canvas border |
+| `FillRatio(min, max)` | opaque share of the canvas is within bounds (silhouette readable, not a blob) |
+| `MaxParts(n)` | at most `n` 8-connected pieces (no stray pixels) |
+| `NoClumps()` | no 2×2 opaque block (lines one pixel thick) |
+| `PixelPerfect(allowed)` | no L-shaped double corners in lines (square corners of straight runs are fine) |
+| `HasOutline(color?, share)` | ≥ `share` of the edge pixels (touching transparency) are `color`, or darker than the inside pixel next to them (black, coloured and sel-out all pass) |
+| `LightFrom(dir)` | inside pixels on the side facing `dir` are brighter on average than the far side (pillow shading and reversed light fail with their own message) |
+| `FullyOpaque()` | no transparent pixel |
+| `Seamless(h, v)` | the wrap-around step (last column → first, last row → first) is no harsher than the tile's own texture |
+| `HasFrames(n, movement)` | ≥ n frames, each different from the one before |
+| `RampOrdered(points, minStep)` | the colours at the points get brighter by ≥ `minStep` (0–255) each |
+| `HueShift(dark, light, deg)` | the light swatch's hue is nearer yellow than the dark one's by ≥ `deg` degrees |
+| `UsesDither(min)` | at least `min` 2×2 checkerboard cells of two colours |
+
+A new rule derives from `CheckRule` (in `Checks.cs`) and writes every message through `Say(true|false, "English with
+{0}", args…)` — `tools/Update-Strings.sh` and `LangTests` collect those literals, so after adding one run the script and
+translate the new keys in every `Lang/<code>.json`. Point at a place when a rule fails ("e.g. at {2}, {3}"). Each rule
+needs a passing and a failing fixture in `LearnRuleTests`, and each exercise a passing answer in
+`LearnContentTests.EveryExercise_HasAPassingAnswer` (a fresh document must fail its check).
 
 ## Releasing
 

@@ -37,6 +37,9 @@ public sealed class Settings
     public int OnionAfter { get; set; } = 1;
     public int OnionOpacity { get; set; } = 68;
     public bool OnionTint { get; set; }
+    /// <summary>Learn pixel art: the lessons opened (ids) and the lessons whose exercise passed.</summary>
+    public List<string> LessonsRead { get; set; } = new();
+    public List<string> LessonsPassed { get; set; } = new();
     /// <summary>Recently opened or saved files, newest first.</summary>
     public List<string> Recent { get; set; } = new();
 
