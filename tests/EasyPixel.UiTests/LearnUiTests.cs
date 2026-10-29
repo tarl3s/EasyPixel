@@ -57,6 +57,29 @@ public class LearnUiTests
         w.Close();
     }
 
+    /// <summary>Every lesson opens with its pictures and a Try it, and its exercise opens and checks (failing while empty).</summary>
+    [AvaloniaFact]
+    public void EveryLesson_Opens_AndItsExerciseChecks()
+    {
+        using var h = new Harness();
+        var w = h.Window.ShowLearn();
+        foreach (var id in LessonLibrary.Ids)
+        {
+            Click(w.LessonButtons[id]);
+            Assert.Equal(id, w.Current!.Lesson.Id);
+            Assert.True(w.Pictures.Count >= 3, id + " shows fewer than 3 pictures");
+            Assert.NotNull(w.TryItButton);
+        }
+        w.Close();
+        foreach (var id in LessonLibrary.Ids)
+        {
+            Assert.True(h.Window.StartPracticeAsync(id).Result, id);
+            Assert.Equal(h.Doc.Layers[1], h.Session.Layer);
+            Assert.False(h.Window.CheckPractice(), id + " passes before anything is drawn");
+            Assert.NotEmpty(h.Window.LessonBar.ResultLines);
+        }
+    }
+
     [AvaloniaFact]
     public void AnimatedIllustration_StepsThroughItsFrames()
     {

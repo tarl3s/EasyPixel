@@ -15,8 +15,9 @@ public class LearnContentTests
     public void Library_HasTheWrittenLessons_InOrder()
     {
         var ids = LessonLibrary.Ids;
-        foreach (var n in new[] { "01-", "02-", "03-", "05-", "06-", "13-" })
-            Assert.Contains(ids, id => id.StartsWith(n, StringComparison.Ordinal));
+        Assert.Equal(18, ids.Count); // the whole curriculum (docs/superpowers/specs/2026-10-29-learn-pixel-art-design.md)
+        for (int n = 1; n <= 18; n++)
+            Assert.Contains(ids, id => id.StartsWith(n.ToString("00") + "-", StringComparison.Ordinal));
         Assert.Equal(ids.OrderBy(i => i, StringComparer.Ordinal), ids);
         Assert.Contains("en", LessonLibrary.Languages);
     }
@@ -63,9 +64,9 @@ public class LearnContentTests
     }
 
     [Fact]
-    public void WrittenLessons_AreSubstantial()
+    public void EveryLesson_IsSubstantial()
     {
-        foreach (var id in LessonLibrary.Ids.Where(i => i[..3] is "01-" or "02-" or "03-" or "05-" or "06-" or "13-"))
+        foreach (var id in LessonLibrary.Ids)
         {
             var l = LessonLibrary.Load(id, "en").Lesson;
             int words = l.Blocks.Sum(b => b switch

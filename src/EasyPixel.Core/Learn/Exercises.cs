@@ -114,7 +114,7 @@ public static class Exercises
         new()
         {
             Id = "hero-sprite", Width = 24, Height = 32,
-            Guide = g => { g.Line(0, 30, 23, 30, Faint); for (int x = 0; x < 24; x += 2) g.Px(x, 14, Faint); },
+            Guide = g => { g.Line(0, 30, 23, 30, Faint); for (int x = 0; x < 24; x += 2) g.Px(x, 17, Faint); }, // the floor, and about where a chibi's chin goes
             Rules = new[] { Rules.NotEmpty(120), Rules.MinColors(3), Rules.MaxColors(8), Rules.HasOutline(), Rules.MaxParts(2), Rules.OnFloor(29), Rules.KeepsMargin(1) },
             Palette = new[] { Pal.Black, Pal.Plum, Pal.Red, Pal.Orange, Pal.Yellow, Pal.White, Pal.Navy, Pal.Blue, Pal.Sky, Pal.Ebony, Pal.Teal, Pal.Green },
         },
