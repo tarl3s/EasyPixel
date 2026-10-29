@@ -480,5 +480,10 @@
   "{0} anti-aliasing pixels, all on the steps of the curve.": "{0} 個反鋸齒像素，全都在曲線的階梯上。",
   "{0} matching copies of the same detail: the repetition reads as one design.": "同一細節有 {0} 個相同副本：重複看起來是統一的設計。",
   "{0} tag(s) so far: name each animation with a tag (pick its frames, then Frame → New tag from the picked frames…), at least {1}.": "目前有 {0} 個標籤：用標籤替每個動畫命名（選取它的影格，然後 影格 → 用選取的影格新增標籤…），至少 {1} 個。",
-  "{0} tags, and every frame belongs to one.": "{0} 個標籤，每個影格都屬於其中一個。"
+  "{0} tags, and every frame belongs to one.": "{0} 個標籤，每個影格都屬於其中一個。",
+  "How do you want to open {0}?": "要如何開啟 {0}？",
+  "Open as its own sprite": "作為獨立的精靈開啟",
+  "Place it in this canvas": "放到此畫布中",
+  "Place file": "放置檔案",
+  "Placed {0}: move it, then press Enter": "已放置 {0}：移動它，然後按 Enter"
 }

@@ -480,5 +480,10 @@
   "{0} anti-aliasing pixels, all on the steps of the curve.": "{0} píxeis de anti-aliasing, todos nos degraus da curva.",
   "{0} matching copies of the same detail: the repetition reads as one design.": "{0} cópias iguais do mesmo detalhe: a repetição lê-se como um só desenho.",
   "{0} tag(s) so far: name each animation with a tag (pick its frames, then Frame → New tag from the picked frames…), at least {1}.": "{0} etiqueta(s) até agora: dê nome a cada animação com uma etiqueta (escolha os fotogramas e use Fotograma → Nova etiqueta com os fotogramas escolhidos…), pelo menos {1}.",
-  "{0} tags, and every frame belongs to one.": "{0} etiquetas, e cada fotograma pertence a uma."
+  "{0} tags, and every frame belongs to one.": "{0} etiquetas, e cada fotograma pertence a uma.",
+  "How do you want to open {0}?": "Como quer abrir {0}?",
+  "Open as its own sprite": "Abrir como sprite próprio",
+  "Place it in this canvas": "Colocar nesta tela",
+  "Place file": "Colocar ficheiro",
+  "Placed {0}: move it, then press Enter": "{0} colocado: mova-o e prima Enter"
 }

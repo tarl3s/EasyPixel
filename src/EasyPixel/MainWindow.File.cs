@@ -59,11 +59,37 @@ public partial class MainWindow
 
     internal async Task OpenAsync()
     {
-        if (!await ConfirmDiscardAsync()) return;
         var readable = FormatRegistry.All.Where(f => f.CanRead).ToList();
         var types = new List<FileType> { new(L.T("All supported files"), readable.SelectMany(f => f.Extensions).ToArray()) };
         types.AddRange(readable.Select(f => new FileType(L.T(f.Name), f.Extensions)));
-        if (await Dialogs.PickOpenFile(types) is { } path) await LoadAsync(path);
+        if (await Dialogs.PickOpenFile(types) is { } path) await OpenOrPlaceAsync(path);
+    }
+
+    /// <summary>
+    /// File → Open and Recent: asks whether the file becomes the document (the current one is offered to be saved) or
+    /// is placed in this canvas — its current picture pasted as floating pixels, e.g. a 32x32 drawing moved into a
+    /// new 64x64 sprite.
+    /// </summary>
+    internal async Task OpenOrPlaceAsync(string path)
+    {
+        var choice = await Dialogs.Choose(L.T("Open"), L.F("How do you want to open {0}?", Path.GetFileName(path)),
+            new[] { L.T("Open as its own sprite"), L.T("Place it in this canvas") });
+        if (choice == 0) await OpenPathAsync(path);
+        else if (choice == 1) await PlaceFileAsync(path);
+    }
+
+    /// <summary>Reads a file and pastes its first frame (all visible layers) into the current layer, floating.</summary>
+    internal async Task<bool> PlaceFileAsync(string path)
+    {
+        if (await ReadAsync(path) is not { } read) return false;
+        var src = read.Sprite;
+        var flat = new Image(src.Width, src.Height);
+        Compositor.Flatten(src, 0, flat, new PixelRect(0, 0, src.Width, src.Height));
+        if (!PlaceFloating(flat, L.N("Place file"))) return false;
+        ShowStatus(L.F("Placed {0}: move it, then press Enter", Path.GetFileName(path)));
+        if (read.Warnings.Count > 0)
+            await Dialogs.Tell(L.F("{0} was opened, with these notes:\n\n{1}", Path.GetFileName(path), Bullets(read.Warnings)));
+        return true;
     }
 
     /// <summary>Opens a file (from Recent, the command line or a test), asking to save the current one first.</summary>
@@ -75,31 +101,37 @@ public partial class MainWindow
 
     private async Task<bool> LoadAsync(string path)
     {
+        if (await ReadAsync(path) is not { } read) return false;
+        var name = Path.GetFileName(path);
+        SetSession(new EditorSession(read.Sprite, Path.GetFullPath(path)));
+        RememberRecent(path);
+        ShowStatus(L.F("Opened {0}", name));
+        if (read.Warnings.Count > 0)
+            await Dialogs.Tell(L.F("{0} was opened, with these notes:\n\n{1}", name, Bullets(read.Warnings)));
+        return true;
+    }
+
+    /// <summary>Reads a sprite file; any problem is told to the person and gives null.</summary>
+    private async Task<(Sprite Sprite, List<string> Warnings)?> ReadAsync(string path)
+    {
         var name = Path.GetFileName(path);
         var format = FormatRegistry.ForPath(path);
         if (format == null || !format.CanRead)
         {
             await Dialogs.Tell(L.F("EasyPixel can't open this kind of file: {0}", name));
-            return false;
+            return null;
         }
         var warnings = new List<string>();
-        Sprite sprite;
         try
         {
             using var stream = File.OpenRead(path);
-            sprite = format.Read(stream, warnings);
+            return (format.Read(stream, warnings), warnings);
         }
         catch (Exception ex) // any reader error (broken or unexpected file) is reported, never a crash
         {
             await Dialogs.Tell(L.F("{0} could not be opened:\n{1}", name, ex.Message));
-            return false;
+            return null;
         }
-        SetSession(new EditorSession(sprite, Path.GetFullPath(path)));
-        RememberRecent(path);
-        ShowStatus(L.F("Opened {0}", name));
-        if (warnings.Count > 0)
-            await Dialogs.Tell(L.F("{0} was opened, with these notes:\n\n{1}", name, Bullets(warnings)));
-        return true;
     }
 
     /// <summary>
@@ -296,11 +328,11 @@ public partial class MainWindow
         foreach (var p in App.Settings.Recent)
         {
             // A TextBlock, not a string: a string header would turn "_" in the path into an access key.
-            var item = new MenuItem { Header = new TextBlock { Text = p } };
+            var item = L.Keep(new MenuItem { Header = new TextBlock { Text = p } }); // a file path, never translated
             var path = p;
             item.Click += async (_, _) =>
             {
-                if (File.Exists(path)) { await OpenPathAsync(path); return; }
+                if (File.Exists(path)) { await OpenOrPlaceAsync(path); return; }
                 App.Settings.Recent.Remove(path);
                 App.Settings.Save();
                 BuildRecentMenu();

@@ -480,5 +480,10 @@
   "{0} anti-aliasing pixels, all on the steps of the curve.": "アンチエイリアスピクセル {0} 個、すべて曲線の段にあります。",
   "{0} matching copies of the same detail: the repetition reads as one design.": "同じディテールのコピーが {0} 個。繰り返しが1つのデザインとして読めます。",
   "{0} tag(s) so far: name each animation with a tag (pick its frames, then Frame → New tag from the picked frames…), at least {1}.": "今のタグは {0} 個です。各アニメーションにタグで名前を付けましょう（フレームを選んで フレーム → 選んだフレームから新しいタグ…）。少なくとも {1} 個。",
-  "{0} tags, and every frame belongs to one.": "タグ {0} 個。すべてのフレームがいずれかに属しています。"
+  "{0} tags, and every frame belongs to one.": "タグ {0} 個。すべてのフレームがいずれかに属しています。",
+  "How do you want to open {0}?": "{0} をどのように開きますか？",
+  "Open as its own sprite": "別のスプライトとして開く",
+  "Place it in this canvas": "このキャンバスに配置",
+  "Place file": "ファイルを配置",
+  "Placed {0}: move it, then press Enter": "{0} を配置しました：移動して Enter を押してください"
 }

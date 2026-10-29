@@ -135,7 +135,16 @@ public partial class MainWindow
     {
         var img = await SystemClipboardPicture() ?? InternalClipboard;
         if (img == null) { ShowStatus(L.T("The clipboard has no picture")); return; }
-        if (Session.WhyNotEditable() is { } why) { ShowStatus(why); return; }
+        PlaceFloating(img, "Paste");
+    }
+
+    /// <summary>
+    /// Puts an RGBA picture on the current layer as floating pixels (centred, or at the selection), ready to be moved.
+    /// False when the layer can't be edited (the reason is shown).
+    /// </summary>
+    internal bool PlaceFloating(Image img, string editName)
+    {
+        if (Session.WhyNotEditable() is { } why) { ShowStatus(why); return false; }
         Session.DropFloating();
         var doc = Session.Doc;
         // Colours the picture adds to an indexed palette become part of the paste's undo step.
@@ -154,9 +163,10 @@ public partial class MainWindow
         int y = Session.Sel.IsEmpty ? (doc.Height - img.Height) / 2 : Session.Sel.Bounds.Y;
         var selectionBefore = Session.Sel;
         Session.Sel = Selectors.Rect(doc.Width, doc.Height, new PixelRect(x, y, img.Width, img.Height));
-        Session.BeginFloating(new Floating(pixels, x, y, clear), cel, before, "Paste", selectionBefore, paletteBefore, added);
+        Session.BeginFloating(new Floating(pixels, x, y, clear), cel, before, editName, selectionBefore, paletteBefore, added);
         Tools.Current = ToolKind.Move;
         UpdateTitle();
+        return true;
     }
 
     private async Task<Image?> SystemClipboardPicture()

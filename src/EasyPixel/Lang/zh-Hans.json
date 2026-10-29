@@ -480,5 +480,10 @@
   "{0} anti-aliasing pixels, all on the steps of the curve.": "{0} 个抗锯齿像素，全都在曲线的台阶上。",
   "{0} matching copies of the same detail: the repetition reads as one design.": "同一细节有 {0} 个相同副本：重复看起来是统一的设计。",
   "{0} tag(s) so far: name each animation with a tag (pick its frames, then Frame → New tag from the picked frames…), at least {1}.": "目前有 {0} 个标签：用标签给每个动画命名（选中它的帧，然后 帧 → 用选中的帧新建标签…），至少 {1} 个。",
-  "{0} tags, and every frame belongs to one.": "{0} 个标签，每一帧都属于其中一个。"
+  "{0} tags, and every frame belongs to one.": "{0} 个标签，每一帧都属于其中一个。",
+  "How do you want to open {0}?": "要如何打开 {0}？",
+  "Open as its own sprite": "作为单独的精灵打开",
+  "Place it in this canvas": "放到此画布中",
+  "Place file": "放置文件",
+  "Placed {0}: move it, then press Enter": "已放置 {0}：移动它，然后按 Enter"
 }
