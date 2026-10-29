@@ -69,6 +69,6 @@ Only with the owner's word; try the packaging first with `-DryRun -OutDir <scrat
 
 ## Last known green (v0.1.0)
 
-`dotnet test`: EasyPixel.Tests 227/227, EasyPixel.UiTests 80/80 (includes the contrast audit, the 9-language check and
+`dotnet test`: EasyPixel.Tests 241/241, EasyPixel.UiTests 92/92 (includes the contrast audit, the 9-language check and
 the end-to-end draw-animate-export test). `Publish-Release.ps1 -DryRun` builds a 37.7 MB zip with `EasyPixel.exe` +
 `easypixel-files.txt`, and the published exe starts.

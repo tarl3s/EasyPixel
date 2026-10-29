@@ -38,7 +38,7 @@ never touched. You can turn the check off in **Edit → Settings**.
 
 - **Drawing tools** — pencil, eraser, bucket (contiguous or global), line, rectangle, ellipse (filled or outline),
   shading, lighten / darken, dither brush, spray, eyedropper, mirror drawing (horizontal and vertical).
-- **Selection** — rectangle, ellipse, lasso, magic wand; move, cut, copy, paste, invert, select by colour.
+- **Selection** — rectangle, ellipse, lasso, magic wand; move, flip, rotate, scale, cut, copy, paste, invert, select by colour.
 - **Layers** — groups, opacity, blend modes, show / hide, lock, reorder.
 - **Animation** — frames with their own duration, a timeline, tags (named loops), loop / ping-pong / reverse playback,
   onion skin, a floating preview and a full-screen preview.
@@ -50,7 +50,7 @@ never touched. You can turn the check off in **Edit → Settings**.
 - **Files**
   - Open and save **`.aseprite` / `.ase`** (lossless for everything EasyPixel models; it warns before saving if the file
     holds something it doesn't), **`.piskel`** and EasyPixel's own **`.epx`**.
-  - Open PNG, animated GIF and sprite sheets (cut into frames).
+  - Open PNG and animated GIF; **File → Import sprite sheet…** cuts a PNG sheet into frames.
   - Export **PNG**, animated **GIF** and **sprite sheet** (PNG + JSON, horizontal / vertical / grid).
 - **9 languages** — English, German, Spanish, French, Japanese, Portuguese (Brazil and Portugal), Chinese (simplified and traditional).
 - **Dark and light themes.**
@@ -65,6 +65,11 @@ If you have both installed, they find each other:
 
 EasyPixel never writes into an EasyEngine project — it only reads one to import; the result comes back from
 EasyEngine's side.
+
+## Known limits
+
+- Every cel is stored at the full canvas size for now, so very large canvases with many frames use a lot of memory
+  (a 4096x4096 sprite needs about 64 MB per frame and layer).
 
 ## Roadmap
 

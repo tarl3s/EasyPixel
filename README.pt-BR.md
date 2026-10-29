@@ -38,7 +38,7 @@ são tocados. Dá para desligar a verificação em **Editar → Configurações*
 
 - **Ferramentas de desenho** — lápis, borracha, balde (contíguo ou global), linha, retângulo, elipse (cheia ou só contorno),
   sombreamento, clarear / escurecer, pincel de dither, spray, conta-gotas, desenho espelhado (horizontal e vertical).
-- **Seleção** — retângulo, elipse, laço, varinha mágica; mover, recortar, copiar, colar, inverter, selecionar por cor.
+- **Seleção** — retângulo, elipse, laço, varinha mágica; mover, espelhar, girar, redimensionar, recortar, copiar, colar, inverter, selecionar por cor.
 - **Camadas** — grupos, opacidade, modos de mesclagem, mostrar / ocultar, travar, reordenar.
 - **Animação** — quadros com duração própria, linha do tempo, tags (loops com nome), reprodução em loop / vai-e-volta / invertida,
   onion skin, janela de pré-visualização e pré-visualização em tela cheia.
@@ -50,7 +50,7 @@ são tocados. Dá para desligar a verificação em **Editar → Configurações*
 - **Arquivos**
   - Abre e salva **`.aseprite` / `.ase`** (sem perdas para tudo que o EasyPixel modela; avisa antes de salvar se o arquivo tiver
     algo que ele não entende), **`.piskel`** e o formato próprio **`.epx`**.
-  - Abre PNG, GIF animado e sprite sheets (cortadas em quadros).
+  - Abre PNG e GIF animado; **Arquivo → Importar sprite sheet…** corta uma sprite sheet PNG em quadros.
   - Exporta **PNG**, **GIF** animado e **sprite sheet** (PNG + JSON, horizontal / vertical / grade).
 - **9 idiomas** — inglês, alemão, espanhol, francês, japonês, português (Brasil e Portugal), chinês (simplificado e tradicional).
 - **Temas escuro e claro.**
@@ -64,6 +64,11 @@ Com os dois instalados, eles se encontram sozinhos:
 - Na janela **Animações** da EasyEngine: **Importar do EasyPixel** traz o resultado de volta.
 
 O EasyPixel nunca escreve dentro de um projeto da EasyEngine — só lê para importar; o resultado volta pelo lado da EasyEngine.
+
+## Limites conhecidos
+
+- Por enquanto cada cel guarda a tela inteira, então telas muito grandes com muitos quadros usam bastante memória
+  (um sprite 4096x4096 precisa de uns 64 MB por quadro e camada).
 
 ## Roteiro
 
