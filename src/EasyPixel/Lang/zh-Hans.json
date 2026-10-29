@@ -485,5 +485,6 @@
   "Open as its own sprite": "作为单独的精灵打开",
   "Place it in this canvas": "放到此画布中",
   "Place file": "放置文件",
-  "Placed {0}: move it, then press Enter": "已放置 {0}：移动它，然后按 Enter"
+  "Placed {0}: move it, then press Enter": "已放置 {0}：移动它，然后按 Enter",
+  "Resize": "调整大小"
 }

@@ -99,6 +99,22 @@ public sealed class Floating
         Y += (h - w) / 2;
     }
 
+    /// <summary>Scales the pixels (nearest neighbour) to fill <paramref name="r"/>.</summary>
+    public void ScaleTo(PixelRect r)
+    {
+        Pixels = Transform.ScaleNearest(Pixels, Math.Max(1, r.W), Math.Max(1, r.H));
+        X = r.X;
+        Y = r.Y;
+    }
+
+    /// <summary>Puts back pixels and a place kept from before (a resize being dragged starts from the original each time).</summary>
+    public void Restore(Image pixels, int x, int y)
+    {
+        Pixels = pixels;
+        X = x;
+        Y = y;
+    }
+
     /// <summary>Scales the pixels to <paramref name="w"/> x <paramref name="h"/> (nearest neighbour) around their centre.</summary>
     public void Scale(int w, int h)
     {

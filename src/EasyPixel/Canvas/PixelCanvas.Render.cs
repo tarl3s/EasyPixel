@@ -40,6 +40,7 @@ public sealed partial class PixelCanvas
             if (ShowTileGrid) DrawTileGrid(ctx, vis);
         }
         DrawSelection(ctx, bounds);
+        DrawHandles(ctx);
         DrawToolOverlay(ctx);
         DrawMirrorAxes(ctx, page);
     }

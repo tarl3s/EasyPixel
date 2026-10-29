@@ -485,5 +485,6 @@
   "Open as its own sprite": "別のスプライトとして開く",
   "Place it in this canvas": "このキャンバスに配置",
   "Place file": "ファイルを配置",
-  "Placed {0}: move it, then press Enter": "{0} を配置しました：移動して Enter を押してください"
+  "Placed {0}: move it, then press Enter": "{0} を配置しました：移動して Enter を押してください",
+  "Resize": "サイズ変更"
 }

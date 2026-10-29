@@ -485,5 +485,6 @@
   "Open as its own sprite": "Als eigenes Sprite öffnen",
   "Place it in this canvas": "In diese Leinwand einfügen",
   "Place file": "Datei einfügen",
-  "Placed {0}: move it, then press Enter": "{0} eingefügt: verschieben, dann Enter drücken"
+  "Placed {0}: move it, then press Enter": "{0} eingefügt: verschieben, dann Enter drücken",
+  "Resize": "Größe ändern"
 }

@@ -485,5 +485,6 @@
   "Open as its own sprite": "Abrir como sprite próprio",
   "Place it in this canvas": "Colocar neste canvas",
   "Place file": "Colocar arquivo",
-  "Placed {0}: move it, then press Enter": "{0} colocado: mova e aperte Enter"
+  "Placed {0}: move it, then press Enter": "{0} colocado: mova e aperte Enter",
+  "Resize": "Redimensionar"
 }

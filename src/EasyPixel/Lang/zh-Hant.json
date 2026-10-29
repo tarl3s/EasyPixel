@@ -485,5 +485,6 @@
   "Open as its own sprite": "作為獨立的精靈開啟",
   "Place it in this canvas": "放到此畫布中",
   "Place file": "放置檔案",
-  "Placed {0}: move it, then press Enter": "已放置 {0}：移動它，然後按 Enter"
+  "Placed {0}: move it, then press Enter": "已放置 {0}：移動它，然後按 Enter",
+  "Resize": "調整大小"
 }

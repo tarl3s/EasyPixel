@@ -282,6 +282,13 @@ public sealed partial class PixelCanvas : Control
             return;
         }
         if (_ctx == null || _tools == null || _activeTool != null || !(props.IsLeftButtonPressed || props.IsRightButtonPressed)) return;
+        if (props.IsLeftButtonPressed && TryStartResize(pt.Position, e.KeyModifiers))
+        {
+            e.Pointer.Capture(this);
+            e.Handled = true;
+            InvalidateVisual();
+            return;
+        }
         var tool = _tools.CurrentTool;
         if (e.KeyModifiers.HasFlag(KeyModifiers.Alt) && ToolController.IsPaintTool(tool.Kind)) tool = _tools.Get(ToolKind.Eyedropper);
         _lastInput = Input(pt.Position, e.KeyModifiers, props.IsRightButtonPressed && !props.IsLeftButtonPressed);
@@ -304,6 +311,7 @@ public sealed partial class PixelCanvas : Control
             ViewChanged?.Invoke();
             return;
         }
+        UpdateHandleCursor(pos);
         var (x, y) = ScreenToSprite(pos);
         var hover = _s != null && _s.CanvasRect.Contains(x, y) ? (x, y) : ((int, int)?)null;
         if (hover != Hover) { Hover = hover; ViewChanged?.Invoke(); }
