@@ -7,14 +7,26 @@ public static class Quantize
     /// <summary>Median-cut palette of the visible (alpha &gt; 0) colours of an RGBA image, at most <paramref name="maxColors"/> entries.</summary>
     public static Palette MedianCut(Image img, int maxColors)
     {
-        maxColors = Math.Clamp(maxColors, 1, Palette.MaxColors);
         var counts = new Dictionary<uint, int>();
+        CountColors(img, counts);
+        return MedianCut(counts, maxColors);
+    }
+
+    /// <summary>Adds how many times each visible (alpha &gt; 0) colour of an RGBA image appears to <paramref name="counts"/>.</summary>
+    public static void CountColors(Image img, Dictionary<uint, int> counts)
+    {
         foreach (uint p in img.Pixels)
         {
             if ((p >> 24) == 0) continue;
             counts.TryGetValue(p, out int n);
             counts[p] = n + 1;
         }
+    }
+
+    /// <summary>Median-cut palette of colours counted with <see cref="CountColors"/> (packed RGBA → count), at most <paramref name="maxColors"/> entries.</summary>
+    public static Palette MedianCut(IReadOnlyDictionary<uint, int> counts, int maxColors)
+    {
+        maxColors = Math.Clamp(maxColors, 1, Palette.MaxColors);
         var pal = new Palette();
         if (counts.Count == 0) return pal;
 

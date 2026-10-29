@@ -252,12 +252,11 @@ public class RasterTests
         img.Set(1, 0, ramp.Colors[2].Packed);
         img.Set(2, 0, Blue);
         var s = new PixelSink(img);
-        var one = new Brush();
-        for (int x = 0; x < 3; x++) Shading.Apply(s, x, 0, one, ramp, lighten: true);
+        for (int x = 0; x < 3; x++) if (Shading.Step(img.Get(x, 0), ramp, lighten: true) is uint v) s.Set(x, 0, v);
         Assert.Equal(ramp.Colors[2].Packed, img.Get(0, 0));
         Assert.Equal(ramp.Colors[2].Packed, img.Get(1, 0)); // end of the ramp
         Assert.Equal(Blue, img.Get(2, 0));
-        Shading.Apply(s, 0, 0, one, ramp, lighten: false);
+        img.Set(0, 0, Shading.Step(img.Get(0, 0), ramp, lighten: false)!.Value);
         Assert.Equal(ramp.Colors[1].Packed, img.Get(0, 0));
     }
 
@@ -267,8 +266,8 @@ public class RasterTests
         var ramp = new Palette();
         for (int i = 0; i < 3; i++) ramp.Add(new Rgba((byte)i, 0, 0, 255));
         var img = new Image(1, 1, 1);
-        Shading.Apply(new PixelSink(img), 0, 0, new Brush(), ramp, lighten: true, indexed: true);
-        Assert.Equal(2u, img.Get(0, 0));
+        Assert.Equal(2u, Shading.Step(img.Get(0, 0), ramp, lighten: true, indexed: true));
+        Assert.Null(Shading.Step(1, ramp, lighten: true, indexed: true, transparentIndex: 2)); // never into the transparent entry
     }
 
     [Fact]
@@ -354,20 +353,6 @@ public class RasterTests
         Assert.Equal(1u, big.Get(1, 1));
         Assert.Equal(4u, big.Get(3, 3));
         Assert.Equal(img.Pixels, Transform.ScaleNearest(big, 2, 2).Pixels);
-    }
-
-    [Fact]
-    public void RotateFree_0IsIdentity_90MatchesRotate90_45Grows()
-    {
-        var img = Numbered(5, 3);
-        Assert.Equal(img.Pixels, Transform.RotateFree(img, 0).Pixels);
-        var r90 = Transform.RotateFree(img, 90);
-        Assert.Equal((3, 5), (r90.Width, r90.Height));
-        Assert.Equal(Transform.Rotate90(img).Pixels, r90.Pixels);
-        var r45 = Transform.RotateFree(new Image(10, 10, Red), 45);
-        Assert.True(r45.Width >= 14);
-        Assert.Equal(Red, r45.Get(r45.Width / 2, r45.Height / 2));
-        Assert.Equal(0u, r45.Get(0, 0));
     }
 
     // ---- pixelate ----

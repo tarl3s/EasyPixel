@@ -66,8 +66,6 @@ public static class Compositor
         byte opacity = (byte)Math.Clamp((int)MathF.Round(layer.Opacity * Math.Clamp(cel.Opacity, 0f, 1f)), 0, 255);
         if (opacity == 0) return;
         bool indexed = s.Mode == ColorMode.Indexed;
-        var colors = s.Palette.Colors;
-        int transparent = s.Palette.TransparentIndex;
         var img = cel.Image;
         for (int y = r.Y; y < r.Bottom; y++)
         {
@@ -75,7 +73,7 @@ public static class Compositor
             for (int x = r.X; x < r.Right; x++)
             {
                 uint p = img.Pixels[src + x];
-                if (indexed) p = (int)p == transparent || p >= (uint)colors.Count ? 0u : colors[(int)p].Packed;
+                if (indexed) p = s.Palette.ToPacked(p);
                 if ((p >> 24) != 0) dest.Pixels[dst + x] = BlendModes.Blend(layer.Blend, dest.Pixels[dst + x], p, opacity);
             }
         }

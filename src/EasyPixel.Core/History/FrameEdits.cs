@@ -29,7 +29,7 @@ public sealed class MoveFrameEdit : IEdit
         Move(s, from, to);
         foreach (var t in s.Tags)
         {
-            int a = Map(t.From, from, to), b = Map(t.To, from, to);
+            int a = Sprite.MoveIndex(t.From, from, to), b = Sprite.MoveIndex(t.To, from, to);
             (t.From, t.To) = (Math.Min(a, b), Math.Max(a, b));
         }
         return new MoveFrameEdit(from, to, before, TagsEdit.Take(s));
@@ -38,9 +38,6 @@ public sealed class MoveFrameEdit : IEdit
     public void Undo(Sprite s) { Move(s, _to, _from); TagsEdit.Restore(s, _tagsBefore); }
     public void Redo(Sprite s) { Move(s, _from, _to); TagsEdit.Restore(s, _tagsAfter); }
 
-    /// <summary>Where frame <paramref name="i"/> is after moving frame <paramref name="from"/> to <paramref name="to"/>.</summary>
-    private static int Map(int i, int from, int to) =>
-        i == from ? to : from < to ? (i > from && i <= to ? i - 1 : i) : (i >= to && i < from ? i + 1 : i);
 
     private static void Move(Sprite s, int from, int to)
     {
@@ -51,7 +48,7 @@ public sealed class MoveFrameEdit : IEdit
         int lo = Math.Min(from, to), hi = Math.Max(from, to);
         var moved = s.Cels.Where(kv => kv.Key.Item2 >= lo && kv.Key.Item2 <= hi).ToList();
         foreach (var kv in moved) s.Cels.Remove(kv.Key);
-        foreach (var kv in moved) s.Cels[(kv.Key.Item1, Map(kv.Key.Item2, from, to))] = kv.Value;
+        foreach (var kv in moved) s.Cels[(kv.Key.Item1, Sprite.MoveIndex(kv.Key.Item2, from, to))] = kv.Value;
     }
 }
 
@@ -96,10 +93,8 @@ public static class FrameOps
         {
             if (!copies.TryGetValue(kv.Value, out var c))
             {
-                var o = kv.Value;
-                c = new Cel(o.Image.Clone(), o.X, o.Y) { Opacity = o.Opacity };
-                foreach (var e in o.Extra) c.Extra[e.Key] = (byte[])e.Value.Clone();
-                copies[o] = c;
+                c = kv.Value.Clone();
+                copies[kv.Value] = c;
             }
             s.Cels[(kv.Key.Item1, index + 1)] = c;
         }

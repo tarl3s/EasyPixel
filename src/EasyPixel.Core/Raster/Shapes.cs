@@ -58,7 +58,8 @@ public static class Shapes
         for (int k = 0; k < n; k++) s.Set(pts[k].Item1, pts[k].Item2, color);
     }
 
-    internal static List<(int, int)> LinePoints(int x0, int y0, int x1, int y1)
+    /// <summary>Points of the straight line from (x0, y0) to (x1, y1) (Bresenham), both ends included.</summary>
+    public static List<(int X, int Y)> LinePoints(int x0, int y0, int x1, int y1)
     {
         var pts = new List<(int, int)>();
         int dx = Math.Abs(x1 - x0), dy = -Math.Abs(y1 - y0);

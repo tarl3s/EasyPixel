@@ -58,20 +58,4 @@ public abstract class Tool
     /// <summary>The pixel value a press draws with: the primary colour, or the secondary with the right button.</summary>
     protected static uint PaintValue(ToolContext c, ToolInput p) =>
         c.Session.Doc.ColorToPixel(p.Right ? c.Tools.Secondary : c.Tools.Primary);
-
-    /// <summary>Points of the straight line from (x0, y0) to (x1, y1), both ends included.</summary>
-    protected static List<(int X, int Y)> LinePoints(int x0, int y0, int x1, int y1)
-    {
-        var pts = new List<(int, int)>();
-        int dx = Math.Abs(x1 - x0), dy = -Math.Abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1, err = dx + dy;
-        while (true)
-        {
-            pts.Add((x0, y0));
-            if (x0 == x1 && y0 == y1) break;
-            int e2 = 2 * err;
-            if (e2 >= dy) { err += dy; x0 += sx; }
-            if (e2 <= dx) { err += dx; y0 += sy; }
-        }
-        return pts;
-    }
 }

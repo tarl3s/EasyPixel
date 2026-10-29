@@ -3,73 +3,7 @@ using EasyPixel.Core.Model;
 namespace EasyPixel.Core.History;
 
 // Each Perform() applies the change to the sprite and returns the edit to push.
-// Frame edits keep Tags consistent. Not covered: group children of a removed layer.
-
-public sealed class AddLayerEdit : IEdit
-{
-    private readonly Layer _layer;
-    private readonly int _index;
-    private List<(int Frame, Cel Cel)> _cels = new(); // cels drawn on the layer, held while the add is undone
-
-    private AddLayerEdit(Layer layer, int index) { _layer = layer; _index = index; }
-
-    public string Name => "Add layer";
-    public long Bytes => 64 + _cels.Sum(c => c.Cel.Image.Pixels.Length * 4L);
-
-    public static AddLayerEdit Perform(Sprite s, Layer layer, int index)
-    {
-        s.Layers.Insert(index, layer);
-        return new AddLayerEdit(layer, index);
-    }
-
-    public void Undo(Sprite s)
-    {
-        _cels = s.Cels.Where(kv => kv.Key.Item1 == _layer).Select(kv => (Frame: kv.Key.Item2, Cel: kv.Value)).ToList();
-        foreach (var c in _cels) s.Cels.Remove((_layer, c.Frame));
-        s.Layers.Remove(_layer);
-    }
-
-    public void Redo(Sprite s)
-    {
-        s.Layers.Insert(_index, _layer);
-        foreach (var c in _cels) s.Cels[(_layer, c.Frame)] = c.Cel;
-        _cels = new();
-    }
-}
-
-
-public sealed class RemoveLayerEdit : IEdit
-{
-    private readonly Layer _layer;
-    private readonly int _index;
-    private readonly List<(int Frame, Cel Cel)> _cels;
-
-    private RemoveLayerEdit(Layer layer, int index, List<(int Frame, Cel Cel)> cels) { _layer = layer; _index = index; _cels = cels; }
-
-    public string Name => "Remove layer";
-    public long Bytes => 64 + _cels.Sum(c => c.Cel.Image.Pixels.Length * 4L);
-
-    public static RemoveLayerEdit Perform(Sprite s, int index)
-    {
-        var layer = s.Layers[index];
-        var cels = s.Cels.Where(kv => kv.Key.Item1 == layer).Select(kv => (Frame: kv.Key.Item2, Cel: kv.Value)).ToList();
-        foreach (var c in cels) s.Cels.Remove((layer, c.Frame));
-        s.Layers.RemoveAt(index);
-        return new RemoveLayerEdit(layer, index, cels);
-    }
-
-    public void Undo(Sprite s)
-    {
-        s.Layers.Insert(_index, _layer);
-        foreach (var c in _cels) s.Cels[(_layer, c.Frame)] = c.Cel;
-    }
-
-    public void Redo(Sprite s)
-    {
-        foreach (var c in _cels) s.Cels.Remove((_layer, c.Frame));
-        s.Layers.Remove(_layer);
-    }
-}
+// Frame edits keep Tags consistent. Layer structure changes are LayerStructureEdit (LayerEdits.cs).
 
 public sealed class AddFrameEdit : IEdit
 {

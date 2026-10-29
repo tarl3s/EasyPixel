@@ -59,8 +59,6 @@ public sealed class PiskelFormat : ISpriteFormat
     private static string LayerJson(Sprite sp, Layer? layer, int frames)
     {
         var strip = new Image(sp.Width * frames, sp.Height);
-        var colors = sp.Palette.Colors;
-        int transparent = sp.Palette.TransparentIndex;
         if (layer != null)
             for (int f = 0; f < frames; f++)
             {
@@ -72,7 +70,7 @@ public sealed class PiskelFormat : ISpriteFormat
                         int dx = cel.X + x, dy = cel.Y + y;
                         if ((uint)dx >= (uint)sp.Width || (uint)dy >= (uint)sp.Height) continue;
                         uint p = cel.Image.Pixels[y * cel.Image.Width + x];
-                        if (sp.Mode == ColorMode.Indexed) p = (int)p == transparent || p >= (uint)colors.Count ? 0u : colors[(int)p].Packed;
+                        p = sp.ToPacked(p);
                         if (op < 1f) p = (p & 0x00FFFFFF) | (uint)MathF.Round((p >> 24) * op) << 24;
                         strip.Pixels[dy * strip.Width + f * sp.Width + dx] = p;
                     }

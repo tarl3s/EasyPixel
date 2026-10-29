@@ -194,7 +194,6 @@ public sealed partial class PixelCanvas : Control
         _floatBitmap?.Dispose();
         _floatBitmap = new WriteableBitmap(new PixelSize(img.Width, img.Height), new Vector(96, 96), PixelFormats.Rgba8888, AlphaFormat.Unpremul);
         var doc = _s!.Doc;
-        bool indexed = doc.Mode == ColorMode.Indexed;
         using (var fb = _floatBitmap.Lock())
         {
             unsafe
@@ -205,8 +204,7 @@ public sealed partial class PixelCanvas : Control
                     for (int x = 0; x < img.Width; x++)
                     {
                         uint v = img.Pixels[y * img.Width + x];
-                        row[x] = v == fs.Pixels.Clear ? 0 : !indexed ? v
-                            : (int)v == doc.Palette.TransparentIndex || v >= (uint)doc.Palette.Colors.Count ? 0 : doc.Palette.Colors[(int)v].Packed;
+                        row[x] = v == fs.Pixels.Clear ? 0 : doc.ToPacked(v);
                     }
                 }
             }

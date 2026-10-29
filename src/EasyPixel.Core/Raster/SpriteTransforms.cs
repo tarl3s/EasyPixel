@@ -71,10 +71,9 @@ public static class SpriteTransforms
         bool indexed = s.Mode == ColorMode.Indexed;
         if (indexed) s.ConvertMode(ColorMode.Rgba);
         var cels = Cels(s).ToList();
-        var all = new Image(1, Math.Max(1, cels.Sum(c => c.Image.Pixels.Length)));
-        int at = 0;
-        foreach (var c in cels) { Array.Copy(c.Image.Pixels, 0, all.Pixels, at, c.Image.Pixels.Length); at += c.Image.Pixels.Length; }
-        var pal = Quantize.MedianCut(all, colors);
+        var counts = new Dictionary<uint, int>(); // counted cel by cel: no copy of the whole picture
+        foreach (var c in cels) Quantize.CountColors(c.Image, counts);
+        var pal = Quantize.MedianCut(counts, colors);
         foreach (var c in cels) c.Image = Quantize.ToPalette(c.Image, pal, dither: false);
         if (indexed) s.ConvertMode(ColorMode.Indexed);
         else

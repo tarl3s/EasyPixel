@@ -120,10 +120,8 @@ public static class LayerTree
         {
             if (!cels.TryGetValue(kv.Value, out var copy))
             {
-                var o = kv.Value;
-                copy = new Cel(o.Image.Clone(), o.X, o.Y) { Opacity = o.Opacity };
-                foreach (var e in o.Extra) copy.Extra[e.Key] = (byte[])e.Value.Clone();
-                cels[o] = copy;
+                copy = kv.Value.Clone();
+                cels[kv.Value] = copy;
             }
             s.Cels[(map[kv.Key.Item1], kv.Key.Item2)] = copy;
         }

@@ -5,36 +5,43 @@ namespace EasyPixel.Core.Raster;
 public static class Shading
 {
     /// <summary>
-    /// Aseprite-style shading: every pixel under the brush whose colour is in <paramref name="ramp"/> moves one step
-    /// along it (lighten: next entry, darken: previous). Pixels not in the ramp, or at its end, are left alone.
-    /// In indexed mode (<paramref name="indexed"/>) the pixel value is already the ramp index.
+    /// Aseprite-style shading of one pixel: a value whose colour is in <paramref name="ramp"/> moves one step along it
+    /// (lighten: next entry, darken: previous). Returns null when it stays: transparent, not in the ramp, or at its end.
+    /// In indexed mode (<paramref name="indexed"/>) the value is already the ramp index and the ramp is the sprite's
+    /// palette, whose <paramref name="transparentIndex"/> is never shaded from or into.
     /// </summary>
-    public static void Apply(PixelSink s, int x, int y, Brush b, Palette ramp, bool lighten, bool indexed = false)
+    public static uint? Step(uint v, Palette ramp, bool lighten, bool indexed = false, int transparentIndex = -1)
     {
-        int step = lighten ? 1 : -1;
-        Brush.ForEach(x, y, b, (px, py) =>
+        int step = lighten ? 1 : -1, count = ramp.Colors.Count;
+        if (indexed)
         {
-            if (!s.CanWrite(px, py)) return;
-            uint v = s.Get(px, py);
-            int idx = indexed ? (v < (uint)ramp.Colors.Count ? (int)v : -1) : ramp.IndexOf(Rgba.FromPacked(v));
-            int next = idx + step;
-            if (idx < 0 || next < 0 || next >= ramp.Colors.Count) return;
-            s.Set(px, py, indexed ? (uint)next : ramp.Colors[next].Packed);
-        });
+            if (v >= (uint)count || (int)v == transparentIndex) return null;
+            int next = (int)v + step;
+            return next < 0 || next >= count || next == transparentIndex ? null : (uint)next;
+        }
+        if ((v >> 24) == 0) return null;
+        int idx = ramp.IndexOf(Rgba.FromPacked(v)), to = idx + step;
+        if (idx < 0 || to < 0 || to >= count || ramp.Colors[to].A == 0) return null;
+        return ramp.Colors[to].Packed;
     }
 
-    /// <summary>Changes the HSL lightness of each opaque RGBA pixel under the brush by <paramref name="amount"/> percent (negative darkens).</summary>
+    /// <summary>Changes the HSL lightness of every opaque RGBA pixel under the brush by <paramref name="amount"/> percent (negative darkens).</summary>
     public static void LightenDarken(PixelSink s, int x, int y, Brush b, int amount)
     {
         Brush.ForEach(x, y, b, (px, py) =>
         {
-            if (!s.CanWrite(px, py)) return;
-            var c = Rgba.FromPacked(s.Get(px, py));
-            if (c.A == 0) return;
-            RgbToHsl(c, out double h, out double sat, out double l);
-            l = Math.Clamp(l + amount / 100.0, 0, 1);
-            s.Set(px, py, HslToRgb(h, sat, l, c.A).Packed);
+            if (s.CanWrite(px, py) && Lighten(s.Get(px, py), amount) is uint v) s.Set(px, py, v);
         });
+    }
+
+    /// <summary>The RGBA value <paramref name="v"/> with its HSL lightness changed by <paramref name="amount"/> percent, or null when it is transparent.</summary>
+    public static uint? Lighten(uint v, int amount)
+    {
+        var c = Rgba.FromPacked(v);
+        if (c.A == 0) return null;
+        RgbToHsl(c, out double h, out double sat, out double l);
+        l = Math.Clamp(l + amount / 100.0, 0, 1);
+        return HslToRgb(h, sat, l, c.A).Packed;
     }
 
     private static void RgbToHsl(Rgba c, out double h, out double s, out double l)

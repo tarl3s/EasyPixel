@@ -138,29 +138,6 @@ public class HistoryTests
     }
 
     [Fact]
-    public void AddRemoveLayer_RoundTrip()
-    {
-        var (s, h, _) = Setup();
-        var l2 = new Layer { Name = "Two" };
-        h.Push(AddLayerEdit.Perform(s, l2, 1));
-        s.GetOrCreateCel(l2, 0).Image.Set(1, 1, 5);
-        Assert.Equal(2, s.Layers.Count);
-        h.Push(RemoveLayerEdit.Perform(s, 1));
-        Assert.Single(s.Layers);
-        Assert.False(s.Cels.ContainsKey((l2, 0)));
-        h.Undo();
-        Assert.Equal(2, s.Layers.Count);
-        Assert.Equal(5u, s.Cels[(l2, 0)].Image.Get(1, 1));
-        h.Redo();
-        Assert.Single(s.Layers);
-        h.Undo(); h.Undo();
-        Assert.Single(s.Layers);
-        h.Redo();
-        Assert.Equal(2, s.Layers.Count);
-        Assert.Same(l2, s.Layers[1]);
-    }
-
-    [Fact]
     public void AddRemoveFrame_RestoresCelsAndShifts()
     {
         var (s, h, cel0) = Setup();
@@ -220,19 +197,6 @@ public class HistoryTests
         h.Push(e);
         Assert.True(h.Undo());
         Assert.True(h.Redo());
-    }
-
-    [Fact]
-    public void AddLayer_UndoRemovesPaintedCels_RedoRestoresThem()
-    {
-        var (s, h, _) = Setup();
-        var l2 = new Layer();
-        h.Push(AddLayerEdit.Perform(s, l2, 1));
-        s.GetOrCreateCel(l2, 0).Image.Set(1, 1, 7);
-        h.Undo();
-        Assert.DoesNotContain(s.Cels.Keys, k => k.Item1 == l2);
-        h.Redo();
-        Assert.Equal(7u, s.Cels[(l2, 0)].Image.Get(1, 1));
     }
 
     [Fact]

@@ -50,4 +50,30 @@ public sealed class Cel
         X = x;
         Y = y;
     }
+
+    /// <summary>A separate copy: its own image, position, opacity and extra data.</summary>
+    public Cel Clone()
+    {
+        var c = new Cel(Image.Clone(), X, Y) { Opacity = Opacity };
+        foreach (var e in Extra) c.Extra[e.Key] = (byte[])e.Value.Clone();
+        return c;
+    }
+
+    /// <summary>
+    /// Grows the image (keeping its pixels where they are on the canvas) so it covers <paramref name="area"/> (canvas
+    /// coordinates); the new part is <paramref name="fill"/>. Returns false when it already covered it.
+    /// </summary>
+    public bool GrowToCover(PixelRect area, uint fill)
+    {
+        var own = new PixelRect(X, Y, Image.Width, Image.Height);
+        var need = own.Union(area);
+        if (need == own) return false;
+        var grown = new Image(need.W, need.H, fill);
+        for (int y = 0; y < Image.Height; y++)
+            Array.Copy(Image.Pixels, y * Image.Width, grown.Pixels, (y + Y - need.Y) * need.W + (X - need.X), Image.Width);
+        Image = grown;
+        X = need.X;
+        Y = need.Y;
+        return true;
+    }
 }

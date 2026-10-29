@@ -62,22 +62,9 @@ public static class Selectors
         {
             var (x1, y1) = poly[i];
             var (x2, y2) = poly[(i + 1) % n];
-            Line(s, x1, y1, x2, y2);
+            foreach (var (x, y) in Shapes.LinePoints(x1, y1, x2, y2)) s.Set(x, y, true);
         }
         return s;
-    }
-
-    private static void Line(Selection s, int x0, int y0, int x1, int y1)
-    {
-        int dx = Math.Abs(x1 - x0), dy = -Math.Abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1, err = dx + dy;
-        while (true)
-        {
-            s.Set(x0, y0, true);
-            if (x0 == x1 && y0 == y1) break;
-            int e2 = 2 * err;
-            if (e2 >= dy) { err += dy; x0 += sx; }
-            if (e2 <= dx) { err += dx; y0 += sy; }
-        }
     }
 
     /// <summary>Selects every pixel of the image whose value matches <paramref name="value"/> within <paramref name="tolerance"/> (same rule as the bucket fill).</summary>

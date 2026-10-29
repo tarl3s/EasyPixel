@@ -86,7 +86,7 @@ public sealed class MagicWandTool : Tool
         if (s.Doc.Cels.TryGetValue((s.Layer, s.Frame), out var cel))
         {
             var inImage = Selectors.MagicWand(cel.Image, p.X - cel.X, p.Y - cel.Y, c.Tools.Tolerance, c.Tools.Contiguous);
-            shape = SelectionTools.FromImageSpace(inImage, cel.X, cel.Y, w, h);
+            shape = inImage.Offset(cel.X, cel.Y, w, h);
         }
         else shape = Selection.All(w, h); // an empty cel: everything is the same (transparent)
         s.Sel = SelectionTools.Combine(s.Sel, shape, SelectTool.Mode(p));

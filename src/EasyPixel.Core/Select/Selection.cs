@@ -94,6 +94,24 @@ public sealed class Selection
     }
 
     /// <summary>
+    /// The same pixels moved by (<paramref name="dx"/>, <paramref name="dy"/>) in a selection of <paramref name="width"/> x
+    /// <paramref name="height"/> (the canvas size; this one's size by default). Pixels that fall outside are dropped. Also
+    /// turns a selection built over a cel's image into canvas coordinates (offset = the cel's position).
+    /// </summary>
+    public Selection Offset(int dx, int dy, int width = 0, int height = 0)
+    {
+        if (width <= 0) width = Width;
+        if (height <= 0) height = Height;
+        if (dx == 0 && dy == 0 && width == Width && height == Height) return this;
+        var r = new Selection(width, height);
+        var b = Bounds;
+        for (int y = b.Y; y < b.Bottom; y++)
+            for (int x = b.X; x < b.Right; x++)
+                if (_bits[y * Width + x]) r.Set(x + dx, y + dy, true);
+        return r;
+    }
+
+    /// <summary>
     /// A clip for <see cref="Raster.PixelSink"/> working in cel-image coordinates, for a cel placed at
     /// (<paramref name="offsetX"/>, <paramref name="offsetY"/>) on the canvas.
     /// </summary>

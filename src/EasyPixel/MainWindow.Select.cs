@@ -26,7 +26,7 @@ public partial class MainWindow
         var doc = Session.Doc;
         var sel = Selection.None(doc.Width, doc.Height);
         if (doc.Cels.TryGetValue((Session.Layer, Session.Frame), out var cel) && PixelValueOf(doc, color) is { } value)
-            sel = SelectionTools.FromImageSpace(Selectors.ByValue(cel.Image, value, Tools.Tolerance), cel.X, cel.Y, doc.Width, doc.Height);
+            sel = Selectors.ByValue(cel.Image, value, Tools.Tolerance).Offset(cel.X, cel.Y, doc.Width, doc.Height);
         Session.Sel = sel;
         ShowStatus(sel.IsEmpty ? L.T("No pixel has that colour on this layer") : L.T("Selected every pixel of the primary colour"));
     }
