@@ -18,6 +18,7 @@ public sealed class LessonStrip : Border
     private readonly TextBlock _title = new() { FontWeight = FontWeight.SemiBold, FontSize = 14, TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock _goal = L.Keep(new TextBlock { TextWrapping = TextWrapping.Wrap });
     private readonly TextBlock _summary = new() { FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap };
+    private readonly ScrollViewer _scroll;
 
     public LessonStrip()
     {
@@ -44,7 +45,8 @@ public sealed class LessonStrip : Border
         _summary.IsVisible = false;
         var dock = new DockPanel();
         dock.Children.Add(buttons);
-        dock.Children.Add(new ScrollViewer { Content = _body, MaxHeight = 230 });
+        _scroll = new ScrollViewer { Content = _body, MaxHeight = 230 };
+        dock.Children.Add(_scroll);
         Child = dock;
     }
 
@@ -83,12 +85,14 @@ public sealed class LessonStrip : Border
         bool ticked = SelfChecks.All(c => c.IsChecked == true);
         bool passed = result.Passed && ticked;
         _results.Children.Clear();
-        foreach (var line in result.Lines)
+        // what to fix first: the bar scrolls, and a ✗ below the fold would leave only "Not yet" in sight
+        foreach (var line in result.Lines.OrderBy(l => l.Ok))
             _results.Children.Add(new TextBlock { Text = (line.Ok ? "✓ " : "✗ ") + L.F(line.Text, line.Args), TextWrapping = TextWrapping.Wrap });
         _summary.Text = passed ? L.T("Passed! Well done: this lesson is marked as passed.")
             : result.Passed ? L.T("The automatic checks pass. Tick the self-check items that are true for your drawing, then press Check again.")
             : L.T("Not yet: fix the points marked ✗ and press Check again.");
         _summary.IsVisible = true;
+        _scroll.ScrollToEnd(); // the verdict and its lines, not the goal the person already read
         return passed;
     }
 }
