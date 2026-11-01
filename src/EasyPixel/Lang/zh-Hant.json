@@ -487,5 +487,10 @@
   "Place file": "放置檔案",
   "Placed {0}: move it, then press Enter": "已放置 {0}：移動它，然後按 Enter",
   "Resize": "調整大小",
-  "The sprite was saved, but its frames could not be written as PNG:\n{0}": "精靈已儲存，但其影格無法寫入為 PNG：\n{0}"
+  "The sprite was saved, but its frames could not be written as PNG:\n{0}": "精靈已儲存，但其影格無法寫入為 PNG：\n{0}",
+  "Adobe colour table": "Adobe 色彩表",
+  "Adobe swatch exchange": "Adobe 色票交換 (ASE)",
+  "Colours of a picture": "圖片的顏色",
+  "Paint.NET palette": "Paint.NET 調色盤",
+  "Photoshop swatches": "Photoshop 色票"
 }

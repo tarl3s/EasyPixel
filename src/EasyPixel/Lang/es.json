@@ -487,5 +487,10 @@
   "Place file": "Colocar archivo",
   "Placed {0}: move it, then press Enter": "{0} colocado: muévelo y pulsa Enter",
   "Resize": "Redimensionar",
-  "The sprite was saved, but its frames could not be written as PNG:\n{0}": "El sprite se guardó, pero sus cuadros no se pudieron escribir como PNG:\n{0}"
+  "The sprite was saved, but its frames could not be written as PNG:\n{0}": "El sprite se guardó, pero sus cuadros no se pudieron escribir como PNG:\n{0}",
+  "Adobe colour table": "Tabla de colores de Adobe",
+  "Adobe swatch exchange": "Muestras de Adobe (ASE)",
+  "Colours of a picture": "Colores de una imagen",
+  "Paint.NET palette": "Paleta de Paint.NET",
+  "Photoshop swatches": "Muestras de Photoshop"
 }

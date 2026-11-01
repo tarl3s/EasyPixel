@@ -288,6 +288,10 @@ public class EditorEditsTests
     [InlineData(".gpl")]
     [InlineData(".hex")]
     [InlineData(".pal")]
+    [InlineData(".txt")]
+    [InlineData(".act")]
+    [InlineData(".aco")]
+    [InlineData(".ase")]
     public void PaletteFile_RoundTrip(string ext)
     {
         var colors = new List<Rgba> { new(0, 0, 0, 255), new(255, 128, 7, 255), new(18, 52, 86, 255) };

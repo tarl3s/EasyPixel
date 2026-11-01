@@ -166,14 +166,22 @@ public sealed class PalettePanel : DockPanel
     private static IReadOnlyList<FileType> Types => new[]
     {
         new FileType(L.T("GIMP palette"), new[] { ".gpl" }), new FileType(L.T("Hex list"), new[] { ".hex" }),
-        new FileType(L.T("JASC palette"), new[] { ".pal" }),
+        new FileType(L.T("JASC palette"), new[] { ".pal" }), new FileType(L.T("Adobe swatch exchange"), new[] { ".ase" }),
+        new FileType(L.T("Photoshop swatches"), new[] { ".aco" }), new FileType(L.T("Adobe colour table"), new[] { ".act" }),
+        new FileType(L.T("Paint.NET palette"), new[] { ".txt" }),
     };
+
+    // opening also takes any picture or sprite: its colours become the palette
+    private static IReadOnlyList<FileType> OpenTypes =>
+        new[] { new FileType(L.T("All supported files"), PaletteFormats.ReadableExtensions.ToArray()) }
+            .Concat(Types).Append(new FileType(L.T("Colours of a picture"), FormatRegistry.All.Where(f => f.CanRead).SelectMany(f => f.Extensions).ToArray()))
+            .ToList();
 
     /// <summary>Replaces the palette with the colours of a file. Indexed pixels keep their numbers (as in Aseprite).</summary>
     internal async Task LoadAsync(string? path = null)
     {
         if (_w == null) return;
-        path ??= await _w.Dialogs.PickOpenFile(Types);
+        path ??= await _w.Dialogs.PickOpenFile(OpenTypes);
         if (path == null) return;
         List<Rgba> colors;
         try { colors = PaletteFormats.Read(path); }
