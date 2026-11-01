@@ -17,7 +17,7 @@ public partial class MainWindow
     /// <summary>Strip order and symbols (symbols are pictures, not words; the tooltip carries the name).</summary>
     private static readonly (ToolKind Kind, string Glyph)[] Strip =
     {
-        (ToolKind.Pencil, "✎"), (ToolKind.Eraser, "⌫"), (ToolKind.Bucket, "◪"), (ToolKind.Eyedropper, "⊙"),
+        (ToolKind.Pencil, "✎"), (ToolKind.Eraser, "⌫"), (ToolKind.Bucket, ""), (ToolKind.Eyedropper, "⊙"),
         (ToolKind.Line, "╱"), (ToolKind.Rectangle, "▭"), (ToolKind.Ellipse, "◯"), (ToolKind.Spray, "⁘"),
         (ToolKind.Shading, "◐"), (ToolKind.LightenDarken, "☼"), (ToolKind.Dither, "▦"), (ToolKind.Move, "✥"),
         (ToolKind.RectSelect, "⬚"), (ToolKind.EllipseSelect, "◌"), (ToolKind.Lasso, "➰"), (ToolKind.MagicWand, "✧"),
@@ -30,12 +30,29 @@ public partial class MainWindow
     {
         foreach (var (kind, glyph) in Strip)
         {
-            var b = new ToggleButton { Content = glyph, Classes = { "tool" }, Focusable = false }; // Space and arrows stay with the canvas
+            var b = new ToggleButton { Content = glyph.Length > 0 ? glyph : Picture(kind), Classes = { "tool" }, Focusable = false }; // Space and arrows stay with the canvas
             ToolTip.SetTip(b, ToolKey(kind) is { } key ? L.T(Tools.Get(kind).Name) + " (" + key + ")" : L.T(Tools.Get(kind).Name));
             b.Click += (_, _) => Tools.Current = kind;
             _toolButtons[kind] = b;
             ToolStrip.Children.Add(b);
         }
+    }
+
+    // Tools no font symbol looks like: drawn (24 x 24 box), in the button's text colour so they follow the theme and the checked state.
+    private static readonly Dictionary<ToolKind, string> Pictures = new()
+    {
+        // a bucket with its handle, and a drop of paint beside it
+        [ToolKind.Bucket] = "M4,9 L16,9 L14.6,20.2 Q14.4,21.5 13.1,21.5 L6.9,21.5 Q5.6,21.5 5.4,20.2 Z "
+            + "M5,8 C5,1.5 15,1.5 15,8 L13.3,8 C13.3,3.8 6.7,3.8 6.7,8 Z "
+            + "M20,11 C20,11 23,14.6 23,16.5 C23,18.2 21.7,19.5 20,19.5 C18.3,19.5 17,18.2 17,16.5 C17,14.6 20,11 20,11 Z",
+    };
+
+    private static Control Picture(ToolKind kind)
+    {
+        var p = new Avalonia.Controls.Shapes.Path { Data = Geometry.Parse(Pictures[kind]), Width = 18, Height = 18, Stretch = Stretch.Uniform };
+        p.Bind(Avalonia.Controls.Shapes.Shape.FillProperty, new Avalonia.Data.Binding("Foreground")
+            { RelativeSource = new Avalonia.Data.RelativeSource(Avalonia.Data.RelativeSourceMode.FindAncestor) { AncestorType = typeof(Avalonia.Controls.Presenters.ContentPresenter) } });
+        return p;
     }
 
     private void OnToolsChanged()
