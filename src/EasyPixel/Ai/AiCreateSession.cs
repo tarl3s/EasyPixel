@@ -57,6 +57,11 @@ public sealed class AiCreateSession(IReadOnlyList<IImageGenerator> gens, ITextAi
                 {
                     error = L.T("The AI service didn't answer. Check the internet connection and try again.");
                 }
+                catch (Exception ex) when (ex is not OutOfMemoryException)
+                {
+                    System.Diagnostics.Debug.WriteLine(ex);
+                    error = L.T("Something went wrong while drawing. Try again.");
+                }
             }
         }
         finally { gate.Release(); }

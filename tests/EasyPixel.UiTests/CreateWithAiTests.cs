@@ -19,7 +19,7 @@ public class CreateWithAiTests
         return Png.Encode(img);
     }
 
-    private sealed class FakeGen(string id = "fake", Func<int, byte[]>? make = null, int maxParallel = 4, TaskCompletionSource? hold = null) : IImageGenerator
+    private sealed class FakeGen(string id = "fake", Func<int, byte[]>? make = null, int maxParallel = 4, TaskCompletionSource? hold = null, bool ignoreCancel = false) : IImageGenerator
     {
         private int _calls;
         public string Id => id; public string Name => id; public bool NeedsKey => true; public bool Free => true; public int MaxParallel => maxParallel;
@@ -29,7 +29,7 @@ public class CreateWithAiTests
         {
             int n;
             lock (Prompts) { Prompts.Add(prompt); Seeds.Add(seed); n = _calls++; }
-            if (hold != null) await hold.Task.WaitAsync(ct);
+            if (hold != null) await (ignoreCancel ? hold.Task : hold.Task.WaitAsync(ct));
             return (make ?? (_ => ShapePng()))(n);
         }
     }
@@ -160,20 +160,30 @@ public class CreateWithAiTests
     [AvaloniaFact]
     public async Task CreateWithAi_Cancel_StopsAndAddsNothing()
     {
+        // the generator ignores the cancel and answers afterwards: its picture must not arrive anywhere
         var hold = new TaskCompletionSource();
-        var w = Window(new AiCreateRequest(32, null), new FakeGen(hold: hold));
+        var gen = new FakeGen(hold: hold, ignoreCancel: true);
+        var session = new AiCreateSession([gen], null, _ => "k");
+        int late = 0;
+        session.CandidateReady += (_, _, _) => late++;
+        var w = new CreateWithAiWindow(new AiCreateRequest(32, null), () => session);
         w.Show();
         w.RequestBox.Text = "a red box";
         var run = w.GenerateAsync();
-        w.Close();
-        await run; // stops quietly
-        hold.SetResult();
+        Harness.Pump();
+        Assert.NotEmpty(gen.Prompts); // the request is under way
+        w.Close();                    // = Cancel
+        hold.SetResult();             // the service answers after the cancel
+        await run;                    // stops quietly
+        Harness.Pump();
+        Assert.Equal(0, late);
         Assert.Null(w.Result);
         Assert.All(w.Candidates, c => Assert.Null(c));
 
         using var h = new Harness();
         int layers = h.Doc.Layers.Count;
-        await h.Window.CreateWithAiAsync(skipSetupCheck: true); // the dialog answers null
+        h.Dialogs.AiPicks.Enqueue(w.Result); // what the cancelled window answered
+        await h.Window.CreateWithAiAsync(skipSetupCheck: true);
         Assert.Equal(layers, h.Doc.Layers.Count);
         Assert.False(h.Session.History.CanUndo);
     }
@@ -182,13 +192,39 @@ public class CreateWithAiTests
     public async Task CreateWithAi_EmptyOrHugePrompt()
     {
         var gen = new FakeGen();
-        var w = await Generated("   ", null, gen);
-        Assert.Empty(gen.Prompts);
-        Assert.NotEmpty(w.Status);
-        w.RequestBox.Text = new string('a', CreateWithAiWindow.MaxRequest + 1);
+        var text = new FakeText("not json");
+        var w = new CreateWithAiWindow(new AiCreateRequest(32, null), () => new AiCreateSession([gen], text, _ => "k"));
+        w.Show();
+        w.RequestBox.Text = "   ";
+        Harness.Pump();
+        Assert.False(w.CanGenerate);
         await w.GenerateAsync();
         Assert.Empty(gen.Prompts);
-        Assert.Contains(CreateWithAiWindow.MaxRequest.ToString(), w.Status);
+
+        var paste = string.Concat(Enumerable.Repeat("um lobo com olhos vermelhos ", 400)); // > 10 000 chars
+        Assert.True(paste.Length >= 10_000);
+        w.RequestBox.Text = paste;
+        Harness.Pump();
+        Assert.True(w.CanGenerate);
+        await w.GenerateAsync();
+        var sent = Assert.Single(text.Seen);
+        Assert.True(sent.Length <= CreateWithAiWindow.MaxRequest);
+        Assert.StartsWith(sent, paste);
+        Assert.Equal(4, gen.Prompts.Count);
+        Assert.All(gen.Prompts, p => Assert.DoesNotContain(paste[..(CreateWithAiWindow.MaxRequest + 30)], p));
+        Assert.All(w.Candidates, c => Assert.NotNull(c));
+        w.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task CreateWithAi_UnexpectedException_BecomesThatSlotsError()
+    {
+        var gen = new FakeGen(make: n => n == 2 ? throw new InvalidOperationException("boom") : ShapePng(), maxParallel: 1);
+        var w = await Generated("a red box", null, gen);
+        Assert.Equal(3, w.Candidates.Count(c => c != null));
+        Assert.Single(w.Errors, e => e != null);
+        Assert.DoesNotContain("drawing 4", w.Status);
+        Assert.True(w.CanGenerate);
         w.Close();
     }
 

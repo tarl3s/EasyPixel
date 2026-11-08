@@ -527,7 +527,6 @@
   "No sprite could be made. Try again or change the description.": "スプライトを作れませんでした。もう一度試すか、説明を変えてください。",
   "Open AI settings": "AI設定を開く",
   "Pick the one you like, or ask for 4 more.": "気に入ったものを選ぶか、あと4つ頼んでください。",
-  "Please keep the description under {0} characters.": "説明は{0}文字以内にしてください。",
   "Side": "横",
   "That palette file couldn't be read.": "そのパレットファイルを読み込めませんでした。",
   "The AI is drawing 4 sprites. This can take a minute.": "AIが4つのスプライトを描いています。1分ほどかかることがあります。",
@@ -542,5 +541,6 @@
   "Use as new sprite": "新しいスプライトとして使う",
   "✨ Create with AI": "✨ AIで作成",
   "✨ Create with AI…": "✨ AIで作成…",
+  "Something went wrong while drawing. Try again.": "描画中に問題が発生しました。もう一度試してください。",
   "✨ Generate": "✨ 生成"
 }

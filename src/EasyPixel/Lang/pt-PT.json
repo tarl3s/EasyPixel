@@ -527,7 +527,6 @@
   "No sprite could be made. Try again or change the description.": "Não foi possível criar nenhum sprite. Tente de novo ou altere a descrição.",
   "Open AI settings": "Abrir definições de IA",
   "Pick the one you like, or ask for 4 more.": "Escolha o que gostar ou peça mais 4.",
-  "Please keep the description under {0} characters.": "Mantenha a descrição com menos de {0} caracteres.",
   "Side": "Lateral",
   "That palette file couldn't be read.": "Não foi possível ler esse ficheiro de paleta.",
   "The AI is drawing 4 sprites. This can take a minute.": "A IA está a desenhar 4 sprites. Pode demorar um minuto.",
@@ -542,5 +541,6 @@
   "Use as new sprite": "Usar como novo sprite",
   "✨ Create with AI": "✨ Criar com IA",
   "✨ Create with AI…": "✨ Criar com IA…",
+  "Something went wrong while drawing. Try again.": "Algo correu mal ao desenhar. Tente de novo.",
   "✨ Generate": "✨ Gerar"
 }

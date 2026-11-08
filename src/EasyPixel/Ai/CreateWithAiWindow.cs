@@ -18,7 +18,7 @@ namespace EasyPixel.Ai;
 /// </summary>
 internal sealed class CreateWithAiWindow : Window
 {
-    public const int MaxRequest = 400;
+    public const int MaxRequest = 1000;
 
     private readonly AiCreateRequest _start;
     private readonly Func<AiCreateSession> _newSession;
@@ -34,6 +34,7 @@ internal sealed class CreateWithAiWindow : Window
     private IReadOnlyList<Rgba>? _filePalette;
     private int _paletteShown;
     private int _selected = -1;
+    private bool _busy;
 
     public CreateWithAiWindow(AiCreateRequest start, Func<AiCreateSession> newSession)
     {
@@ -45,7 +46,7 @@ internal sealed class CreateWithAiWindow : Window
         ShowInTaskbar = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
-        RequestBox = new TextBox { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, Height = 64, Width = 560, MaxLength = MaxRequest * 2,
+        RequestBox = new TextBox { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, Height = 64, Width = 560,
             Watermark = L.T("Describe the sprite, in any language: \"a knight with a blue cape\"") };
         var sizes = new List<int> { 16, 32, 48, 64 };
         var sizeNames = sizes.Select(s => $"{s} x {s}").ToList();
@@ -61,7 +62,8 @@ internal sealed class CreateWithAiWindow : Window
         _palette = new ComboBox { ItemsSource = new[] { L.T("Automatic"), L.T("This sprite's palette"), L.T("From a file…") }, SelectedIndex = 0, MinWidth = 160 };
         _palette.SelectionChanged += (_, _) => _ = PaletteChangedAsync();
 
-        _generate = new Button { Content = L.T("✨ Generate"), IsDefault = true, Classes = { "accent" } };
+        _generate = new Button { Content = L.T("✨ Generate"), IsDefault = true, IsEnabled = false, Classes = { "accent" } };
+        RequestBox.TextChanged += (_, _) => { _generate.IsEnabled = !_busy && HasRequest; };
         _generate.Click += (_, _) => Running = GenerateAsync();
         _more = new Button { Content = L.T("4 more"), IsEnabled = false };
         _more.Click += (_, _) => Running = GenerateAsync();
@@ -125,6 +127,11 @@ internal sealed class CreateWithAiWindow : Window
 
     internal TextBox RequestBox { get; }
 
+    private bool HasRequest => !string.IsNullOrWhiteSpace(RequestBox.Text);
+    internal bool CanGenerate => _generate.IsEnabled;
+
+    private static void DebugTrace(Exception ex) => System.Diagnostics.Debug.WriteLine(ex);
+
     /// <summary>The chosen candidate, or null when the window was cancelled.</summary>
     public AiPick? Result { get; private set; }
 
@@ -186,7 +193,7 @@ internal sealed class CreateWithAiWindow : Window
     {
         var request = (RequestBox.Text ?? "").Trim();
         if (request.Length == 0) { _status.Text = L.T("Describe the sprite first."); return; }
-        if (request.Length > MaxRequest) { _status.Text = L.F("Please keep the description under {0} characters.", MaxRequest); return; }
+        if (request.Length > MaxRequest) request = request[..MaxRequest].TrimEnd(); // a huge paste is cut, not refused
 
         _cts?.Cancel();
         var cts = _cts = new CancellationTokenSource();
@@ -202,6 +209,7 @@ internal sealed class CreateWithAiWindow : Window
             _slotButtons[i].IsEnabled = false;
         }
         _generate.IsEnabled = _more.IsEnabled = false;
+        _busy = true;
         _status.Text = L.T("The AI is drawing 4 sprites. This can take a minute.");
 
         var session = _newSession();
@@ -226,9 +234,14 @@ internal sealed class CreateWithAiWindow : Window
             _status.Text = Candidates.Any(c => c != null) ? L.T("Pick the one you like, or ask for 4 more.") : L.T("No sprite could be made. Try again or change the description.");
         }
         catch (OperationCanceledException) { return; } // cancelled: stop quietly
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            _status.Text = L.T("Something went wrong while drawing. Try again.");
+            DebugTrace(ex);
+        }
         finally
         {
-            if (_cts == cts) _generate.IsEnabled = _more.IsEnabled = true;
+            if (_cts == cts) { _busy = false; _generate.IsEnabled = HasRequest; _more.IsEnabled = true; }
         }
     }
 

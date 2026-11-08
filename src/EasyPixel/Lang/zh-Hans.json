@@ -527,7 +527,6 @@
   "No sprite could be made. Try again or change the description.": "无法生成精灵图。请重试或修改描述。",
   "Open AI settings": "打开 AI 设置",
   "Pick the one you like, or ask for 4 more.": "选一个你喜欢的，或者再要 4 个。",
-  "Please keep the description under {0} characters.": "描述请保持在 {0} 个字符以内。",
   "Side": "侧面",
   "That palette file couldn't be read.": "无法读取该调色板文件。",
   "The AI is drawing 4 sprites. This can take a minute.": "AI 正在绘制 4 个精灵图，可能需要一分钟。",
@@ -542,5 +541,6 @@
   "Use as new sprite": "用作新精灵图",
   "✨ Create with AI": "✨ 用 AI 创建",
   "✨ Create with AI…": "✨ 用 AI 创建…",
+  "Something went wrong while drawing. Try again.": "绘制时出了点问题，请重试。",
   "✨ Generate": "✨ 生成"
 }

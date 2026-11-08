@@ -527,7 +527,6 @@
   "No sprite could be made. Try again or change the description.": "Es konnte kein Sprite erstellt werden. Versuche es erneut oder ändere die Beschreibung.",
   "Open AI settings": "KI-Einstellungen öffnen",
   "Pick the one you like, or ask for 4 more.": "Wähle das, das dir gefällt, oder fordere 4 weitere an.",
-  "Please keep the description under {0} characters.": "Bitte halte die Beschreibung unter {0} Zeichen.",
   "Side": "Seite",
   "That palette file couldn't be read.": "Diese Palettendatei konnte nicht gelesen werden.",
   "The AI is drawing 4 sprites. This can take a minute.": "Die KI zeichnet 4 Sprites. Das kann eine Minute dauern.",
@@ -542,5 +541,6 @@
   "Use as new sprite": "Als neues Sprite verwenden",
   "✨ Create with AI": "✨ Mit KI erstellen",
   "✨ Create with AI…": "✨ Mit KI erstellen…",
+  "Something went wrong while drawing. Try again.": "Beim Zeichnen ist etwas schiefgelaufen. Versuche es erneut.",
   "✨ Generate": "✨ Erzeugen"
 }

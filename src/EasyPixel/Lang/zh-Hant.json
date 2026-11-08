@@ -527,7 +527,6 @@
   "No sprite could be made. Try again or change the description.": "無法生成精靈圖。請重試或修改描述。",
   "Open AI settings": "開啟 AI 設定",
   "Pick the one you like, or ask for 4 more.": "選一個你喜歡的，或者再要 4 個。",
-  "Please keep the description under {0} characters.": "描述請保持在 {0} 個字元以內。",
   "Side": "側面",
   "That palette file couldn't be read.": "無法讀取該調色盤檔案。",
   "The AI is drawing 4 sprites. This can take a minute.": "AI 正在繪製 4 個精靈圖，可能需要一分鐘。",
@@ -542,5 +541,6 @@
   "Use as new sprite": "用作新精靈圖",
   "✨ Create with AI": "✨ 用 AI 建立",
   "✨ Create with AI…": "✨ 用 AI 建立…",
+  "Something went wrong while drawing. Try again.": "繪製時出了點問題，請重試。",
   "✨ Generate": "✨ 生成"
 }
