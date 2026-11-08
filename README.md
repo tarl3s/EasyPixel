@@ -86,10 +86,11 @@ it's yours: edit it by hand like any other drawing.
 To use it, add a key once in **Edit → AI settings…**. You only need one provider:
 
 - **Cloudflare Workers AI (free).** Make a free Cloudflare account, open **Workers AI**, and copy your **Account ID**.
-  Then make an **API token** with the Workers AI permission. Paste both in AI settings. The free allowance is about
-  200 pictures a day.
-- **OpenAI, Gemini, Retro Diffusion** (paid) and **Pollinations** (key from its site). These use your own key, and the
-  cost is charged by that service, not by EasyPixel. Their keys stay on your computer.
+  Then make an **API token** with the Workers AI permission. Paste both in AI settings. The free allowance is roughly
+  200 pictures a day (an estimate).
+- **OpenAI, Gemini, Retro Diffusion** (paid). These use your own key, and the cost is charged by that service, not by
+  EasyPixel. Their keys stay on your computer.
+- **Pollinations** (free key from its site, also set in AI settings).
 
 ## Known limits
 

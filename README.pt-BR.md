@@ -86,9 +86,10 @@ Para usar, coloque uma chave uma vez em **Editar → Configurações da IA…**.
 
 - **Cloudflare Workers AI (grátis).** Crie uma conta grátis na Cloudflare, abra o **Workers AI** e copie o seu
   **Account ID**. Depois crie um **API token** com a permissão do Workers AI. Cole os dois nas configurações de IA.
-  A cota grátis dá cerca de 200 imagens por dia.
-- **OpenAI, Gemini, Retro Diffusion** (pagos) e **Pollinations** (chave do site deles). Esses usam a sua própria chave,
-  e quem cobra é o serviço, não o EasyPixel. As chaves ficam no seu computador.
+  A cota grátis dá umas 200 imagens por dia (uma estimativa).
+- **OpenAI, Gemini, Retro Diffusion** (pagos). Esses usam a sua própria chave, e quem cobra é o serviço, não o
+  EasyPixel. As chaves ficam no seu computador.
+- **Pollinations** (chave grátis do site deles, também em Configurações da IA).
 
 ## Limites conhecidos
 
