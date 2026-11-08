@@ -42,6 +42,18 @@ public class PixelArtConverterTests
     }
 
     [Fact]
+    public void ConvertOptions_MaxColors_IsClampedTo4Through32()
+    {
+        Assert.Equal(4, new ConvertOptions(32, MaxColors: 0).MaxColors);
+        Assert.Equal(4, new ConvertOptions(32, MaxColors: -5).MaxColors);
+        Assert.Equal(32, new ConvertOptions(32, MaxColors: 1000).MaxColors);
+        Assert.Equal(12, new ConvertOptions(32).MaxColors);
+        Assert.Equal(32, (new ConvertOptions(32) with { MaxColors = 99 }).MaxColors);
+        Assert.Equal(4, (new ConvertOptions(32) with { MaxColors = 1 }).MaxColors);
+        Assert.NotNull(PixelArtConverter.Convert(Disc(), new ConvertOptions(32, MaxColors: 0)));
+    }
+
+    [Fact]
     public void Downscale_KeepsSmallFeature()
     {
         var img = new Image(512, 512, White);

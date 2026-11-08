@@ -4,7 +4,14 @@ using EasyPixel.Core.Raster;
 namespace EasyPixel.Core.Ai;
 
 /// <summary>How to turn a big generated picture into a sprite: its size, colour limit, optional fixed palette and outline.</summary>
-public sealed record ConvertOptions(int Size, int MaxColors = 12, IReadOnlyList<Rgba>? Palette = null, bool Outline = true);
+public sealed record ConvertOptions(int Size, int MaxColors = 12, IReadOnlyList<Rgba>? Palette = null, bool Outline = true)
+{
+    public const int MinColors = 4, MaxColorLimit = 32;
+    private readonly int _maxColors = Math.Clamp(MaxColors, MinColors, MaxColorLimit);
+
+    /// <summary>The colour limit, always within <see cref="MinColors"/>–<see cref="MaxColorLimit"/>.</summary>
+    public int MaxColors { get => _maxColors; init => _maxColors = Math.Clamp(value, MinColors, MaxColorLimit); }
+}
 
 /// <summary>Turns a big AI-generated picture into a clean small pixel-art sprite. Each step is public so it can be tested and tuned.</summary>
 public static class PixelArtConverter

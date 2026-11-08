@@ -40,7 +40,7 @@ public sealed class RetroDiffusionImage : HttpProvider, IImageGenerator
             var json = ParseJson(await SendAsync(req, ImageTimeout, key, overall.Token).ConfigureAwait(false));
             if (Done(json) is { } first) return first;
             var task = Str(json["task_id"]);
-            if (string.IsNullOrWhiteSpace(task)) throw new AiException($"{DisplayName} didn't start the picture. Try again.");
+            if (string.IsNullOrWhiteSpace(task)) throw new AiException(AiErrorKind.Failed, DisplayName);
 
             var wait = TimeSpan.FromSeconds(1);
             while (true)
@@ -53,11 +53,11 @@ public sealed class RetroDiffusionImage : HttpProvider, IImageGenerator
                 if (Done(status) is { } bytes) return bytes;
                 var s = Str(status["status"])?.ToLowerInvariant();
                 if (s is "failed" or "error" or "cancelled" or "canceled")
-                    throw new AiException($"{DisplayName} couldn't make this picture. Try again or change the description.");
+                    throw new AiException(AiErrorKind.Failed, DisplayName);
             }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-        catch (OperationCanceledException) { throw new AiException($"{DisplayName} took too long to answer. Try again."); }
+        catch (OperationCanceledException) { throw new AiException(AiErrorKind.Timeout, DisplayName); }
     }
 
     /// <summary>The picture, when the answer already carries it (result.base64_images or base64_images).</summary>

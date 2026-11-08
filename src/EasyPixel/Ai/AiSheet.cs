@@ -98,7 +98,7 @@ public static class AiSheet
                 var errs = new string?[AiCreateSession.Slots];
                 session.CandidateReady += (i, img, err) => { done[i] = img; errs[i] = err; };
                 try { await session.RunAsync(prompts[r], size, SpriteView.Auto, null, ct); }
-                catch (Exception ex) when (ex is not OperationCanceledException) { for (int i = 0; i < done.Length; i++) errs[i] ??= ex.Message; }
+                catch (Exception ex) when (ex is not OperationCanceledException) { for (int i = 0; i < done.Length; i++) errs[i] ??= ex is AiException ae ? AiErrors.Describe(ae) : ex.Message; }
                 for (int i = 0; i < AiCreateSession.Slots; i++)
                 {
                     var tag = $"P{r + 1:00} {size}px #{i + 1}";

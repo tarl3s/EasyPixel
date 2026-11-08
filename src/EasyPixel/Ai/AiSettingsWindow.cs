@@ -100,7 +100,7 @@ internal sealed class AiSettingsWindow : DialogWindow
         get
         {
             var keys = new Dictionary<string, string>();
-            foreach (var (id, get) in _keyOf) if (get() is { Length: > 0 } k && k != ":") keys[id] = k;
+            foreach (var (id, get) in _keyOf) if (get() is var k && AiRouting.IsCompleteKey(id, k)) keys[id] = k;
             return new AiChoice(_imageIds[Math.Max(0, _image.SelectedIndex)], _textIds[Math.Max(0, _text.SelectedIndex)], keys);
         }
     }

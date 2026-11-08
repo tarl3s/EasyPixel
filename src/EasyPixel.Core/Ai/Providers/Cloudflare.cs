@@ -9,7 +9,7 @@ internal static class CloudflareKey
     {
         int i = key.IndexOf(':');
         if (i <= 0 || i == key.Length - 1)
-            throw new AiException($"{name} needs your Account ID and API token, written as accountid:token.");
+            throw new AiException(AiErrorKind.KeyFormat, name);
         return (key[..i].Trim(), key[(i + 1)..].Trim());
     }
 }

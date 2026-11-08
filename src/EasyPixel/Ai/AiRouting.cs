@@ -5,7 +5,16 @@ namespace EasyPixel.Ai;
 /// <summary>Which providers a request goes to, from the person's settings.</summary>
 public static class AiRouting
 {
-    public static bool HasKey(Settings s, string id) => s.AiKeys.TryGetValue(id, out var k) && !string.IsNullOrWhiteSpace(k);
+    public static bool HasKey(Settings s, string id) => s.AiKeys.TryGetValue(id, out var k) && IsCompleteKey(id, k);
+
+    /// <summary>A key worth keeping: not blank, and for Cloudflare both halves of "accountId:apiToken" filled in.</summary>
+    public static bool IsCompleteKey(string id, string? key)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return false;
+        if (id != "cloudflare") return true;
+        var parts = key.Split(':', 2);
+        return parts.Length == 2 && !string.IsNullOrWhiteSpace(parts[0]) && !string.IsNullOrWhiteSpace(parts[1]);
+    }
 
     /// <summary>"auto" = the free generators that have a key (keyless ones first), in list order — empty when none; a chosen id = that one.</summary>
     public static IReadOnlyList<IImageGenerator> ImageGenerators(Settings s)

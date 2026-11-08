@@ -23,7 +23,7 @@ public static class AiKeyTester
         {
             return (false, L.T("No answer in time."));
         }
-        catch (AiException e) { return (false, Scrub(e.Message, key)); }
+        catch (AiException e) { return (false, AiErrors.Describe(e, key)); }
         catch (Exception) { return (false, L.T("Could not reach the service.")); }
     }
 
@@ -31,7 +31,7 @@ public static class AiKeyTester
     internal static string Scrub(string message, string key)
     {
         if (string.IsNullOrWhiteSpace(key)) return message;
-        message = message.Replace(key, "…");
+        if (key.Trim().Length >= 4) message = message.Replace(key.Trim(), "…");
         foreach (var part in key.Split(':', StringSplitOptions.RemoveEmptyEntries))
             if (part.Length >= 4) message = message.Replace(part, "…");
         return message;

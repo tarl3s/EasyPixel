@@ -158,6 +158,80 @@ public class CreateWithAiTests
     }
 
     [AvaloniaFact]
+    public async Task CreateWithAi_AllFail_ShowsTheMostUsefulError()
+    {
+        var auth = new FakeGen("auth", _ => throw new AiException(AiErrorKind.Auth, "Alpha"));
+        var slow = new FakeGen("slow", _ => throw new AiException(AiErrorKind.Timeout, "Beta"));
+        var s = new AiCreateSession([auth, slow], null, _ => "k");
+        var errs = new List<string?>();
+        s.CandidateReady += (_, _, e) => errs.Add(e);
+        await s.RunAsync("a box", 16, SpriteView.Auto, null, CancellationToken.None);
+        Assert.Equal(4, errs.Count);
+        Assert.All(errs, e => Assert.Equal("Alpha refused the API key. Check it in the AI settings.", e));
+    }
+
+    [AvaloniaFact]
+    public async Task CreateWithAi_ParallelLimit_IsPerGenerator()
+    {
+        int busy = 0, peak = 0;
+        byte[] Track(int _)
+        {
+            int now = Interlocked.Increment(ref busy);
+            lock (this) peak = Math.Max(peak, now);
+            Thread.Sleep(50);
+            Interlocked.Decrement(ref busy);
+            return [1];
+        }
+        // the first generator allows 1 at a time and always fails; the second allows 4 and must get them all at once
+        var one = new FakeGen("one", _ => throw new AiException(AiErrorKind.Quota, "One"), maxParallel: 1);
+        var four = new ThreadGen(Track, 4);
+        var s = new AiCreateSession([one, four], null, _ => "k");
+        await s.RunAsync("a box", 16, SpriteView.Auto, null, CancellationToken.None);
+        Assert.True(peak > 1, $"peak {peak}");
+    }
+
+    private sealed class ThreadGen(Func<int, byte[]> make, int maxParallel) : IImageGenerator
+    {
+        public string Id => "thread"; public string Name => Id; public bool NeedsKey => false; public bool Free => true; public int MaxParallel => maxParallel;
+        public Task<byte[]> GenerateAsync(string prompt, int seed, string? key, CancellationToken ct) => Task.Run(() => make(0), ct);
+    }
+
+    [AvaloniaFact]
+    public async Task CreateWithAi_DecodeAndConvert_RunOffTheUiThread_EventOnUiThread()
+    {
+        var gen = new FakeGen();
+        var s = new AiCreateSession([gen], null, _ => "k");
+        var onUi = new List<bool>();
+        var got = 0;
+        s.CandidateReady += (_, img, _) => { onUi.Add(Avalonia.Threading.Dispatcher.UIThread.CheckAccess()); if (img != null) got++; };
+        await s.RunAsync("a box", 16, SpriteView.Auto, null, CancellationToken.None);
+        Assert.Equal(4, got);
+        Assert.All(onUi, Assert.True);
+        // Avalonia decodes a bitmap off the UI thread
+        var img2 = await Task.Run(() => ImageDecode.Load(ShapePng()));
+        Assert.Equal(512, img2.Width);
+    }
+
+    [AvaloniaFact]
+    public void AiLayer_DefaultName_IsInThePersonsLanguage_AndIndexedSaysColoursWereMapped()
+    {
+        try
+        {
+            L.Load("pt-BR");
+            using var h = new Harness(16, 16, ColorMode.Indexed);
+            var sprite = new Image(8, 8, new Rgba(200, 30, 30, 255).Packed);
+            h.Window.AddAiLayer(sprite);
+            Assert.StartsWith(L.T("Layer") + " ", h.Session.Layer.Name);
+            Assert.NotEqual("Layer", L.T("Layer"));
+            Assert.Equal(L.T("The AI sprite was added as a new layer. Its colours were matched to the palette."), h.Window.StatusText.Text);
+        }
+        finally { L.Load("en"); }
+        using var h2 = new Harness();
+        h2.Window.AddAiLayer(new Image(8, 8, new Rgba(200, 30, 30, 255).Packed));
+        Assert.Equal("The AI sprite was added as a new layer.", h2.Window.StatusText.Text);
+    }
+
+    [AvaloniaFact]
     public async Task CreateWithAi_Cancel_StopsAndAddsNothing()
     {
         // the generator ignores the cancel and answers afterwards: its picture must not arrive anywhere

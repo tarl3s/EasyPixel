@@ -7,6 +7,11 @@ using Xunit;
 
 namespace EasyPixel.Tests;
 
+[CollectionDefinition("AiProviders", DisableParallelization = true)]
+public sealed class AiProvidersCollection;
+
+/// <summary>Uses AiProviders.UseForTests (global state), so it never runs next to another class of the collection.</summary>
+[Collection("AiProviders")]
 public class ProviderTests
 {
     private static readonly byte[] Png = [0x89, (byte)'P', (byte)'N', (byte)'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13];
@@ -247,6 +252,33 @@ public class ProviderTests
         Assert.False(string.IsNullOrWhiteSpace(e.Message));
         foreach (var part in KeyFor(id).Split(':').Append(KeyFor(id)))
             Assert.DoesNotContain(part, e.Message);
+    }
+
+    [Theory]
+    [InlineData(401, AiErrorKind.Auth)]
+    [InlineData(403, AiErrorKind.Auth)]
+    [InlineData(402, AiErrorKind.NoCredit)]
+    [InlineData(429, AiErrorKind.Quota)]
+    [InlineData(400, AiErrorKind.BadRequest)]
+    [InlineData(503, AiErrorKind.ServerError)]
+    [InlineData(418, AiErrorKind.HttpError)]
+    public async Task Status_codes_give_a_kind_and_the_provider_name(int code, AiErrorKind kind)
+    {
+        var fake = new Fake(_ => Resp((HttpStatusCode)code, "{\"error\":{\"message\":\"bad key " + Key + "\"}}", "application/json"));
+        var e = await Assert.ThrowsAsync<AiException>(() => new OpenAiImage(new HttpClient(fake)).GenerateAsync("x", 1, Key, default));
+        Assert.Equal(kind, e.Kind);
+        Assert.False(string.IsNullOrEmpty(e.ProviderName));
+        Assert.Contains(e.ProviderName!, e.Message);
+        Assert.DoesNotContain(Key, e.Message);
+        Assert.DoesNotContain(Key, e.Detail ?? "");
+        if (kind == AiErrorKind.BadRequest) Assert.Contains("bad key", e.Detail);
+    }
+
+    [Theory, MemberData(nameof(ImageIds))]
+    public async Task Missing_key_has_the_NeedsKey_kind(string id)
+    {
+        var e = await Assert.ThrowsAsync<AiException>(() => MakeImage(id, new HttpClient(new Fake(_ => OkImage(id)))).GenerateAsync("x", 1, null, default));
+        Assert.True(e.Kind is AiErrorKind.NeedsKey or AiErrorKind.KeyFormat, e.Kind.ToString());
     }
 
     [Theory, MemberData(nameof(ImageIds))]

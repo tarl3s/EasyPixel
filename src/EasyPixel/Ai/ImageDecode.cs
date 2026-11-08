@@ -17,11 +17,11 @@ public static class ImageDecode
             using var ms = new MemoryStream(data ?? []);
             bmp = WriteableBitmap.Decode(ms);
         }
-        catch (Exception ex) when (ex is not OutOfMemoryException) { throw new AiException("The picture couldn't be read."); }
+        catch (Exception ex) when (ex is not OutOfMemoryException) { throw new AiException(L.T("The picture couldn't be read.")); }
         using (bmp)
         {
             int w = bmp.PixelSize.Width, h = bmp.PixelSize.Height;
-            if (w < 1 || h < 1) throw new AiException("The picture couldn't be read.");
+            if (w < 1 || h < 1) throw new AiException(L.T("The picture couldn't be read."));
             var img = new Image(w, h);
             using var fb = bmp.Lock();
             bool bgra = bmp.Format == PixelFormats.Bgra8888;

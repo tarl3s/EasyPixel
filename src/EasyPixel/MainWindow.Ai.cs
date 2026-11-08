@@ -75,7 +75,9 @@ public partial class MainWindow
             doc.Cels[(layer, frame)] = cel;
         });
         Session.Layer = layer;
-        ShowStatus(L.T("The AI sprite was added as a new layer."));
+        ShowStatus(doc.Mode == ColorMode.Indexed
+            ? L.T("The AI sprite was added as a new layer. Its colours were matched to the palette.")
+            : L.T("The AI sprite was added as a new layer."));
     }
 
     /// <summary>The picture itself when it fits, else a nearest-neighbour copy scaled down to fit.</summary>

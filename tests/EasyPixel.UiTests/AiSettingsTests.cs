@@ -80,6 +80,69 @@ public class AiSettingsTests
     }
 
     [Fact]
+    public void Cloudflare_HalfKey_CountsAsNoKey()
+    {
+        Assert.False(AiRouting.HasKey(WithKeys(("cloudflare", "acc:")), "cloudflare"));
+        Assert.False(AiRouting.HasKey(WithKeys(("cloudflare", ":tok")), "cloudflare"));
+        Assert.False(AiRouting.HasKey(WithKeys(("cloudflare", "justtoken")), "cloudflare"));
+        Assert.True(AiRouting.HasKey(WithKeys(("cloudflare", "acc:tok")), "cloudflare"));
+        Assert.True(AiRouting.HasKey(WithKeys(("openai", "sk-1")), "openai"));
+    }
+
+    [AvaloniaFact]
+    public void SettingsWindow_DoesNotSaveHalfCloudflareKeys()
+    {
+        foreach (var half in new[] { "acc:", ":tok" })
+        {
+            var w = new AiSettingsWindow(new AiChoice("auto", "auto", new Dictionary<string, string> { ["cloudflare"] = half, ["openai"] = "sk-1" }), _ => { });
+            Assert.False(w.Choice.Keys.ContainsKey("cloudflare"), half);
+            Assert.Equal("sk-1", w.Choice.Keys["openai"]);
+        }
+        var ok = new AiSettingsWindow(new AiChoice("auto", "auto", new Dictionary<string, string> { ["cloudflare"] = "acc:tok" }), _ => { });
+        Assert.Equal("acc:tok", ok.Choice.Keys["cloudflare"]);
+    }
+
+    [AvaloniaFact]
+    public async Task Tester_TranslatesProviderErrors_WithoutTheKey()
+    {
+        using var _ = AiProviders.UseForTests([new KindImage("x", AiErrorKind.Auth)]);
+        try
+        {
+            L.Load("pt-BR");
+            var (ok, msg) = await AiKeyTester.TestAsync("x", "SECRET-KEY-123");
+            Assert.False(ok);
+            Assert.Equal(L.F("{0} refused the API key. Check it in the AI settings.", "x"), msg);
+            Assert.NotEqual("x refused the API key. Check it in the AI settings.", msg);
+            Assert.DoesNotContain("SECRET-KEY-123", msg);
+        }
+        finally { L.Load("en"); }
+    }
+
+    [AvaloniaFact]
+    public void Describe_EveryKind_IsTranslated_AndScrubsTheKey()
+    {
+        try
+        {
+            L.Load("pt-BR");
+            foreach (var kind in Enum.GetValues<AiErrorKind>().Where(k => k != AiErrorKind.Other))
+            {
+                var e = new AiException(kind, "Prov", kind is AiErrorKind.BadRequest ? "bad SECRET-KEY-123" : kind is AiErrorKind.HttpError ? "418" : null);
+                var msg = AiErrors.Describe(e, "SECRET-KEY-123");
+                Assert.Contains("Prov", msg);
+                Assert.NotEqual(e.Message, msg);
+                Assert.DoesNotContain("SECRET-KEY-123", msg);
+            }
+        }
+        finally { L.Load("en"); }
+    }
+
+    private sealed class KindImage(string id, AiErrorKind kind) : IImageGenerator
+    {
+        public string Id => id; public string Name => id; public bool NeedsKey => true; public bool Free => true; public int MaxParallel => 1;
+        public Task<byte[]> GenerateAsync(string prompt, int seed, string? key, CancellationToken ct) => throw new AiException(kind, id);
+    }
+
+    [Fact]
     public async Task Test_ReportsSuccess()
     {
         using var _ = AiProviders.UseForTests([new FakeImage("x", true, true)]);
