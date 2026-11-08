@@ -51,6 +51,7 @@ public sealed class AiCreateSession(IReadOnlyList<IImageGenerator> gens, ITextAi
             try
             {
                 var bytes = await gen.GenerateAsync(Prompt!, Random.Shared.Next(1, int.MaxValue), keyFor(gen.Id), ct);
+                KeepRaw(slot, bytes);
                 // decoding and converting a big picture takes a while: off the UI thread
                 sprite = await Task.Run(() => PixelArtConverter.Convert(ImageDecode.Load(bytes), new ConvertOptions(size, Palette: palette)), ct);
                 if (sprite == null) Fail(L.T("The picture had nothing to turn into a sprite."), 0);
@@ -71,5 +72,22 @@ public sealed class AiCreateSession(IReadOnlyList<IImageGenerator> gens, ITextAi
         if (sprite != null) error = null;
         ct.ThrowIfCancellationRequested();
         CandidateReady?.Invoke(slot, sprite, error);
+    }
+
+    /// <summary>Where the last run's pictures are kept as the generator sent them (before the pixel-art conversion).</summary>
+    public static string RawFolder => Path.Combine(Path.GetTempPath(), "EasyPixel-AI");
+
+    // The generator's own picture, for judging where a bad sprite goes wrong (the model or the conversion). Each run
+    // overwrites the last; a failure to write is ignored.
+    private static void KeepRaw(int slot, byte[] bytes)
+    {
+        try
+        {
+            Directory.CreateDirectory(RawFolder);
+            bool png = bytes.Length > 4 && bytes[0] == 0x89 && bytes[1] == (byte)'P';
+            foreach (var old in Directory.GetFiles(RawFolder, $"candidate{slot + 1}.*")) File.Delete(old);
+            File.WriteAllBytes(Path.Combine(RawFolder, $"candidate{slot + 1}{(png ? ".png" : ".jpg")}"), bytes);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
     }
 }
