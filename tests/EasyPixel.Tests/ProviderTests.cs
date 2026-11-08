@@ -96,7 +96,7 @@ public class ProviderTests
         Assert.Equal("Bearer cftoken_SECRET_99", fake.Last.Headers.Authorization!.ToString());
         var b = JsonNode.Parse(fake.Body!)!;
         Assert.Equal("a red slime", (string)b["prompt"]!);
-        Assert.Equal(42, (int)b["seed"]!);
+        Assert.Null(b["seed"]); // the REST API refuses it
         Assert.InRange((int)b["steps"]!, 1, 8);
         Assert.Null(b["width"]);
         Assert.Null(b["height"]);

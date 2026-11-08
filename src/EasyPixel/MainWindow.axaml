@@ -9,7 +9,12 @@
   <!-- Aseprite's layout: menu and tool options on top, tools on the left, colour/palette/layers on the right,
        the timeline under the canvas. Tab hides everything but the menu and the canvas. -->
   <DockPanel>
-    <Menu DockPanel.Dock="Top" x:Name="MainMenu">
+    <DockPanel DockPanel.Dock="Top" x:Name="MenuRow">
+    <!-- the AI is the headline feature: a big, always-visible button at the right end of the menu bar -->
+    <Button DockPanel.Dock="Right" x:Name="CreateWithAiButton" Content="{loc:T '✨ Create with AI…'}" Click="CreateWithAi_Click"
+            Background="{DynamicResource Accent}" Foreground="{DynamicResource AccentText}" FontWeight="SemiBold"
+            Padding="14,4" Margin="6,3" VerticalAlignment="Center" Focusable="False" />
+    <Menu x:Name="MainMenu">
       <MenuItem Header="{loc:T 'File'}">
         <MenuItem Header="{loc:T 'New…'}" InputGesture="Ctrl+N" Click="New_Click" />
         <MenuItem Header="{loc:T 'Open…'}" InputGesture="Ctrl+O" Click="Open_Click" />
@@ -133,6 +138,7 @@
         <MenuItem Header="{loc:T 'About EasyPixel'}" Click="About_Click" />
       </MenuItem>
     </Menu>
+    </DockPanel>
 
     <Border x:Name="OptionsBorder" DockPanel.Dock="Top" Classes="bar" BorderThickness="0,1,0,1" Padding="8,4">
       <StackPanel x:Name="OptionsBar" Orientation="Horizontal" Spacing="10" Height="32" />
