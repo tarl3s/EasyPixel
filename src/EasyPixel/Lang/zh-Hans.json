@@ -560,5 +560,7 @@
   "{0} sent a broken picture. Try again.": "{0} 发送了损坏的图片。请重试。",
   "{0} sent an answer EasyPixel can't read. Try again.": "{0} 发送了 EasyPixel 无法读取的回答。请重试。",
   "{0} sent an empty answer. Try again.": "{0} 发送了空的回答。请重试。",
-  "{0} took too long to answer. Try again.": "{0} 回答超时。请重试。"
+  "{0} took too long to answer. Try again.": "{0} 回答超时。请重试。",
+  "Asked the AI (in English): {0}": "发送给 AI 的请求（英文）：{0}",
+  "{0} found the description too violent or adult. Try softer words.": "{0} 认为描述过于暴力或成人化。请换用更温和的词语。"
 }

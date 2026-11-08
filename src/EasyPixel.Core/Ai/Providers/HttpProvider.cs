@@ -53,6 +53,7 @@ public abstract class HttpProvider
         401 or 403 => new AiException(AiErrorKind.Auth, DisplayName),
         402 => new AiException(AiErrorKind.NoCredit, DisplayName),
         429 => new AiException(AiErrorKind.Quota, DisplayName),
+        400 when Detail(body) is { } nsfw && nsfw.Contains("NSFW", StringComparison.OrdinalIgnoreCase) => new AiException(AiErrorKind.Refused, DisplayName),
         400 => new AiException(AiErrorKind.BadRequest, DisplayName, Detail(body) is { } d ? Scrub(d, key) : null),
         >= 500 => new AiException(AiErrorKind.ServerError, DisplayName),
         _ => new AiException(AiErrorKind.HttpError, DisplayName, ((int)code).ToString()),

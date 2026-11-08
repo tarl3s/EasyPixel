@@ -32,7 +32,7 @@ public static class PixelArtConverter
         return small;
     }
 
-    /// <summary>Makes the background transparent: the border's dominant colour is flooded in from the border, then only the main blob (and blobs of at least 2% of it) stays.</summary>
+    /// <summary>Makes the background transparent: the border's dominant colour is flooded in from the border, then only the main blob (and blobs of at least MinBlobPercent % of it) stays.</summary>
     public static Image RemoveBackground(Image src)
     {
         int w = src.Width, h = src.Height;
@@ -83,7 +83,10 @@ public static class PixelArtConverter
         return res;
     }
 
-    /// <summary>Clears every 8-connected blob smaller than 2% of the largest one (the largest always stays).</summary>
+    /// <summary>Blobs under this share of the largest are dropped: a puddle, a ground shadow or a stray prop beside the subject.</summary>
+    public const int MinBlobPercent = 15;
+
+    /// <summary>Clears every 8-connected blob smaller than <see cref="MinBlobPercent"/>% of the largest one (the largest always stays).</summary>
     private static void KeepMainBlobs(Image img)
     {
         int w = img.Width, h = img.Height;
@@ -116,7 +119,7 @@ public static class PixelArtConverter
         }
         int largest = sizes.Max();
         for (int i = 0; i < label.Length; i++)
-            if (label[i] != 0 && sizes[label[i]] * 50 < largest) img.Pixels[i] = 0;
+            if (label[i] != 0 && sizes[label[i]] * 100 < largest * MinBlobPercent) img.Pixels[i] = 0;
     }
 
     /// <summary>The box around the visible pixels; width 0 when there are none.</summary>

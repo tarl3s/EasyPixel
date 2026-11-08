@@ -33,7 +33,7 @@ public sealed class CloudflareImage : HttpProvider, IImageGenerator
         var (account, token) = CloudflareKey.Split(RequireKey(key), DisplayName);
         using var req = new HttpRequestMessage(HttpMethod.Post, $"{CloudflareKey.Base}{Uri.EscapeDataString(account)}/ai/run/{Model}")
         {
-            Content = Json(new { prompt, steps = 4 }), // the REST API refuses "seed" (and width/height); each call is random anyway
+            Content = Json(new { prompt, steps = 8 }), // 8 = the most it allows (clearer shapes); it refuses "seed" and width/height, each call is random anyway
         };
         Bearer(req, token);
         var json = ParseJson(await SendAsync(req, ImageTimeout, key, ct).ConfigureAwait(false));

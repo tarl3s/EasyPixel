@@ -27,7 +27,7 @@ public interface ITextAi
 }
 
 /// <summary>What went wrong, so the app can say it in the person's language.</summary>
-public enum AiErrorKind { Other, NeedsKey, KeyFormat, Auth, NoCredit, Quota, BadRequest, ServerError, HttpError, Empty, Timeout, Offline, Unreadable, NoPicture, BrokenPicture, Failed }
+public enum AiErrorKind { Other, Refused, NeedsKey, KeyFormat, Auth, NoCredit, Quota, BadRequest, ServerError, HttpError, Empty, Timeout, Offline, Unreadable, NoPicture, BrokenPicture, Failed }
 
 /// <summary>
 /// A provider failure: its <see cref="Kind"/>, the provider's name and an optional (key-free) <see cref="Detail"/>; the English
@@ -51,6 +51,7 @@ public sealed class AiException : Exception
         AiErrorKind.Auth => $"{p} refused the API key. Check it in the AI settings.",
         AiErrorKind.NoCredit => $"{p} says the account has no credit left.",
         AiErrorKind.Quota => $"{p} is busy or the free quota is used up. Try again later.",
+        AiErrorKind.Refused => $"{p} refused the description as too violent or adult.",
         AiErrorKind.BadRequest => string.IsNullOrEmpty(d) ? $"{p} didn't accept the request." : $"{p} didn't accept the request: {d}",
         AiErrorKind.ServerError => $"{p} had a problem on its side. Try again later.",
         AiErrorKind.HttpError => $"{p} answered with an error ({d}).",

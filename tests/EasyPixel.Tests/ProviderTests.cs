@@ -19,7 +19,7 @@ public class ProviderTests
     private const string Key = "sk_secret_KEY_1234";
     private const string CfKey = "acct123abc:cftoken_SECRET_99";
 
-    private sealed class Fake(Func<HttpRequestMessage, HttpResponseMessage> answer) : HttpMessageHandler
+    internal sealed class Fake(Func<HttpRequestMessage, HttpResponseMessage> answer) : HttpMessageHandler
     {
         public HttpRequestMessage? Last;
         public string? Body;
@@ -34,7 +34,7 @@ public class ProviderTests
         }
     }
 
-    private static HttpResponseMessage Resp(HttpStatusCode code, string body, string type = "application/json") =>
+    internal static HttpResponseMessage Resp(HttpStatusCode code, string body, string type = "application/json") =>
         new(code) { Content = new StringContent(body, Encoding.UTF8, type) };
 
     private static HttpResponseMessage Bytes(byte[] b) => new(HttpStatusCode.OK) { Content = new ByteArrayContent(b) };

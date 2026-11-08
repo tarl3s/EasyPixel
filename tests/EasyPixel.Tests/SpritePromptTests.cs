@@ -12,8 +12,8 @@ public class SpritePromptTests
     public void Build_HasRequestAndStyle()
     {
         var p = SpritePrompt.Build("a green slime", SpriteView.Side);
-        Assert.StartsWith("a green slime", p);
-        Assert.Contains("pixel art", p);
+        Assert.Contains("of a green slime.", p); // the subject leads the prompt
+        Assert.StartsWith("Pixel art", p);
         Assert.Contains("side view", p);
     }
 

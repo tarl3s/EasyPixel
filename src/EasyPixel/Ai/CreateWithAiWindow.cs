@@ -26,6 +26,8 @@ internal sealed class CreateWithAiWindow : Window
     private readonly ComboBox _size, _view, _palette;
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap, MaxWidth = 560 };
     private readonly TextBlock _note = new() { TextWrapping = TextWrapping.Wrap, MaxWidth = 560, Classes = { "dim" }, IsVisible = false };
+    // what the AI was actually asked (the request in English), so a lost detail in the translation can be seen
+    private readonly TextBlock _sent = new() { TextWrapping = TextWrapping.Wrap, MaxWidth = 560, Classes = { "dim" }, FontSize = 11, IsVisible = false };
     private readonly Button _generate, _more, _useSprite, _addLayer;
     private readonly ToggleButton[] _slotButtons = new ToggleButton[AiCreateSession.Slots];
     private readonly Avalonia.Controls.Image[] _big = new Avalonia.Controls.Image[AiCreateSession.Slots], _small = new Avalonia.Controls.Image[AiCreateSession.Slots];
@@ -110,6 +112,7 @@ internal sealed class CreateWithAiWindow : Window
         root.Children.Add(_note);
         root.Children.Add(slots);
         root.Children.Add(_status);
+        root.Children.Add(_sent);
         root.Children.Add(buttons);
         Content = root;
         Closed += (_, _) => _cts?.Cancel();
@@ -231,6 +234,12 @@ internal sealed class CreateWithAiWindow : Window
         try
         {
             await session.RunAsync(request, size, view, palette, cts.Token);
+            if (session.English is { Length: > 0 } en)
+            {
+                _sent.Text = L.F("Asked the AI (in English): {0}", SpritePrompt.Soften(en));
+                L.Keep(_sent); // holds the person's words
+                _sent.IsVisible = true;
+            }
             _status.Text = Candidates.Any(c => c != null) ? L.T("Pick the one you like, or ask for 4 more.") : L.T("No sprite could be made. Try again or change the description.");
         }
         catch (OperationCanceledException) { return; } // cancelled: stop quietly

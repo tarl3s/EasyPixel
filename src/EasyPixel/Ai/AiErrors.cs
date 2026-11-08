@@ -10,6 +10,7 @@ public static class AiErrors
         var p = e.ProviderName ?? "";
         var text = e.Kind switch
         {
+            AiErrorKind.Refused => L.F("{0} found the description too violent or adult. Try softer words.", p),
             AiErrorKind.NeedsKey => L.F("{0} needs an API key. Add it in the AI settings.", p),
             AiErrorKind.KeyFormat => L.F("{0} needs your Account ID and API token, written as accountid:token.", p),
             AiErrorKind.Auth => L.F("{0} refused the API key. Check it in the AI settings.", p),

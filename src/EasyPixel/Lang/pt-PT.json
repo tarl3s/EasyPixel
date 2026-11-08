@@ -560,5 +560,7 @@
   "{0} sent a broken picture. Try again.": "{0} enviou uma imagem danificada. Tente novamente.",
   "{0} sent an answer EasyPixel can't read. Try again.": "{0} enviou uma resposta que o EasyPixel não consegue ler. Tente novamente.",
   "{0} sent an empty answer. Try again.": "{0} enviou uma resposta vazia. Tente novamente.",
-  "{0} took too long to answer. Try again.": "{0} demorou demasiado a responder. Tente novamente."
+  "{0} took too long to answer. Try again.": "{0} demorou demasiado a responder. Tente novamente.",
+  "Asked the AI (in English): {0}": "Pedido enviado à IA (em inglês): {0}",
+  "{0} found the description too violent or adult. Try softer words.": "{0} considerou a descrição demasiado violenta ou adulta. Tente palavras mais suaves."
 }
