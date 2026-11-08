@@ -18,10 +18,12 @@ public class ProviderTests
     {
         public HttpRequestMessage? Last;
         public string? Body;
+        public readonly List<(HttpRequestMessage Req, string? Body)> All = [];
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage req, CancellationToken ct)
         {
             Last = req;
             Body = req.Content == null ? null : await req.Content.ReadAsStringAsync(ct);
+            All.Add((req, Body));
             ct.ThrowIfCancellationRequested();
             return answer(req);
         }
@@ -57,7 +59,7 @@ public class ProviderTests
     {
         "cloudflare" => $"{{\"result\":{{\"image\":\"{PngB64}\"}},\"success\":true}}",
         "openai" => $"{{\"data\":[{{\"b64_json\":\"{PngB64}\"}}]}}",
-        "gemini" => $"{{\"candidates\":[{{\"content\":{{\"parts\":[{{\"text\":\"here\"}},{{\"inlineData\":{{\"mimeType\":\"image/png\",\"data\":\"{PngB64}\"}}}}]}}}}]}}",
+        "gemini" => $"{{\"output_image\":{{\"mime_type\":\"image/png\",\"data\":\"{PngB64}\"}}}}",
         _ => $"{{\"base64_images\":[\"{PngB64}\"]}}",
     };
 
@@ -91,6 +93,8 @@ public class ProviderTests
         Assert.Equal("a red slime", (string)b["prompt"]!);
         Assert.Equal(42, (int)b["seed"]!);
         Assert.InRange((int)b["steps"]!, 1, 8);
+        Assert.Null(b["width"]);
+        Assert.Null(b["height"]);
     }
 
     [Fact]
@@ -112,8 +116,7 @@ public class ProviderTests
         Assert.Equal("gen.pollinations.ai", u.Host);
         Assert.Equal("/image/a%20red%20slime", u.AbsolutePath.Replace("+", "%20"));
         Assert.Contains("seed=7", u.Query);
-        Assert.Contains("model=flux", u.Query);
-        Assert.Contains("nologo=true", u.Query);
+        Assert.Contains("model=black-forest-labs/flux.1-schnell", Uri.UnescapeDataString(u.Query));
         Assert.Equal($"Bearer {Key}", fake.Last.Headers.Authorization!.ToString());
     }
 
@@ -135,27 +138,89 @@ public class ProviderTests
     {
         var fake = new Fake(_ => OkImage("gemini"));
         await new GeminiImage(new HttpClient(fake)).GenerateAsync("a red slime", 7, Key, default);
-        Assert.Equal("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
-                     fake.Last!.RequestUri!.ToString());
+        Assert.Equal(HttpMethod.Post, fake.Last!.Method);
+        Assert.Equal("https://generativelanguage.googleapis.com/v1beta/interactions", fake.Last.RequestUri!.ToString());
         Assert.Equal(Key, fake.Last.Headers.GetValues("x-goog-api-key").Single());
+        Assert.Equal("2026-05-20", fake.Last.Headers.GetValues("Api-Revision").Single());
         Assert.DoesNotContain(Key, fake.Last.RequestUri.ToString());
         var b = JsonNode.Parse(fake.Body!)!;
-        Assert.Equal("a red slime", (string)b["contents"]![0]!["parts"]![0]!["text"]!);
-        Assert.Equal("IMAGE", (string)b["generationConfig"]!["responseModalities"]![0]!);
+        Assert.Equal("gemini-nano-banana-2.1", (string)b["model"]!);
+        Assert.Equal("a red slime", (string)b["input"]!);
+        Assert.Equal("image", (string)b["response_format"]!["type"]!);
+        Assert.Equal("image/png", (string)b["response_format"]!["mime_type"]!);
     }
 
-    [Fact]
-    public async Task RetroDiffusion_request_is_documented_shape()
+    private static Fake RdFake(int pendingPolls) => new(req =>
     {
-        var fake = new Fake(_ => OkImage("retrodiffusion"));
-        await new RetroDiffusionImage(new HttpClient(fake)).GenerateAsync("a red slime", 7, Key, default);
-        Assert.Equal("https://api.retrodiffusion.ai/v1/inferences", fake.Last!.RequestUri!.ToString());
-        Assert.Equal(Key, fake.Last.Headers.GetValues("X-RD-Token").Single());
-        var b = JsonNode.Parse(fake.Body!)!;
+        if (req.Method == HttpMethod.Post) return Resp(HttpStatusCode.OK, "{\"status\":\"accepted\",\"task_id\":\"t42\"}");
+        return pendingPolls-- > 0
+            ? Resp(HttpStatusCode.OK, "{\"status\":\"processing\"}")
+            : Resp(HttpStatusCode.OK, $"{{\"status\":\"completed\",\"result\":{{\"base64_images\":[\"{PngB64}\"]}}}}");
+    });
+
+    [Fact]
+    public async Task RetroDiffusion_starts_a_task_and_polls_it_with_backoff()
+    {
+        var fake = RdFake(2);
+        var waits = new List<TimeSpan>();
+        var rd = new RetroDiffusionImage(new HttpClient(fake)) { Delay = (t, _) => { waits.Add(t); return Task.CompletedTask; } };
+        var bytes = await rd.GenerateAsync("a red slime", 7, Key, default);
+        Assert.Equal(Png, bytes);
+
+        var post = fake.All[0];
+        Assert.Equal(HttpMethod.Post, post.Req.Method);
+        Assert.Equal("https://api.retrodiffusion.ai/v2/inferences", post.Req.RequestUri!.ToString());
+        Assert.Equal(Key, post.Req.Headers.GetValues("X-RD-Token").Single());
+        var b = JsonNode.Parse(post.Body!)!;
         Assert.Equal("a red slime", (string)b["prompt"]!);
         Assert.Equal(7, (int)b["seed"]!);
         Assert.Equal(1, (int)b["num_images"]!);
-        Assert.NotNull(b["width"]);
+        Assert.Equal("rd_fast__default", (string)b["prompt_style"]!);
+        Assert.InRange((int)b["width"]!, 64, 384);
+
+        Assert.Equal(4, fake.All.Count);
+        Assert.All(fake.All.Skip(1), r =>
+        {
+            Assert.Equal(HttpMethod.Get, r.Req.Method);
+            Assert.Equal("https://api.retrodiffusion.ai/v2/inferences/tasks/t42", r.Req.RequestUri!.ToString());
+            Assert.Equal(Key, r.Req.Headers.GetValues("X-RD-Token").Single());
+        });
+        Assert.Equal(3, waits.Count);
+        Assert.True(waits[1] > waits[0], "polling backs off");
+    }
+
+    [Fact]
+    public async Task RetroDiffusion_failed_task_is_a_friendly_error()
+    {
+        var fake = new Fake(req => req.Method == HttpMethod.Post
+            ? Resp(HttpStatusCode.OK, "{\"task_id\":\"t1\"}") : Resp(HttpStatusCode.OK, "{\"status\":\"failed\"}"));
+        var rd = new RetroDiffusionImage(new HttpClient(fake)) { Delay = (_, _) => Task.CompletedTask };
+        await Assert.ThrowsAsync<AiException>(() => rd.GenerateAsync("x", 1, Key, default));
+    }
+
+    [Fact]
+    public async Task RetroDiffusion_cancel_during_polling_is_OperationCanceled()
+    {
+        using var cts = new CancellationTokenSource();
+        var fake = RdFake(1000);
+        int polls = 0;
+        var rd = new RetroDiffusionImage(new HttpClient(fake))
+        {
+            Delay = (t, ct) => { if (++polls == 3) cts.Cancel(); ct.ThrowIfCancellationRequested(); return Task.CompletedTask; },
+        };
+        var e = await Assert.ThrowsAnyAsync<Exception>(() => rd.GenerateAsync("x", 1, Key, cts.Token));
+        Assert.IsAssignableFrom<OperationCanceledException>(e);
+        Assert.True(fake.All.Count < 10);
+    }
+
+    [Theory, MemberData(nameof(TextIds))]
+    public async Task Text_user_cancel_is_OperationCanceled_not_AiException(string id)
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        var fake = new Fake(_ => Resp(HttpStatusCode.OK, OkTextBody(id)));
+        var e = await Assert.ThrowsAnyAsync<Exception>(() => MakeText(id, new HttpClient(fake)).AskAsync("s", "u", KeyFor(id), cts.Token));
+        Assert.IsAssignableFrom<OperationCanceledException>(e);
     }
 
     public static TheoryData<string, int, string> BadAnswers()
@@ -226,7 +291,7 @@ public class ProviderTests
     {
         var f1 = new Fake(_ => Resp(HttpStatusCode.OK, OkTextBody("cloudflare")));
         await new CloudflareText(new HttpClient(f1)).AskAsync("S", "U", CfKey, default);
-        Assert.Equal("https://api.cloudflare.com/client/v4/accounts/acct123abc/ai/run/@cf/meta/llama-3.1-8b-instruct", f1.Last!.RequestUri!.ToString());
+        Assert.Equal("https://api.cloudflare.com/client/v4/accounts/acct123abc/ai/run/@cf/meta/llama-3.1-8b-instruct-fp8", f1.Last!.RequestUri!.ToString());
         Assert.Equal("system", (string)JsonNode.Parse(f1.Body!)!["messages"]![0]!["role"]!);
 
         var f2 = new Fake(_ => Resp(HttpStatusCode.OK, OkTextBody("gemini")));

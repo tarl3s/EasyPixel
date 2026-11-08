@@ -44,7 +44,7 @@ public sealed class CloudflareImage : HttpProvider, IImageGenerator
 /// <summary>Free tier text model for translation; answers {"result":{"response":"…"}}.</summary>
 public sealed class CloudflareText : HttpProvider, ITextAi
 {
-    internal const string Model = "@cf/meta/llama-3.1-8b-instruct";
+    internal const string Model = "@cf/meta/llama-3.1-8b-instruct-fp8";
     public CloudflareText() : this(null) { }
     internal CloudflareText(HttpClient? http) : base(http) { }
 

@@ -20,7 +20,10 @@ internal static class GeminiApi
 /// <summary>Gemini image (paid; no free tier for image models). The picture comes back in a part's inlineData.data.</summary>
 public sealed class GeminiImage : HttpProvider, IImageGenerator
 {
-    internal const string Model = "gemini-2.5-flash-image";
+    // Interactions API (the image docs' current shape); the seed has no documented field and is not sent.
+    internal const string Url = "https://generativelanguage.googleapis.com/v1beta/interactions";
+    internal const string Model = "gemini-nano-banana-2.1";
+    internal const string Revision = "2026-05-20";
     public GeminiImage() : this(null) { }
     internal GeminiImage(HttpClient? http) : base(http) { }
 
@@ -34,16 +37,19 @@ public sealed class GeminiImage : HttpProvider, IImageGenerator
     public async Task<byte[]> GenerateAsync(string prompt, int seed, string? key, CancellationToken ct)
     {
         var k = RequireKey(key);
-        var body = new
+        using var req = new HttpRequestMessage(HttpMethod.Post, Url)
         {
-            contents = new[] { new { parts = new[] { new { text = prompt } } } },
-            generationConfig = new { responseModalities = new[] { "IMAGE" }, seed },
+            Content = Json(new
+            {
+                model = Model,
+                input = prompt,
+                response_format = new { type = "image", mime_type = "image/png", aspect_ratio = "1:1" },
+            }),
         };
-        using var req = GeminiApi.Request(Model, k, body, Json);
+        req.Headers.Add("x-goog-api-key", k);
+        req.Headers.Add("Api-Revision", Revision);
         var json = ParseJson(await SendAsync(req, ImageTimeout, key, ct).ConfigureAwait(false));
-        var data = GeminiApi.Parts(json).Select(p => Str(p["inlineData"]?["data"]) ?? Str(p["inline_data"]?["data"]))
-                                        .FirstOrDefault(d => d != null);
-        return FromBase64(data);
+        return FromBase64(Str(json["output_image"]?["data"]));
     }
 }
 
