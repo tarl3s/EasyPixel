@@ -61,6 +61,9 @@ internal sealed class FakeDialogs : IDialogs
     public Task<OnionOptions?> AskOnion(OnionOptions current) => Task.FromResult(Onions.Count > 0 ? Onions.Dequeue() : null);
     public Task<SettingsChoice?> AskSettings(SettingsChoice current) => Task.FromResult(SettingsChoices.Count > 0 ? SettingsChoices.Dequeue() : null);
 
+    public Queue<AiChoice?> AiChoices { get; } = new();
+    public Task<AiChoice?> AskAiSettings(AiChoice current) => Task.FromResult(AiChoices.Count > 0 ? AiChoices.Dequeue() : null);
+
     public Task ShowShortcuts(IReadOnlyList<(string Keys, string Action)> shortcuts)
     {
         ShortcutLists.Add(shortcuts);

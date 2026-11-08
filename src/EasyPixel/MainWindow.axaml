@@ -41,6 +41,7 @@
         <MenuItem Header="{loc:T 'Scale…'}" Click="ScaleSel_Click" />
         <Separator />
         <MenuItem Header="{loc:T 'Settings…'}" Click="Settings_Click" />
+        <MenuItem Header="{loc:T 'AI settings…'}" Click="AiSettings_Click" />
       </MenuItem>
       <MenuItem Header="{loc:T 'Sprite'}">
         <MenuItem Header="{loc:T 'Canvas size…'}" Click="CanvasSize_Click" />

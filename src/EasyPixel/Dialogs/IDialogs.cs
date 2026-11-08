@@ -24,6 +24,9 @@ public sealed record SliceOptions(int CellWidth, int CellHeight, int Padding);
 
 public sealed record OnionOptions(int Before, int After, int Opacity, bool Tint);
 
+/// <summary>Edit → AI settings: image generator id ("auto" or an id), text AI id, and the keys by provider id.</summary>
+public sealed record AiChoice(string Image, string Text, IReadOnlyDictionary<string, string> Keys);
+
 /// <summary>
 /// Every question the main window asks the person. The app shows real windows (<see cref="AppDialogs"/>); the UI tests
 /// answer from a script. All texts passed in are already translated.
@@ -67,6 +70,8 @@ public interface IDialogs
     Task<OnionOptions?> AskOnion(OnionOptions current);
 
     Task<SettingsChoice?> AskSettings(SettingsChoice current);
+
+    Task<AiChoice?> AskAiSettings(AiChoice current);
 
     /// <summary>Help → Keyboard shortcuts: keys and what they do (already translated).</summary>
     Task ShowShortcuts(IReadOnlyList<(string Keys, string Action)> shortcuts);

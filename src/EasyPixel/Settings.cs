@@ -42,6 +42,10 @@ public sealed class Settings
     public List<string> LessonsPassed { get; set; } = new();
     /// <summary>Recently opened or saved files, newest first.</summary>
     public List<string> Recent { get; set; } = new();
+    /// <summary>Create with AI: image generator and text AI ("auto" or a provider id) and the API keys by provider id (Cloudflare: "accountId:apiToken").</summary>
+    public string AiImage { get; set; } = "auto";
+    public string AiText { get; set; } = "auto";
+    public Dictionary<string, string> AiKeys { get; set; } = new();
 
     /// <summary>The saved settings, or defaults when there are none or the file is broken.</summary>
     public static Settings Load()
