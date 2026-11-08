@@ -47,4 +47,13 @@ public class SpritePromptTests
         var r = await AiTranslate.ToEnglishAsync("um lobo com dois olhos", (_, _, _) => Task.FromResult("a wolf with two eyes"), CancellationToken.None);
         Assert.Equal("a wolf with two eyes", r);
     }
+
+    [Fact]
+    public async Task ToEnglish_CancellationPropagates()
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            AiTranslate.ToEnglishAsync("um lobo com dois olhos", (_, _, ct) => throw new OperationCanceledException(ct), cts.Token));
+    }
 }

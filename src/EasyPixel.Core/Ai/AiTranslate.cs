@@ -95,6 +95,7 @@ public static class AiTranslate
     {
         if (string.IsNullOrWhiteSpace(request) || LooksEnglish(request)) return request;
         try { return Clean(request, await ask(System, request, ct)) ?? request; }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex) when (ex is not OutOfMemoryException) { return request; }
     }
 }
