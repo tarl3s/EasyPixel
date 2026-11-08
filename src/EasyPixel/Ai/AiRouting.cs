@@ -16,6 +16,14 @@ public static class AiRouting
         return free.Where(p => !p.NeedsKey).Concat(free.Where(p => p.NeedsKey)).ToList();
     }
 
+    /// <summary>The generators a request can really use: <see cref="ImageGenerators"/> without a chosen one that still lacks its key.</summary>
+    public static IReadOnlyList<IImageGenerator> UsableGenerators(Settings s) =>
+        ImageGenerators(s).Where(p => !p.NeedsKey || HasKey(s, p.Id)).ToList();
+
+    /// <summary>A Create with AI run with the person's current choice and keys.</summary>
+    public static AiCreateSession NewSession() => new(UsableGenerators(App.Settings), TextAi(App.Settings),
+        id => App.Settings.AiKeys.TryGetValue(id, out var k) ? k : null);
+
     /// <summary>The chosen text AI; "auto" = one that has a key, preferring the image provider's (Cloudflare first).</summary>
     public static ITextAi? TextAi(Settings s)
     {

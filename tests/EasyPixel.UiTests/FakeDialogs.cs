@@ -64,6 +64,14 @@ internal sealed class FakeDialogs : IDialogs
     public Queue<AiChoice?> AiChoices { get; } = new();
     public Task<AiChoice?> AskAiSettings(AiChoice current) => Task.FromResult(AiChoices.Count > 0 ? AiChoices.Dequeue() : null);
 
+    public Queue<AiPick?> AiPicks { get; } = new();
+    public List<AiCreateRequest> AiRequests { get; } = new();
+    public Task<AiPick?> CreateWithAi(AiCreateRequest start)
+    {
+        AiRequests.Add(start);
+        return Task.FromResult(AiPicks.Count > 0 ? AiPicks.Dequeue() : null);
+    }
+
     public Task ShowShortcuts(IReadOnlyList<(string Keys, string Action)> shortcuts)
     {
         ShortcutLists.Add(shortcuts);

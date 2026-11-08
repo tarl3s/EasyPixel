@@ -15,6 +15,7 @@
         <MenuItem Header="{loc:T 'Open…'}" InputGesture="Ctrl+O" Click="Open_Click" />
         <MenuItem x:Name="RecentMenu" Header="{loc:T 'Open recent'}" />
         <MenuItem Header="{loc:T 'Import sprite sheet…'}" Click="ImportSheet_Click" />
+        <MenuItem Header="{loc:T '✨ Create with AI…'}" Click="CreateWithAi_Click" />
         <Separator />
         <MenuItem Header="{loc:T 'Save'}" InputGesture="Ctrl+S" Click="Save_Click" />
         <MenuItem Header="{loc:T 'Save as…'}" InputGesture="Ctrl+Shift+S" Click="SaveAs_Click" />
