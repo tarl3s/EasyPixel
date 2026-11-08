@@ -122,6 +122,20 @@ public sealed class AppDialogs : IDialogs
         return w.Result == 0 ? w.Choice : null;
     }
 
+    public async Task<AiPick?> CreateWithAi(AiCreateRequest start)
+    {
+        var w = new EasyPixel.Ai.CreateWithAiWindow(start, EasyPixel.Ai.AiRouting.NewSession);
+        await w.ShowDialog(_owner);
+        return w.Result;
+    }
+
+    public async Task<AiChoice?> AskAiSettings(AiChoice current)
+    {
+        var w = new EasyPixel.Ai.AiSettingsWindow(current, (_owner as MainWindow)?.OpenExternal ?? (_ => { }));
+        await w.ShowDialog(_owner);
+        return w.Result == 0 ? w.Choice : null;
+    }
+
     public async Task ShowShortcuts(IReadOnlyList<(string Keys, string Action)> shortcuts) =>
         await new ShortcutsWindow(shortcuts).ShowDialog(_owner);
 

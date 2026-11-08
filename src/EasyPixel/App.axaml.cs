@@ -51,6 +51,19 @@ public partial class App : Application
         RegisterInstall();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            if (desktop.Args is { } cli && cli.Contains("--ai-sheet"))
+            {
+                // Dev tool: no window; run the quality contact sheet and exit.
+                _ = Task.Run(async () =>
+                {
+                    int code;
+                    try { code = await EasyPixel.Ai.AiSheet.RunCommandAsync(cli); }
+                    catch (Exception ex) { Console.Error.WriteLine(ex.Message); code = 1; }
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => desktop.Shutdown(code));
+                });
+                base.OnFrameworkInitializationCompleted();
+                return;
+            }
             var window = new MainWindow();
             var file = desktop.Args?.FirstOrDefault(a => !a.StartsWith('-'));
             if (file != null) window.Opened += async (_, _) => await window.OpenPathAsync(file);

@@ -36,6 +36,10 @@ public partial class MainWindow
             _toolButtons[kind] = b;
             ToolStrip.Children.Add(b);
         }
+        var ai = new Button { Content = "✨", Classes = { "tool" }, Focusable = false };
+        ToolTip.SetTip(ai, L.T("Create with AI"));
+        ai.Click += CreateWithAi_Click;
+        ToolStrip.Children.Add(ai);
     }
 
     // Tools no font symbol looks like: drawn (24 x 24 box), in the button's text colour so they follow the theme and the checked state.

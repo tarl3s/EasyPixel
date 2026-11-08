@@ -72,6 +72,25 @@ Com os dois instalados, eles se encontram sozinhos:
 
 O EasyPixel nunca escreve dentro de um projeto da EasyEngine — só lê para importar; o resultado volta pelo lado da EasyEngine.
 
+## Criar com IA
+
+Descreva o sprite que você quer, em qualquer idioma — *"um slime vermelho pequeno com olhos grandes"* — e o EasyPixel
+mostra quatro opções em pixel art. Escolha uma e ela vira um **sprite novo**, ou uma **camada nova** no sprite que
+você tem aberto. Depois é seu: edite à mão como qualquer outro desenho.
+
+- **Arquivo → ✨ Criar com IA…** (ou o botão ✨ na barra de ferramentas). Escolha o tamanho (16, 32, 48 ou 64 pixels),
+  a visão e a paleta, depois **Gerar**. **Mais 4** cria quatro opções novas com a mesma descrição.
+- A imagem volta como pixels de verdade, não como uma imagem borrada, então você pode continuar trabalhando nela.
+
+Para usar, coloque uma chave uma vez em **Editar → Configurações da IA…**. Você precisa de só um provedor:
+
+- **Cloudflare Workers AI (grátis).** Crie uma conta grátis na Cloudflare, abra o **Workers AI** e copie o seu
+  **Account ID**. Depois crie um **API token** com a permissão do Workers AI. Cole os dois nas configurações de IA.
+  A cota grátis dá umas 200 imagens por dia (uma estimativa).
+- **OpenAI, Gemini, Retro Diffusion** (pagos). Esses usam a sua própria chave, e quem cobra é o serviço, não o
+  EasyPixel. As chaves ficam no seu computador.
+- **Pollinations** (chave grátis do site deles, também em Configurações da IA).
+
 ## Limites conhecidos
 
 - Por enquanto cada cel guarda a tela inteira, então telas muito grandes com muitos quadros usam bastante memória
@@ -80,7 +99,7 @@ O EasyPixel nunca escreve dentro de um projeto da EasyEngine — só lê para im
 ## Roteiro
 
 1. Modo tilemap; importação de arquivos PSD, `.pyxel` e `.ora`.
-2. **Geração com IA** — descreva um sprite, ou peça mudanças e mais quadros; provedores locais (grátis, no seu PC) e na nuvem,
+2. **Mais IA** — peça mudanças e mais quadros; provedores locais (grátis, no seu PC) e na nuvem,
    com resultado limpo em pixels de verdade, que você continua editando à mão.
 
 ## Compilando do código-fonte

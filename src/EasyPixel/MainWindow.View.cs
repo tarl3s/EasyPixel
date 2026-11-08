@@ -105,6 +105,19 @@ public partial class MainWindow
         await Dialogs.Tell(L.T("Changes apply the next time EasyPixel starts."));
     }
 
+    private void AiSettings_Click(object? sender, RoutedEventArgs e) => _ = AiSettingsAsync();
+
+    /// <summary>Edit → AI settings: which generator and text AI to use, and their keys.</summary>
+    internal async Task AiSettingsAsync()
+    {
+        var s = App.Settings;
+        if (await Dialogs.AskAiSettings(new AiChoice(s.AiImage, s.AiText, new Dictionary<string, string>(s.AiKeys))) is not { } c) return;
+        s.AiImage = c.Image;
+        s.AiText = c.Text;
+        s.AiKeys = new Dictionary<string, string>(c.Keys);
+        s.Save();
+    }
+
     // ---- Help ----
 
     private void Shortcuts_Click(object? sender, RoutedEventArgs e) => _ = ShowShortcutsAsync();

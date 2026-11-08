@@ -73,6 +73,25 @@ If you have both installed, they find each other:
 EasyPixel never writes into an EasyEngine project — it only reads one to import; the result comes back from
 EasyEngine's side.
 
+## Create with AI
+
+Describe the sprite you want, in any language — *"a small red slime with big eyes"* — and EasyPixel shows four
+pixel-art options. Pick one and it becomes a **new sprite**, or a **new layer** on the sprite you have open. From there
+it's yours: edit it by hand like any other drawing.
+
+- **File → ✨ Create with AI…** (or the ✨ button in the tool bar). Choose the size (16, 32, 48 or 64 pixels), the view
+  and the palette, then **Generate**. **4 more** makes four new options from the same description.
+- The picture comes back as real pixels, not a blurry image, so you can keep working on it.
+
+To use it, add a key once in **Edit → AI settings…**. You only need one provider:
+
+- **Cloudflare Workers AI (free).** Make a free Cloudflare account, open **Workers AI**, and copy your **Account ID**.
+  Then make an **API token** with the Workers AI permission. Paste both in AI settings. The free allowance is roughly
+  200 pictures a day (an estimate).
+- **OpenAI, Gemini, Retro Diffusion** (paid). These use your own key, and the cost is charged by that service, not by
+  EasyPixel. Their keys stay on your computer.
+- **Pollinations** (free key from its site, also set in AI settings).
+
 ## Known limits
 
 - Every cel is stored at the full canvas size for now, so very large canvases with many frames use a lot of memory
@@ -81,7 +100,7 @@ EasyEngine's side.
 ## Roadmap
 
 1. Tilemap mode; import of PSD, `.pyxel` and `.ora` files.
-2. **AI generation** — describe a sprite, or ask for changes and more frames; local (free, on your PC) and cloud
+2. **More AI** — ask for changes and more frames; local (free, on your PC) and cloud
    providers, with clean real-pixel results you can keep editing by hand.
 
 ## Build from source
