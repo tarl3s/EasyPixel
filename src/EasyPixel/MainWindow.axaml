@@ -44,6 +44,7 @@
         <MenuItem Header="{loc:T 'Flip vertically'}" InputGesture="Shift+V" Click="FlipSelV_Click" />
         <MenuItem Header="{loc:T 'Rotate 90° clockwise'}" Click="RotateSelCw_Click" />
         <MenuItem Header="{loc:T 'Rotate 90° counter-clockwise'}" Click="RotateSelCcw_Click" />
+        <MenuItem Header="{loc:T 'Rotate by angle…'}" Click="RotateSelAngle_Click" />
         <MenuItem Header="{loc:T 'Scale…'}" Click="ScaleSel_Click" />
         <Separator />
         <MenuItem Header="{loc:T 'Settings…'}" Click="Settings_Click" />

@@ -562,5 +562,8 @@
   "{0} sent an empty answer. Try again.": "{0} a envoyé une réponse vide. Réessayez.",
   "{0} took too long to answer. Try again.": "{0} a mis trop de temps à répondre. Réessayez.",
   "Asked the AI (in English): {0}": "Demande envoyée à l’IA (en anglais) : {0}",
-  "{0} found the description too violent or adult. Try softer words.": "{0} a jugé la description trop violente ou pour adultes. Essayez des mots plus doux."
+  "{0} found the description too violent or adult. Try softer words.": "{0} a jugé la description trop violente ou pour adultes. Essayez des mots plus doux.",
+  "Degrees (clockwise; negative turns the other way)": "Degrés (sens horaire ; négatif tourne dans l’autre sens)",
+  "Rotate by angle": "Pivoter d’un angle",
+  "Rotate by angle…": "Pivoter d’un angle…"
 }

@@ -562,5 +562,8 @@
   "{0} sent an empty answer. Try again.": "{0} 发送了空的回答。请重试。",
   "{0} took too long to answer. Try again.": "{0} 回答超时。请重试。",
   "Asked the AI (in English): {0}": "发送给 AI 的请求（英文）：{0}",
-  "{0} found the description too violent or adult. Try softer words.": "{0} 认为描述过于暴力或成人化。请换用更温和的词语。"
+  "{0} found the description too violent or adult. Try softer words.": "{0} 认为描述过于暴力或成人化。请换用更温和的词语。",
+  "Degrees (clockwise; negative turns the other way)": "角度（顺时针；负数则反方向旋转）",
+  "Rotate by angle": "按角度旋转",
+  "Rotate by angle…": "按角度旋转…"
 }

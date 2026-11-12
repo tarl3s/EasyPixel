@@ -32,6 +32,7 @@ public partial class MainWindow
     private void RotateSelCw_Click(object? sender, RoutedEventArgs e) => RotateSelection(clockwise: true);
     private void RotateSelCcw_Click(object? sender, RoutedEventArgs e) => RotateSelection(clockwise: false);
     private void ScaleSel_Click(object? sender, RoutedEventArgs e) => _ = ScaleSelectionAsync();
+    private void RotateSelAngle_Click(object? sender, RoutedEventArgs e) => _ = RotateSelectionByAngleAsync();
 
     internal void Undo()
     {
@@ -77,6 +78,14 @@ public partial class MainWindow
         TransformSelection(L.N("Flip"), f => { if (horizontal) f.FlipH(); else f.FlipV(); });
 
     internal void RotateSelection(bool clockwise) => TransformSelection(L.N("Rotate"), f => f.Rotate90(clockwise));
+
+    /// <summary>Edit → Rotate by angle: any whole number of degrees, clockwise (negative = counter-clockwise).</summary>
+    internal async Task RotateSelectionByAngleAsync()
+    {
+        if (await Dialogs.AskNumber(L.T("Rotate by angle"), L.T("Degrees (clockwise; negative turns the other way)"), 45, -359, 359) is not { } deg
+            || deg == 0) return;
+        TransformSelection(L.N("Rotate"), f => f.RotateBy(deg));
+    }
 
     internal async Task ScaleSelectionAsync()
     {

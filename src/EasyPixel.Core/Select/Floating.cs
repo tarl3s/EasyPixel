@@ -99,6 +99,15 @@ public sealed class Floating
         Y += (h - w) / 2;
     }
 
+    /// <summary>Turns the pixels by any angle (degrees, clockwise) around their centre, without blending.</summary>
+    public void RotateBy(double degrees)
+    {
+        int w = Pixels.Width, h = Pixels.Height;
+        Pixels = Transform.RotateNearest(Pixels, degrees, Clear);
+        X += (int)Math.Round((w - Pixels.Width) / 2.0, MidpointRounding.AwayFromZero);
+        Y += (int)Math.Round((h - Pixels.Height) / 2.0, MidpointRounding.AwayFromZero);
+    }
+
     /// <summary>Scales the pixels (nearest neighbour) to fill <paramref name="r"/>.</summary>
     public void ScaleTo(PixelRect r)
     {

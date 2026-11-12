@@ -124,7 +124,7 @@ public partial class MainWindow : Window
 
     private void UpdateStatusBar()
     {
-        PosText.Text = Canvas.Hover is { } h ? $"{h.X}, {h.Y}" : "";
+        PosText.Text = (Canvas.Hover is { } h ? $"{h.X}, {h.Y}" : "") + (Canvas.RotatingAngle is { } deg ? $"   {deg:0}°" : ""); // the turn being dragged
         ZoomText.Text = L.F("{0}%   {1} x {2}", Math.Round(Canvas.ZoomPercent, 1), Session.Doc.Width, Session.Doc.Height);
     }
 
