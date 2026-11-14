@@ -47,10 +47,9 @@ public partial class MainWindow
 
     private async Task OpenAiSpriteAsync(Image sprite)
     {
-        if (!await ConfirmDiscardAsync()) return;
         var doc = NewDocument(sprite.Width, sprite.Height, ColorMode.Rgba);
         doc.Cels[(doc.Layers[0], 0)] = new Cel(sprite.Clone());
-        SetSession(new EditorSession(doc));
+        OpenTab(new EditorSession(doc));
         ShowStatus(L.F("New {0} x {1} sprite", sprite.Width, sprite.Height));
     }
 

@@ -16,7 +16,7 @@ internal sealed class Harness : IDisposable
         Dialogs = new FakeDialogs();
         Window.Dialogs = Dialogs;
         Window.Show();
-        Window.SetSession(new EditorSession(new Sprite(width, height, mode)));
+        Window.OpenTab(new EditorSession(new Sprite(width, height, mode)));
         Pump();
         Window.Canvas.FitToView();
     }

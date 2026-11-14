@@ -72,20 +72,54 @@ public class EditorTests
         Assert.True(File.Exists(path));
         Assert.False(h.Window.IsVisible);
 
-        // New and Open ask too; Don't save goes on without saving.
+        // New and Open open a tab: nothing is asked, and the drawing stays in its own tab.
         using var h2 = new Harness();
         h2.Drag((1, 1));
-        h2.Dialogs.SaveChoices.Enqueue(SaveChoice.DontSave);
+        var drawing = h2.Session;
         h2.Dialogs.NewSprites.Enqueue(new NewSpriteOptions(8, 8, ColorMode.Rgba));
         await h2.Window.NewAsync();
-        Assert.Equal(1, h2.Dialogs.SaveQuestions);
+        Assert.Equal(0, h2.Dialogs.SaveQuestions);
         Assert.Equal(8, h2.Doc.Width);
+        Assert.Equal(2, h2.Window.Tabs.Count);
+        Assert.True(await h2.Window.OpenPathAsync(path));
+        Assert.Equal(2, h2.Window.Tabs.Count); // the new, untouched sprite gave its tab to the file
+        Assert.True(await h2.Window.OpenPathAsync(path)); // already open: its tab, not another
+        Assert.Equal(2, h2.Window.Tabs.Count);
+        h2.Window.SwitchTab(drawing);
+        Assert.Equal(Black, h2.Pixel(1, 1)); // the drawing is still there, with its changes
 
-        h2.Drag((1, 1));
+        // Closing the window asks about each tab with changes; Cancel on the first stops.
         h2.Dialogs.SaveChoices.Enqueue(SaveChoice.Cancel);
-        Assert.False(await h2.Window.OpenPathAsync(path));
-        Assert.Equal(2, h2.Dialogs.SaveQuestions);
-        Assert.Equal(Black, h2.Pixel(1, 1)); // still the same document
+        h2.Window.Close();
+        Harness.Pump();
+        Assert.Equal(1, h2.Dialogs.SaveQuestions);
+        Assert.True(h2.Window.IsVisible);
+    }
+
+    [AvaloniaFact]
+    public async Task Tabs_SwitchKeepEachHistory_CloseAsksOnlyWhenChanged()
+    {
+        using var h = new Harness();
+        var first = h.Session;
+        h.Drag((2, 2));
+        h.Dialogs.NewSprites.Enqueue(new NewSpriteOptions(10, 10, ColorMode.Rgba));
+        await h.Window.NewAsync();
+        var second = h.Session;
+        Assert.NotSame(first, second);
+        h.Key(Key.Tab, RawInputModifiers.Control); // Ctrl+Tab: round to the first
+        Assert.Same(first, h.Session);
+        h.Key(Key.Z, RawInputModifiers.Control);    // its own undo
+        Assert.Equal(0u, h.Pixel(2, 2));
+
+        // an unchanged tab closes without a question; the other becomes current
+        Assert.True(await h.Window.CloseTabAsync(second));
+        Assert.Equal(0, h.Dialogs.SaveQuestions);
+        Assert.Single(h.Window.Tabs);
+
+        // closing the last tab leaves a fresh sprite
+        Assert.True(await h.Window.CloseTabAsync(h.Session));
+        Assert.Single(h.Window.Tabs);
+        Assert.NotSame(first, h.Session);
     }
 
     [AvaloniaFact]

@@ -567,5 +567,8 @@
   "Rotate by angle": "按角度旋转",
   "Rotate by angle…": "按角度旋转…",
   "New sprites will start with the default palette": "新精灵将使用默认调色板",
-  "New sprites: back to the default palette": "新精灵：恢复默认调色板"
+  "New sprites: back to the default palette": "新精灵：恢复默认调色板",
+  "Close sprite": "关闭精灵",
+  "Close this sprite": "关闭此精灵",
+  "Next / previous sprite tab": "下一个 / 上一个精灵标签页"
 }

@@ -567,5 +567,8 @@
   "Rotate by angle": "Girar por ângulo",
   "Rotate by angle…": "Girar por ângulo…",
   "New sprites will start with the default palette": "Os sprites novos vão começar com a paleta padrão",
-  "New sprites: back to the default palette": "Sprites novos: voltar à paleta padrão"
+  "New sprites: back to the default palette": "Sprites novos: voltar à paleta padrão",
+  "Close sprite": "Fechar sprite",
+  "Close this sprite": "Fechar este sprite",
+  "Next / previous sprite tab": "Aba de sprite seguinte / anterior"
 }

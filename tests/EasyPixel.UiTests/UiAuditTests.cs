@@ -33,7 +33,7 @@ public class UiAuditTests
         s.Tags.Add(new Tag { Name = "idle", From = 2, To = 2, Color = MainWindow.TagColors[3] });
         var cel = s.GetOrCreateCel(s.Layers[0], 0);
         for (int i = 0; i < 64; i++) cel.Image.Pixels[i * 7] = PanelsColor(i);
-        w.SetSession(new EditorSession(s));
+        w.OpenTab(new EditorSession(s));
         w.Canvas.FitToView();
         Harness.Pump();
         return w;

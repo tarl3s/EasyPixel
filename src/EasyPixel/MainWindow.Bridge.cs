@@ -39,7 +39,6 @@ public partial class MainWindow
                 OpenExternal(EngineUrl);
             return;
         }
-        if (!await ConfirmDiscardAsync()) return;
         if (await PickEngineProjectAsync() is not { } eeproj) return;
 
         IReadOnlyList<EngineSprite> sprites;
@@ -64,7 +63,7 @@ public partial class MainWindow
             await Dialogs.Tell(L.F("No picture of {0} could be read.", sprites[i].Object));
             return;
         }
-        SetSession(new EditorSession(sprite));
+        OpenTab(new EditorSession(sprite));
         ShowStatus(L.F("Imported {0}", sprites[i].Object));
         if (warnings.Count > 0)
             await Dialogs.Tell(L.F("{0} was imported, with these notes:\n\n{1}", sprites[i].Object, Bullets(warnings)));

@@ -30,7 +30,7 @@ public partial class MainWindow : Window
         ApplyViewSettings();
         UpdateThemeMenu(App.Settings.Theme);
         Colors.Attach(Tools);
-        SetSession(new EditorSession(NewDocument(32, 32, ColorMode.Rgba)));
+        OpenTab(new EditorSession(NewDocument(32, 32, ColorMode.Rgba)));
         PaletteView.Attach(this);
         Layers.Attach(this);
         Timeline.Attach(this);
@@ -116,6 +116,7 @@ public partial class MainWindow : Window
         Title = $"{Session.DisplayName}{(Session.History.IsDirty ? " *" : "")} - EasyPixel";
         UndoItem.Header = Session.History.UndoName is { } u ? L.F("Undo {0}", L.T(u)) : L.T("Undo");
         RedoItem.Header = Session.History.RedoName is { } r ? L.F("Redo {0}", L.T(r)) : L.T("Redo");
+        BuildTabs(); // the tab shows the name and * too
         UndoItem.IsEnabled = Session.History.CanUndo || Session.Float != null;
         RedoItem.IsEnabled = Session.History.CanRedo;
     }
@@ -132,7 +133,7 @@ public partial class MainWindow : Window
     {
         base.OnClosing(e);
         if (_closeConfirmed || e.Cancel) return;
-        if (!Session.History.IsDirty && Session.Float == null)
+        if (!AnyTabChanged)
         {
             _closeConfirmed = true;
             return;
@@ -143,7 +144,7 @@ public partial class MainWindow : Window
 
     private async Task CloseAfterAskingAsync()
     {
-        if (!await ConfirmDiscardAsync()) return;
+        if (!await ConfirmDiscardAllAsync()) return;
         _closeConfirmed = true;
         Close();
     }

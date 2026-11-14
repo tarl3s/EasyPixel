@@ -567,5 +567,8 @@
   "Rotate by angle": "角度を指定して回転",
   "Rotate by angle…": "角度を指定して回転…",
   "New sprites will start with the default palette": "新しいスプライトはデフォルトのパレットで始まります",
-  "New sprites: back to the default palette": "新しいスプライト：デフォルトのパレットに戻す"
+  "New sprites: back to the default palette": "新しいスプライト：デフォルトのパレットに戻す",
+  "Close sprite": "スプライトを閉じる",
+  "Close this sprite": "このスプライトを閉じる",
+  "Next / previous sprite tab": "次 / 前のスプライトタブ"
 }

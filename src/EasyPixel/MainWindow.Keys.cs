@@ -13,7 +13,7 @@ public partial class MainWindow
         ("B", "Pencil"), ("E", "Eraser"), ("G", "Bucket"), ("L", "Line"), ("U", "Rectangle / ellipse (press again to switch)"),
         ("M", "Rectangle / ellipse selection (press again to switch)"), ("Q", "Lasso"), ("W", "Magic wand"), ("V", "Move"),
         ("I", "Eyedropper"), ("Alt", "Eyedropper while held (with a drawing tool)"), ("X", "Swap primary and secondary colours"),
-        ("Ctrl+Z", "Undo"), ("Ctrl+Y / Ctrl+Shift+Z", "Redo"), ("Ctrl+N", "New…"), ("Ctrl+O", "Open…"), ("Ctrl+S", "Save"),
+        ("Ctrl+Z", "Undo"), ("Ctrl+Y / Ctrl+Shift+Z", "Redo"), ("Ctrl+N", "New…"), ("Ctrl+O", "Open…"), ("Ctrl+S", "Save"), ("Ctrl+W", "Close sprite"), ("Ctrl+Tab / Ctrl+Shift+Tab", "Next / previous sprite tab"),
         ("Ctrl+Shift+S", "Save as…"), ("Ctrl+E", "Export…"), ("Ctrl+X / Ctrl+C / Ctrl+V", "Cut / copy / paste"),
         ("Delete", "Delete"), ("Ctrl+A", "Select all"), ("Ctrl+D", "Deselect"), ("Ctrl+Shift+I", "Invert selection"),
         ("Alt+N", "New frame"), ("Shift+N", "New layer"), ("← / →", "Previous / next frame"), ("↑ / ↓", "Layer above / below"),
@@ -57,6 +57,8 @@ public partial class MainWindow
                 case Key.Z: Undo(); return true;
                 case Key.Y: Redo(); return true;
                 case Key.N: _ = NewAsync(); return true;
+                case Key.W: _ = CloseTabAsync(Session); return true;
+                case Key.Tab: StepTab(shift ? -1 : 1); return true;
                 case Key.O: _ = OpenAsync(); return true;
                 case Key.S when shift: _ = SaveAsAsync(); return true;
                 case Key.S: _ = SaveAsync(); return true;

@@ -84,7 +84,7 @@ public class ShadingAndIndexedTests
         s.Cels[(s.Layers[0], 0)] = cel;
         cel.Image.Set(2, 2, 0);
         cel.Image.Set(3, 2, 1);
-        h.Window.SetSession(new EditorSession(s));
+        h.Window.OpenTab(new EditorSession(s));
         Harness.Pump();
         h.Window.Canvas.FitToView();
         return h;

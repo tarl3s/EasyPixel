@@ -24,6 +24,7 @@
         <Separator />
         <MenuItem Header="{loc:T 'Save'}" InputGesture="Ctrl+S" Click="Save_Click" />
         <MenuItem Header="{loc:T 'Save as…'}" InputGesture="Ctrl+Shift+S" Click="SaveAs_Click" />
+        <MenuItem Header="{loc:T 'Close sprite'}" InputGesture="Ctrl+W" Click="CloseTab_Click" />
         <MenuItem Header="{loc:T 'Export…'}" InputGesture="Ctrl+E" Click="Export_Click" />
         <Separator />
         <MenuItem Header="{loc:T 'Import sprite from EasyEngine…'}" Click="ImportEngine_Click" />
@@ -179,6 +180,13 @@
         <Border DockPanel.Dock="Top" Height="1" Background="{DynamicResource Border}" />
         <panels:LayersPanel x:Name="Layers" />
       </DockPanel>
+    </Border>
+
+    <!-- One tab per open sprite (MainWindow.Tabs.cs). -->
+    <Border Classes="bar" DockPanel.Dock="Top" BorderThickness="0,0,0,1" Padding="6,4,6,0">
+      <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <StackPanel x:Name="TabBar" Orientation="Horizontal" />
+      </ScrollViewer>
     </Border>
 
     <!-- Shown while a lesson's exercise is open: goal, self-checks, Check, Back to lesson. -->

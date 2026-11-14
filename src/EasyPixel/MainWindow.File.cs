@@ -19,6 +19,7 @@ public partial class MainWindow
     private void SaveAs_Click(object? sender, RoutedEventArgs e) => _ = SaveAsAsync();
     private void Export_Click(object? sender, RoutedEventArgs e) => _ = ExportAsync();
     private void Exit_Click(object? sender, RoutedEventArgs e) => Close();
+    private void CloseTab_Click(object? sender, RoutedEventArgs e) => _ = CloseTabAsync(Session);
     private void ImportSheet_Click(object? sender, RoutedEventArgs e) => _ = ImportSheetAsync();
 
     /// <summary>
@@ -39,7 +40,6 @@ public partial class MainWindow
 
     internal async Task NewAsync()
     {
-        if (!await ConfirmDiscardAsync()) return;
         if (await Dialogs.AskNewSprite() is not { } o) return;
         if (o.Width < 1 || o.Height < 1) return;
         if ((o.Width > LargeCanvas || o.Height > LargeCanvas)
@@ -53,7 +53,7 @@ public partial class MainWindow
             await Dialogs.Tell(L.T("There isn't enough memory for a canvas that big."));
             return;
         }
-        SetSession(new EditorSession(sprite));
+        OpenTab(new EditorSession(sprite));
         ShowStatus(L.F("New {0} x {1} sprite", o.Width, o.Height));
     }
 
@@ -92,10 +92,10 @@ public partial class MainWindow
         return true;
     }
 
-    /// <summary>Opens a file (from Recent, the command line or a test), asking to save the current one first.</summary>
+    /// <summary>Opens a file (from Recent, the command line or a test) in a new tab; a file already open just shows its tab.</summary>
     public async Task<bool> OpenPathAsync(string path)
     {
-        if (!await ConfirmDiscardAsync()) return false;
+        if (TabFor(path) is { } open) { SwitchTab(open); return true; }
         return await LoadAsync(path);
     }
 
@@ -103,7 +103,7 @@ public partial class MainWindow
     {
         if (await ReadAsync(path) is not { } read) return false;
         var name = Path.GetFileName(path);
-        SetSession(new EditorSession(read.Sprite, Path.GetFullPath(path)));
+        OpenTab(new EditorSession(read.Sprite, Path.GetFullPath(path)));
         RememberRecent(path);
         ShowStatus(L.F("Opened {0}", name));
         if (read.Warnings.Count > 0)
@@ -304,7 +304,6 @@ public partial class MainWindow
     /// </summary>
     internal async Task ImportSheetAsync(string? path = null)
     {
-        if (!await ConfirmDiscardAsync()) return;
         path ??= await Dialogs.PickOpenFile(new[] { new FileType(L.T("PNG image"), new[] { ".png" }) });
         if (path == null) return;
         Image sheet;
@@ -322,7 +321,7 @@ public partial class MainWindow
         }
         var sprite = SpriteSheet.Slice(sheet, o.CellWidth, o.CellHeight, o.Padding);
         sprite.Palette.Colors.AddRange(Panels.PalettePanel.StartColors);
-        SetSession(new EditorSession(sprite));
+        OpenTab(new EditorSession(sprite));
         ShowStatus(L.F("Imported {0} frames from {1}", sprite.Frames.Count, Path.GetFileName(path)));
     }
 

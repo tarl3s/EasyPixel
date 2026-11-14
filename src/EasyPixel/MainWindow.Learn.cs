@@ -47,10 +47,9 @@ public partial class MainWindow
     {
         var lesson = LessonLibrary.Load(lessonId, L.Language).Lesson;
         if (lesson.TryIt is not { } tryIt || !Exercises.Exists(tryIt.ExerciseId)) return false;
-        if (!await ConfirmDiscardAsync()) return false;
         var exercise = Exercises.Get(tryIt.ExerciseId);
         var session = new EditorSession(exercise.CreateDocument(L.T("Guide"), L.T("Drawing")));
-        SetSession(session);
+        OpenTab(session);
         CurrentPractice = new Practice(lesson, tryIt, exercise, session);
         LessonBar.Show(lesson, tryIt);
         Canvas.FitToView();

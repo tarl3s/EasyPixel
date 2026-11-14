@@ -617,7 +617,7 @@ public class PanelTests
         var inner = s.Layers[0];
         var g = LayerTree.Group(s, inner, "G");
         g.Extra["ase:flags"] = new byte[] { 1 | 2 | 32, 0, 1, 0, 0, 0, 0, 0 };
-        h.Window.SetSession(new EditorSession(s));
+        h.Window.OpenTab(new EditorSession(s));
         Assert.Equal(new[] { g }, h.Window.Layers.Shown);
     }
 }

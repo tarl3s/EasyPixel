@@ -186,7 +186,7 @@ public class LearnUiTests
         using var h = new Harness();
         Assert.True(h.Window.StartPracticeAsync(Lines).Result);
         Assert.True(h.Window.LessonBar.IsVisible);
-        h.Window.SetSession(new EditorSession(new Core.Model.Sprite(8, 8)));
+        h.Window.OpenTab(new EditorSession(new Core.Model.Sprite(8, 8)));
         Assert.Null(h.Window.CurrentPractice);
         Assert.False(h.Window.LessonBar.IsVisible);
     }
@@ -207,7 +207,7 @@ public class LearnUiTests
 
         Click(h.Window.LessonBar.CloseButton); // ✕: the bar goes, the drawing stays
         Assert.Null(h.Window.CurrentPractice);
-        h.Window.SetSession(new EditorSession(new Core.Model.Sprite(8, 8)));
+        h.Window.OpenTab(new EditorSession(new Core.Model.Sprite(8, 8)));
         Assert.False(h.Window.LessonBar.IsVisible);
 
         Assert.True(await h.Window.OpenPathAsync(path));
@@ -255,14 +255,16 @@ public class LearnUiTests
     }
 
     [AvaloniaFact]
-    public void TryIt_AsksBeforeDroppingUnsavedWork()
+    public void TryIt_OpensInItsOwnTab_KeepingUnsavedWork()
     {
         using var h = new Harness();
         h.Window.Tools.Current = Tools.ToolKind.Pencil;
         h.Drag((1, 1), (3, 1));
-        Assert.True(h.Session.History.IsDirty);
-        h.Dialogs.SaveChoices.Enqueue(Dialogs.SaveChoice.Cancel);
-        Assert.False(h.Window.StartPracticeAsync(Lines).Result);
-        Assert.Null(h.Window.CurrentPractice);
+        var drawing = h.Session;
+        Assert.True(h.Window.StartPracticeAsync(Lines).Result);
+        Assert.NotNull(h.Window.CurrentPractice);
+        Assert.Equal(0, h.Dialogs.SaveQuestions);
+        Assert.Contains(drawing, h.Window.Tabs);
+        Assert.True(drawing.History.IsDirty);
     }
 }
