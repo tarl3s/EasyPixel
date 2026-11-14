@@ -38,12 +38,15 @@ never touched. You can turn the check off in **Edit → Settings**.
 
 - **Drawing tools** — pencil, eraser, bucket (contiguous or global), line, rectangle, ellipse (filled or outline),
   shading, lighten / darken, dither brush, spray, eyedropper, mirror drawing (horizontal and vertical).
-- **Selection** — rectangle, ellipse, lasso, magic wand; move, flip, rotate, scale, cut, copy, paste, invert, select by colour.
+- **Tabs** — several sprites open at once, each with its own undo (Ctrl+Tab to switch, Ctrl+W to close).
+- **Selection** — rectangle, ellipse, lasso, magic wand; move, flip, scale and rotate by dragging handles (any angle,
+  no blur), cut, copy, paste, invert, select by colour.
 - **Layers** — groups, opacity, blend modes, show / hide, lock, reorder.
 - **Animation** — frames with their own duration, a timeline, tags (named loops), loop / ping-pong / reverse playback,
   onion skin, a floating preview and a full-screen preview.
 - **Any canvas size** — from 1x1 up to thousands of pixels, with zoom, pan, a pixel grid, a tile grid and a tiled preview.
-- **Colour** — RGBA or indexed (palette) mode like Aseprite, a palette panel, load / save palettes (`.gpl`, `.hex`, `.pal`),
+- **Colour** — RGBA or indexed (palette) mode like Aseprite, a palette panel, load / save palettes (`.gpl`, `.hex`, `.pal`, `.ase`, `.aco`, `.act`,
+  Paint.NET `.txt`, or the colours of any picture; the last one loaded is remembered),
   reduce colours, outline, pixelate.
 - **Sprite tools** — resize, canvas size, rotate, flip.
 - **Undo / redo** for everything, including layer and frame changes.
@@ -87,7 +90,7 @@ To use it, add a key once in **Edit → AI settings…**. You only need one prov
 
 - **Cloudflare Workers AI (free).** Make a free Cloudflare account, open **Workers AI**, and copy your **Account ID**.
   Then make an **API token** with the Workers AI permission. Paste both in AI settings. The free allowance is roughly
-  200 pictures a day (an estimate).
+  100 pictures a day (an estimate).
 - **OpenAI, Gemini, Retro Diffusion** (paid). These use your own key, and the cost is charged by that service, not by
   EasyPixel. Their keys stay on your computer.
 - **Pollinations** (free key from its site, also set in AI settings).

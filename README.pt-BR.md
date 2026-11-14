@@ -38,12 +38,15 @@ são tocados. Dá para desligar a verificação em **Editar → Configurações*
 
 - **Ferramentas de desenho** — lápis, borracha, balde (contíguo ou global), linha, retângulo, elipse (cheia ou só contorno),
   sombreamento, clarear / escurecer, pincel de dither, spray, conta-gotas, desenho espelhado (horizontal e vertical).
-- **Seleção** — retângulo, elipse, laço, varinha mágica; mover, espelhar, girar, redimensionar, recortar, copiar, colar, inverter, selecionar por cor.
+- **Abas** — vários sprites abertos ao mesmo tempo, cada um com seu desfazer (Ctrl+Tab troca, Ctrl+W fecha).
+- **Seleção** — retângulo, elipse, laço, varinha mágica; mover, espelhar, redimensionar e girar arrastando as alças
+  (qualquer ângulo, sem borrar), recortar, copiar, colar, inverter, selecionar por cor.
 - **Camadas** — grupos, opacidade, modos de mesclagem, mostrar / ocultar, travar, reordenar.
 - **Animação** — quadros com duração própria, linha do tempo, tags (loops com nome), reprodução em loop / vai-e-volta / invertida,
   onion skin, janela de pré-visualização e pré-visualização em tela cheia.
 - **Qualquer tamanho de tela** — de 1x1 a milhares de pixels, com zoom, arrastar, grade de pixels, grade de tiles e pré-visualização em mosaico.
-- **Cor** — modo RGBA ou indexado (paleta) como no Aseprite, painel de paleta, carregar / salvar paletas (`.gpl`, `.hex`, `.pal`),
+- **Cor** — modo RGBA ou indexado (paleta) como no Aseprite, painel de paleta, carregar / salvar paletas (`.gpl`, `.hex`, `.pal`, `.ase`, `.aco`,
+  `.act`, `.txt` do Paint.NET, ou as cores de qualquer imagem; a última carregada fica lembrada),
   reduzir cores, contorno, pixelar.
 - **Ferramentas do sprite** — redimensionar, tamanho da tela, girar, espelhar.
 - **Desfazer / refazer** para tudo, inclusive mudanças de camadas e quadros.
@@ -86,7 +89,7 @@ Para usar, coloque uma chave uma vez em **Editar → Configurações da IA…**.
 
 - **Cloudflare Workers AI (grátis).** Crie uma conta grátis na Cloudflare, abra o **Workers AI** e copie o seu
   **Account ID**. Depois crie um **API token** com a permissão do Workers AI. Cole os dois nas configurações de IA.
-  A cota grátis dá umas 200 imagens por dia (uma estimativa).
+  A cota grátis dá umas 100 imagens por dia (uma estimativa).
 - **OpenAI, Gemini, Retro Diffusion** (pagos). Esses usam a sua própria chave, e quem cobra é o serviço, não o
   EasyPixel. As chaves ficam no seu computador.
 - **Pollinations** (chave grátis do site deles, também em Configurações da IA).
