@@ -77,8 +77,8 @@ public partial class MainWindow : Window
     internal static Sprite NewDocument(int width, int height, ColorMode mode)
     {
         var s = new Sprite(width, height, mode);
-        if (mode == ColorMode.Rgba) s.Palette.Colors.AddRange(PalettePanel.DefaultColors);
-        else s.Palette.Colors.AddRange(PalettePanel.DefaultColors.Take(Palette.MaxColors - 1));
+        if (mode == ColorMode.Rgba) s.Palette.Colors.AddRange(PalettePanel.StartColors);
+        else s.Palette.Colors.AddRange(PalettePanel.StartColors.Take(Palette.MaxColors - 1));
         return s;
     }
 

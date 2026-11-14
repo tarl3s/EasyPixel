@@ -40,6 +40,8 @@ public sealed class Settings
     /// <summary>Learn pixel art: the lessons opened (ids) and the lessons whose exercise passed.</summary>
     public List<string> LessonsRead { get; set; } = new();
     public List<string> LessonsPassed { get; set; } = new();
+    /// <summary>The last palette loaded (Palette → Load palette), as RRGGBBAA hex; new sprites start with it. Empty = the default palette.</summary>
+    public List<string> StartPalette { get; set; } = new();
     /// <summary>Recently opened or saved files, newest first.</summary>
     public List<string> Recent { get; set; } = new();
     /// <summary>Create with AI: image generator and text AI ("auto" or a provider id) and the API keys by provider id (Cloudflare: "accountId:apiToken").</summary>

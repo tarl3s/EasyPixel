@@ -25,6 +25,24 @@ public sealed class PalettePanel : DockPanel
         0x597dce, 0xd27d2c, 0x8595a1, 0x6daa2c, 0xd2aa99, 0x6dc2ca, 0xdad45e, 0xdeeed6,
     }.Select(v => new Rgba((byte)(v >> 16), (byte)(v >> 8), (byte)v, 255)).ToArray();
 
+    /// <summary>The palette new sprites get: the last one the person loaded (remembered in the settings), else <see cref="DefaultColors"/>.</summary>
+    public static Rgba[] StartColors
+    {
+        get
+        {
+            var saved = App.Settings.StartPalette
+                .Select(h => uint.TryParse(h, System.Globalization.NumberStyles.HexNumber, null, out var v) ? new Rgba((byte)(v >> 24), (byte)(v >> 16), (byte)(v >> 8), (byte)v) : (Rgba?)null)
+                .Where(c => c != null).Select(c => c!.Value).Take(Palette.MaxColors).ToArray();
+            return saved.Length > 0 ? saved : DefaultColors;
+        }
+    }
+
+    private static void RememberStartColors(IEnumerable<Rgba> colors)
+    {
+        App.Settings.StartPalette = colors.Select(c => $"{c.R:X2}{c.G:X2}{c.B:X2}{c.A:X2}").ToList();
+        App.Settings.Save();
+    }
+
     private readonly WrapPanel _grid = new() { Orientation = Orientation.Horizontal };
     private readonly List<Border> _swatches = new();
     private MainWindow? _w;
@@ -46,6 +64,11 @@ public sealed class PalettePanel : DockPanel
             {
                 Item(L.T("Load palette…"), () => _ = LoadAsync()),
                 Item(L.T("Save palette…"), () => _ = SaveAsync()),
+                Item(L.T("New sprites: back to the default palette"), () =>
+                {
+                    RememberStartColors(Array.Empty<Rgba>());
+                    _w?.ShowStatus(L.T("New sprites will start with the default palette"));
+                }),
             },
         };
         more.Click += (_, _) => more.ContextMenu.Open(more);
@@ -190,6 +213,7 @@ public sealed class PalettePanel : DockPanel
             await _w.Dialogs.Tell(L.F("{0} could not be opened:\n{1}", Path.GetFileName(path), ex.Message));
             return;
         }
+        var loaded = colors.ToList(); // as the file has them, before any padding for this sprite
         var doc = Doc;
         // An indexed picture keeps its numbers: a shorter palette is padded (with the old colours) up to the highest one used.
         int used = doc.Mode == ColorMode.Indexed ? HighestIndexUsed(doc) : -1;
@@ -206,6 +230,7 @@ public sealed class PalettePanel : DockPanel
         }));
         _selected = -1;
         Rebuild();
+        RememberStartColors(loaded); // the next sprite (and the next start) begins with this palette
         _w.ShowStatus(L.F("Loaded {0} colours", colors.Count));
         if (padded) await _w.Dialogs.Tell(L.T("The palette was extended to keep every colour the sprite uses."));
     }

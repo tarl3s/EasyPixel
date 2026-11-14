@@ -565,5 +565,7 @@
   "{0} found the description too violent or adult. Try softer words.": "{0} 认为描述过于暴力或成人化。请换用更温和的词语。",
   "Degrees (clockwise; negative turns the other way)": "角度（顺时针；负数则反方向旋转）",
   "Rotate by angle": "按角度旋转",
-  "Rotate by angle…": "按角度旋转…"
+  "Rotate by angle…": "按角度旋转…",
+  "New sprites will start with the default palette": "新精灵将使用默认调色板",
+  "New sprites: back to the default palette": "新精灵：恢复默认调色板"
 }

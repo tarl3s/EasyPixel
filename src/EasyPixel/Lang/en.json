@@ -246,6 +246,8 @@
   "New layer": "New layer",
   "New layer (Shift+N)": "New layer (Shift+N)",
   "New sprite": "New sprite",
+  "New sprites will start with the default palette": "New sprites will start with the default palette",
+  "New sprites: back to the default palette": "New sprites: back to the default palette",
   "New tag": "New tag",
   "New tag from the picked frames…": "New tag from the picked frames…",
   "New {0} x {1} sprite": "New {0} x {1} sprite",

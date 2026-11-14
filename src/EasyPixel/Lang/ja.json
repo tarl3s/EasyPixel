@@ -565,5 +565,7 @@
   "{0} found the description too violent or adult. Try softer words.": "{0} は説明が暴力的または成人向けすぎると判断しました。もっと穏やかな言葉で試してください。",
   "Degrees (clockwise; negative turns the other way)": "角度（時計回り。マイナスで反対方向）",
   "Rotate by angle": "角度を指定して回転",
-  "Rotate by angle…": "角度を指定して回転…"
+  "Rotate by angle…": "角度を指定して回転…",
+  "New sprites will start with the default palette": "新しいスプライトはデフォルトのパレットで始まります",
+  "New sprites: back to the default palette": "新しいスプライト：デフォルトのパレットに戻す"
 }

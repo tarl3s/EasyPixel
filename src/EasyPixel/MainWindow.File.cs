@@ -321,7 +321,7 @@ public partial class MainWindow
             return;
         }
         var sprite = SpriteSheet.Slice(sheet, o.CellWidth, o.CellHeight, o.Padding);
-        sprite.Palette.Colors.AddRange(Panels.PalettePanel.DefaultColors);
+        sprite.Palette.Colors.AddRange(Panels.PalettePanel.StartColors);
         SetSession(new EditorSession(sprite));
         ShowStatus(L.F("Imported {0} frames from {1}", sprite.Frames.Count, Path.GetFileName(path)));
     }

@@ -565,5 +565,7 @@
   "{0} found the description too violent or adult. Try softer words.": "{0} 認為描述過於暴力或成人化。請改用更溫和的詞語。",
   "Degrees (clockwise; negative turns the other way)": "角度（順時針；負數則反方向旋轉）",
   "Rotate by angle": "依角度旋轉",
-  "Rotate by angle…": "依角度旋轉…"
+  "Rotate by angle…": "依角度旋轉…",
+  "New sprites will start with the default palette": "新精靈將使用預設調色盤",
+  "New sprites: back to the default palette": "新精靈：恢復預設調色盤"
 }

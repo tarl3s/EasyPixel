@@ -11,6 +11,7 @@ internal sealed class Harness : IDisposable
 {
     public Harness(int width = 16, int height = 16, ColorMode mode = ColorMode.Rgba)
     {
+        App.Settings.StartPalette.Clear(); // a palette loaded by an earlier test must not leak into new sprites
         Window = new MainWindow { Width = 1000, Height = 700 };
         Dialogs = new FakeDialogs();
         Window.Dialogs = Dialogs;

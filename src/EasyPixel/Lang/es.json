@@ -565,5 +565,7 @@
   "{0} found the description too violent or adult. Try softer words.": "{0} consideró la descripción demasiado violenta o adulta. Prueba con palabras más suaves.",
   "Degrees (clockwise; negative turns the other way)": "Grados (sentido horario; negativo gira hacia el otro lado)",
   "Rotate by angle": "Girar por ángulo",
-  "Rotate by angle…": "Girar por ángulo…"
+  "Rotate by angle…": "Girar por ángulo…",
+  "New sprites will start with the default palette": "Los sprites nuevos empezarán con la paleta predeterminada",
+  "New sprites: back to the default palette": "Sprites nuevos: volver a la paleta predeterminada"
 }
