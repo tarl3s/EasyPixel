@@ -107,6 +107,7 @@ public partial class MainWindow
     {
         if (await ReadAsync(path) is not { } read) return false;
         var name = Path.GetFileName(path);
+        if (FormatRegistry.ForPath(path) is not (AsepriteFormat or EpxFormat)) GivePaletteIfNone(read.Sprite); // PNG, GIF, Piskel keep none
         OpenTab(new EditorSession(read.Sprite, Path.GetFullPath(path)));
         RememberRecent(path);
         ShowStatus(L.F("Opened {0}", name));

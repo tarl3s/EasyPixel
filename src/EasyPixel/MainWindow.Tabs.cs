@@ -36,6 +36,16 @@ public partial class MainWindow
         BuildTabs();
     }
 
+    /// <summary>
+    /// A picture from a format with no palette (PNG, GIF, Piskel, an engine sprite) gets the starting palette, so the
+    /// palette panel has colours to pick from instead of going empty. Only colours to pick from: the picture doesn't
+    /// change and it isn't an unsaved change.
+    /// </summary>
+    internal static void GivePaletteIfNone(Core.Model.Sprite s)
+    {
+        if (s.Mode == Core.Model.ColorMode.Rgba && s.Palette.Colors.Count == 0) s.Palette.Colors.AddRange(Panels.PalettePanel.StartColors);
+    }
+
     private static bool IsUntouched(EditorSession s) =>
         s.Path == null && !s.History.IsDirty && !s.History.CanUndo && s.Float == null;
 

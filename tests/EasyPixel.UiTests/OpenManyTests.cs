@@ -37,3 +37,17 @@ public class OpenManyTests
         Assert.Single(h.Window.Tabs);
     }
 }
+
+public class OpenedPaletteTests
+{
+    [AvaloniaFact]
+    public async Task OpeningAPng_KeepsAPaletteToPickFrom_WithoutMarkingItChanged()
+    {
+        using var h = new Harness();
+        var path = Harness.TempFile("nopal.png");
+        using (var f = File.Create(path)) new PngFormat().Write(new Sprite(8, 8), f, new List<string>());
+        Assert.True(await h.Window.OpenPathAsync(path));
+        Assert.Equal(EasyPixel.Panels.PalettePanel.StartColors, h.Doc.Palette.Colors);
+        Assert.False(h.Session.History.IsDirty);
+    }
+}

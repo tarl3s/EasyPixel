@@ -63,6 +63,7 @@ public partial class MainWindow
             await Dialogs.Tell(L.F("No picture of {0} could be read.", sprites[i].Object));
             return;
         }
+        GivePaletteIfNone(sprite); // an engine picture brings no palette
         OpenTab(new EditorSession(sprite));
         ShowStatus(L.F("Imported {0}", sprites[i].Object));
         if (warnings.Count > 0)
