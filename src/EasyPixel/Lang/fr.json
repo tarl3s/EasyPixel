@@ -570,5 +570,6 @@
   "New sprites: back to the default palette": "Nouveaux sprites : revenir à la palette par défaut",
   "Close sprite": "Fermer le sprite",
   "Close this sprite": "Fermer ce sprite",
-  "Next / previous sprite tab": "Onglet de sprite suivant / précédent"
+  "Next / previous sprite tab": "Onglet de sprite suivant / précédent",
+  "Opened {0} files": "{0} fichiers ouverts"
 }

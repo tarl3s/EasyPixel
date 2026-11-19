@@ -27,7 +27,7 @@ public partial class MainWindow
         var doc = Session.Doc;
         if (await Dialogs.CreateWithAi(new AiCreateRequest(Math.Min(doc.Width, doc.Height), SpriteColors(doc))) is not { } pick) return;
         if (pick.AsNewLayer) AddAiLayer(pick.Sprite);
-        else await OpenAiSpriteAsync(pick.Sprite);
+        else OpenAiSprite(pick.Sprite);
     }
 
     /// <summary>The sprite's palette (opaque colours), else the colours its pictures use (at most 64).</summary>
@@ -45,7 +45,7 @@ public partial class MainWindow
         return colors;
     }
 
-    private async Task OpenAiSpriteAsync(Image sprite)
+    private void OpenAiSprite(Image sprite)
     {
         var doc = NewDocument(sprite.Width, sprite.Height, ColorMode.Rgba);
         doc.Cels[(doc.Layers[0], 0)] = new Cel(sprite.Clone());

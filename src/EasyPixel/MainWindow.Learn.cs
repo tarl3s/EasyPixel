@@ -42,8 +42,10 @@ public partial class MainWindow
         }
     }
 
-    /// <summary>"Try it": opens the lesson's exercise as a new document (asking to save the current one first) with the lesson bar.</summary>
-    internal async Task<bool> StartPracticeAsync(string lessonId)
+    /// <summary>"Try it": opens the lesson's exercise in a new tab, with the lesson bar. False when the lesson has no exercise.</summary>
+    internal Task<bool> StartPracticeAsync(string lessonId) => Task.FromResult(StartPractice(lessonId));
+
+    private bool StartPractice(string lessonId)
     {
         var lesson = LessonLibrary.Load(lessonId, L.Language).Lesson;
         if (lesson.TryIt is not { } tryIt || !Exercises.Exists(tryIt.ExerciseId)) return false;

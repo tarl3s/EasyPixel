@@ -53,6 +53,9 @@ public interface IDialogs
 
     Task<string?> PickOpenFile(IReadOnlyList<FileType> types);
 
+    /// <summary>File → Open: one or more files (each opens in its own tab); empty when cancelled.</summary>
+    Task<IReadOnlyList<string>> PickOpenFiles(IReadOnlyList<FileType> types);
+
     Task<string?> PickSaveFile(string title, string suggestedName, IReadOnlyList<FileType> types);
 
     /// <summary>One whole number between <paramref name="min"/> and <paramref name="max"/>.</summary>

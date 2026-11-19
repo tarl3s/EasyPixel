@@ -37,6 +37,11 @@ internal sealed class FakeDialogs : IDialogs
     public Task<NewSpriteOptions?> AskNewSprite() => Task.FromResult(NewSprites.Count > 0 ? NewSprites.Dequeue() : null);
     public Task<ExportOptions?> AskExport() => Task.FromResult(Exports.Count > 0 ? Exports.Dequeue() : null);
     public Task<string?> PickOpenFile(IReadOnlyList<FileType> types) => Task.FromResult(OpenPaths.Count > 0 ? OpenPaths.Dequeue() : null);
+    /// <summary>Several files at once; when none are queued, falls back to one path from <see cref="OpenPaths"/>.</summary>
+    public Queue<IReadOnlyList<string>> OpenPathLists { get; } = new();
+    public Task<IReadOnlyList<string>> PickOpenFiles(IReadOnlyList<FileType> types) =>
+        Task.FromResult(OpenPathLists.Count > 0 ? OpenPathLists.Dequeue()
+            : OpenPaths.Count > 0 && OpenPaths.Dequeue() is { } p ? new[] { p } : (IReadOnlyList<string>)Array.Empty<string>());
     public Queue<int?> Numbers { get; } = new();
     public Queue<string?> Texts { get; } = new();
     public Queue<(int Width, int Height)?> Sizes { get; } = new();

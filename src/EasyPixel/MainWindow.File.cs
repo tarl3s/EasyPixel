@@ -62,7 +62,11 @@ public partial class MainWindow
         var readable = FormatRegistry.All.Where(f => f.CanRead).ToList();
         var types = new List<FileType> { new(L.T("All supported files"), readable.SelectMany(f => f.Extensions).ToArray()) };
         types.AddRange(readable.Select(f => new FileType(L.T(f.Name), f.Extensions)));
-        if (await Dialogs.PickOpenFile(types) is { } path) await OpenOrPlaceAsync(path);
+        var paths = await Dialogs.PickOpenFiles(types);
+        if (paths.Count == 1) { await OpenOrPlaceAsync(paths[0]); return; }
+        // several files: each in its own tab (placing several into one canvas would be a guess)
+        foreach (var path in paths) await OpenPathAsync(path);
+        if (paths.Count > 1) ShowStatus(L.F("Opened {0} files", paths.Count));
     }
 
     /// <summary>

@@ -570,5 +570,6 @@
   "New sprites: back to the default palette": "新精灵：恢复默认调色板",
   "Close sprite": "关闭精灵",
   "Close this sprite": "关闭此精灵",
-  "Next / previous sprite tab": "下一个 / 上一个精灵标签页"
+  "Next / previous sprite tab": "下一个 / 上一个精灵标签页",
+  "Opened {0} files": "已打开 {0} 个文件"
 }

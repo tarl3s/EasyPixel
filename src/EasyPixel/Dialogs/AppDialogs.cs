@@ -53,6 +53,17 @@ public sealed class AppDialogs : IDialogs
         return files.Count > 0 ? files[0].TryGetLocalPath() : null;
     }
 
+    public async Task<IReadOnlyList<string>> PickOpenFiles(IReadOnlyList<FileType> types)
+    {
+        var files = await _owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = L.T("Open"),
+            AllowMultiple = true,
+            FileTypeFilter = Filters(types),
+        });
+        return files.Select(f => f.TryGetLocalPath()).OfType<string>().ToList();
+    }
+
     public async Task<string?> PickSaveFile(string title, string suggestedName, IReadOnlyList<FileType> types)
     {
         var file = await _owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions

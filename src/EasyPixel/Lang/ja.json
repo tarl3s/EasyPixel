@@ -570,5 +570,6 @@
   "New sprites: back to the default palette": "新しいスプライト：デフォルトのパレットに戻す",
   "Close sprite": "スプライトを閉じる",
   "Close this sprite": "このスプライトを閉じる",
-  "Next / previous sprite tab": "次 / 前のスプライトタブ"
+  "Next / previous sprite tab": "次 / 前のスプライトタブ",
+  "Opened {0} files": "{0} 個のファイルを開きました"
 }
