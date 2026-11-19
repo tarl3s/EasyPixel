@@ -6,5 +6,5 @@ public class Smoke
 {
     [Fact]
     public void CoreAssemblyLoads() =>
-        Assert.Equal(new Version(0, 3, 0, 0), typeof(Sprite).Assembly.GetName().Version);
+        Assert.Equal(new Version(0, 3, 1, 0), typeof(Sprite).Assembly.GetName().Version);
 }
