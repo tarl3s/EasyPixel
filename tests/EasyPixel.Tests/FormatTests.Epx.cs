@@ -124,7 +124,7 @@ public class FormatTestsEpx
     [Fact]
     public void Epx_NewerFormatVersion_ReadableError()
     {
-        var ex = Assert.Throws<FormatException>(() => new EpxFormat().Read(new MemoryStream(ZipWithJson("{\"format\":2}")), new List<string>()));
+        var ex = Assert.Throws<FormatException>(() => new EpxFormat().Read(new MemoryStream(ZipWithJson("{\"format\":" + (EpxFormat.Version + 1) + "}")), new List<string>()));
         Assert.Contains("newer EasyPixel", ex.Message);
     }
 

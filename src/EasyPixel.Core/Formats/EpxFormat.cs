@@ -5,15 +5,17 @@ using EasyPixel.Core.Model;
 namespace EasyPixel.Core.Formats;
 
 /// <summary>
-/// EasyPixel's own format: a zip with <c>sprite.json</c> (every model field, <c>"format":1</c>) and one PNG per cel in
+/// EasyPixel's own format: a zip with <c>sprite.json</c> (every model field, <c>"format":2</c>) and one PNG per cel in
 /// <c>cels/&lt;layer&gt;_&lt;frame&gt;.png</c>. A linked cel (one cel shown in several frames of a layer) is written once; the other frames
-/// say <c>"linkTo": &lt;first frame&gt;</c> instead of naming a picture (optional key, still format 1). Layers (and a layer's parent) are referenced by their index in the layer list.
+/// say <c>"linkTo": &lt;first frame&gt;</c> instead of naming a picture (optional key). Layers (and a layer's parent) are referenced by their index in the layer list.
 /// RGBA cels are stored as 8-bit RGBA PNGs; indexed cels as 8-bit greyscale PNGs whose value is the palette index
 /// (<see cref="Png.EncodeGrey8"/>), so indices stay lossless. Unknown keys in the JSON are ignored; unknown chunks are kept as base64.
 /// </summary>
 public sealed class EpxFormat : ISpriteFormat
 {
-    public const int Version = 1;
+    /// <summary>2: colours are written "RRGGBBAA" (as everyone reads hex colours). 1 wrote the internal packed value, which reads as
+    /// "AABBGGRR" - red and blue swapped for any other tool; files in format 1 still open the same.</summary>
+    public const int Version = 2;
     public const string UnknownValueWarning = "Some settings had values this version doesn't know; defaults were used";
     private const long MaxEntryBytes = 512L * 1024 * 1024;
 
@@ -45,7 +47,7 @@ public sealed class EpxFormat : ISpriteFormat
             w.WriteStartObject("palette");
             w.WriteNumber("transparentIndex", sp.Palette.TransparentIndex);
             w.WriteStartArray("colors");
-            foreach (var c in sp.Palette.Colors) w.WriteStringValue(c.Packed.ToString("X8"));
+            foreach (var c in sp.Palette.Colors) w.WriteStringValue(Hex(c));
             w.WriteEndArray();
             w.WriteEndObject();
             w.WriteStartArray("layers");
@@ -74,7 +76,7 @@ public sealed class EpxFormat : ISpriteFormat
                 w.WriteNumber("from", t.From);
                 w.WriteNumber("to", t.To);
                 w.WriteString("dir", t.Dir.ToString());
-                w.WriteString("color", t.Color.Packed.ToString("X8"));
+                w.WriteString("color", Hex(t.Color));
                 WriteExtra(w, t.Extra);
                 w.WriteEndObject();
             }
@@ -151,7 +153,7 @@ public sealed class EpxFormat : ISpriteFormat
         var pal = root.GetProperty("palette");
         sp.Palette.TransparentIndex = pal.GetProperty("transparentIndex").GetInt32();
         foreach (var c in pal.GetProperty("colors").EnumerateArray())
-            sp.Palette.Colors.Add(Rgba.FromPacked(Convert.ToUInt32(c.GetString(), 16)));
+            sp.Palette.Colors.Add(ReadColor(c.GetString(), version));
         if (sp.Palette.Colors.Count > Palette.MaxColors) throw new FormatException("The palette has too many colours.");
 
         var parents = new List<int>();
@@ -194,7 +196,7 @@ public sealed class EpxFormat : ISpriteFormat
                 From = Math.Clamp(t.GetProperty("from").GetInt32(), 0, sp.Frames.Count - 1),
                 To = Math.Clamp(t.GetProperty("to").GetInt32(), 0, sp.Frames.Count - 1),
                 Dir = ReadEnum(t.GetProperty("dir").GetString(), LoopDir.Forward, warnings),
-                Color = Rgba.FromPacked(Convert.ToUInt32(t.GetProperty("color").GetString(), 16)),
+                Color = ReadColor(t.GetProperty("color").GetString(), version),
             });
             if (sp.Tags[^1].From > sp.Tags[^1].To) (sp.Tags[^1].From, sp.Tags[^1].To) = (sp.Tags[^1].To, sp.Tags[^1].From);
             ReadExtra(t, sp.Tags[^1].Extra);
@@ -227,6 +229,16 @@ public sealed class EpxFormat : ISpriteFormat
         if (root.TryGetProperty("unknownChunks", out var uc) && uc.ValueKind == JsonValueKind.Object)
             foreach (var p in uc.EnumerateObject()) sp.UnknownChunks[p.Name] = Convert.FromBase64String(p.Value.GetString() ?? "");
         return sp;
+    }
+
+    /// <summary>"RRGGBBAA", the way hex colours are read everywhere.</summary>
+    internal static string Hex(Rgba c) => $"{c.R:X2}{c.G:X2}{c.B:X2}{c.A:X2}";
+
+    /// <summary>A colour as <paramref name="version"/> wrote it: "RRGGBBAA" from format 2 on, the packed "AABBGGRR" before.</summary>
+    private static Rgba ReadColor(string? s, int version)
+    {
+        uint v = Convert.ToUInt32(s ?? throw new FormatException("A colour is missing."), 16);
+        return version >= 2 ? new Rgba((byte)(v >> 24), (byte)(v >> 16), (byte)(v >> 8), (byte)v) : Rgba.FromPacked(v);
     }
 
     /// <summary>A named enum value; an unknown name or a number (which <c>Enum.Parse</c> would accept) falls back with a warning.</summary>
