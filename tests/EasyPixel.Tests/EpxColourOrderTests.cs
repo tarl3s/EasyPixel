@@ -65,4 +65,49 @@ public class EpxColourOrderTests
         Assert.Equal(new[] { Plum, Wine }, back.Palette.Colors);
         Assert.Equal(Plum, back.Tags[0].Color);
     }
+
+    /// <summary>A format 1 file whose colours were written by an outside tool as "AARRGGBB" ("FF" + "RRGGBB").</summary>
+    private static Sprite OpenFormat1(Sprite s, Func<Rgba, string> hex)
+    {
+        var (file, json) = Save(s);
+        var old = json.Replace("\"58474BFF\"", "\"" + hex(Plum) + "\"").Replace("\"3C2C43FF\"", "\"" + hex(Wine) + "\"");
+        old = System.Text.RegularExpressions.Regex.Replace(old, @"""format"":\s*2", "\"format\":1");
+        var ms = new MemoryStream();
+        ms.Write(file);
+        using (var zip = new ZipArchive(ms, ZipArchiveMode.Update, leaveOpen: true))
+        {
+            zip.GetEntry("sprite.json")!.Delete();
+            using var w = new StreamWriter(zip.CreateEntry("sprite.json").Open(), new UTF8Encoding(false));
+            w.Write(old);
+        }
+        return new EpxFormat().Read(new MemoryStream(ms.ToArray()), new List<string>());
+    }
+
+    private static Sprite PaintedWith(params Rgba[] colours)
+    {
+        var s = TwoColours();
+        s.Tags.Clear();
+        var img = new Image(2, 2);
+        s.Cels[(s.Layers[0], 0)] = new Cel(img, 0, 0);
+        for (int i = 0; i < colours.Length; i++) img.Pixels[i] = colours[i].Packed;
+        return s;
+    }
+
+    private static string Argb(Rgba c) => $"FF{c.R:X2}{c.G:X2}{c.B:X2}";
+
+    [Fact]
+    public void Format1File_WrittenAsAARRGGBB_ByAnotherTool_OpensWithTheRightPalette()
+    {
+        var back = OpenFormat1(PaintedWith(Plum, Wine), Argb);
+        Assert.Equal(new[] { Plum, Wine }, back.Palette.Colors);
+    }
+
+    [Fact]
+    public void Format1File_FromEasyPixel_IsNotSwappedBack()
+    {
+        var back = OpenFormat1(PaintedWith(Plum, Wine), c => c.Packed.ToString("X8"));
+        Assert.Equal(new[] { Plum, Wine }, back.Palette.Colors);
+        // an empty picture gives no evidence: the stored meaning (packed) wins
+        Assert.Equal(new[] { Plum, Wine }, OpenFormat1(PaintedWith(), c => c.Packed.ToString("X8")).Palette.Colors);
+    }
 }

@@ -220,6 +220,9 @@ public sealed class EpxFormat : ISpriteFormat
             sp.Cels[(layer, frame)] = sp.Cels.TryGetValue((layer, to), out var shared) ? shared
                 : throw new FormatException("A linked cel points at a missing cel.");
 
+        if (version == 1 && mode == ColorMode.Rgba) FixSwappedPalette(sp);
+
+
         if (mode == ColorMode.Indexed) // an indexed sprite always has a transparent entry (the eraser and holes use it)
         {
             if (sp.Palette.TransparentIndex >= sp.Palette.Colors.Count) sp.Palette.TransparentIndex = -1;
@@ -229,6 +232,32 @@ public sealed class EpxFormat : ISpriteFormat
         if (root.TryGetProperty("unknownChunks", out var uc) && uc.ValueKind == JsonValueKind.Object)
             foreach (var p in uc.EnumerateObject()) sp.UnknownChunks[p.Name] = Convert.FromBase64String(p.Value.GetString() ?? "");
         return sp;
+    }
+
+    /// <summary>
+    /// Format 1 meant the packed "AABBGGRR", but outside tools (a game's script writing "FF" + "RRGGBB") also wrote "AARRGGBB"
+    /// under format 1, so the palette opened with red and blue swapped and colours painted from it came out swapped. When the
+    /// pictures' colours match the palette better with red and blue swapped, the palette was written that way: swap it back.
+    /// </summary>
+    private static void FixSwappedPalette(Sprite sp)
+    {
+        var colors = sp.Palette.Colors;
+        static Rgba Swap(Rgba c) => new(c.B, c.G, c.R, c.A);
+        var asIs = new HashSet<uint>();
+        var swapped = new HashSet<uint>();
+        foreach (var c in colors) { if (c.R == c.B) continue; asIs.Add(c.Packed); swapped.Add(Swap(c).Packed); }
+        if (asIs.Count == 0) return;
+        var seen = new HashSet<uint>();
+        int hitAsIs = 0, hitSwapped = 0;
+        foreach (var cel in sp.Cels.Values.Distinct())
+            foreach (uint p in cel.Image.Pixels)
+            {
+                if (p >> 24 == 0 || !seen.Add(p)) continue;
+                if (asIs.Contains(p)) hitAsIs++;
+                if (swapped.Contains(p)) hitSwapped++;
+            }
+        if (hitSwapped <= hitAsIs) return;
+        for (int i = 0; i < colors.Count; i++) colors[i] = Swap(colors[i]);
     }
 
     /// <summary>"RRGGBBAA", the way hex colours are read everywhere.</summary>
