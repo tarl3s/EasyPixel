@@ -120,11 +120,27 @@ public partial class MainWindow
             bar.Add(Hint(L.T("Shift adds to the selection, Alt subtracts")));
         if (k == ToolKind.Move)
             bar.Add(Hint(L.T("Drag the selection; arrow keys nudge; Enter drops")));
+        if (k is ToolKind.RectSelect or ToolKind.EllipseSelect or ToolKind.Lasso or ToolKind.MagicWand or ToolKind.Move)
+        {
+            // what the Edit menu does to the selection (the whole layer when nothing is selected), in sight
+            bar.Add(ActionButton("⇆ " + L.T("Flip horizontally"), L.T("Flip horizontally") + " (Shift+H)", () => FlipSelection(horizontal: true)));
+            bar.Add(ActionButton("⇅ " + L.T("Flip vertically"), L.T("Flip vertically") + " (Shift+V)", () => FlipSelection(horizontal: false)));
+            bar.Add(ActionButton("↻ 90°", L.T("Rotate 90° clockwise"), () => RotateSelection(clockwise: true)));
+            bar.Add(ActionButton("↺ 90°", L.T("Rotate 90° counter-clockwise"), () => RotateSelection(clockwise: false)));
+        }
         if (ToolController.IsPaintTool(k))
         {
             bar.Add(Check(L.T("Mirror horizontally"), Tools.MirrorH, v => Tools.SetMirror(v, Tools.MirrorV)));
             bar.Add(Check(L.T("Mirror vertically"), Tools.MirrorV, v => Tools.SetMirror(Tools.MirrorH, v)));
         }
+    }
+
+    private static Button ActionButton(string text, string tip, Action run)
+    {
+        var b = new Button { Content = text, Padding = new Avalonia.Thickness(8, 2), Focusable = false, VerticalAlignment = VerticalAlignment.Center };
+        ToolTip.SetTip(b, tip);
+        b.Click += (_, _) => run();
+        return b;
     }
 
     private static Control Labeled(string label, Control field)
