@@ -1,4 +1,5 @@
-# Draws src\EasyPixel\Assets\EasyPixel.ico: a green rounded tile with a pixel-art pencil (crisp squares), at 16-256 px.
+# Draws src\EasyPixel\Assets\EasyPixel.ico: a green pixel-art pencil (crisp squares) on the dark rounded tile of
+# EasyEngine's icon, in the same green, at 16-256 px.
 # Run from anywhere:  powershell -ExecutionPolicy Bypass -File tools\Make-Icon.ps1
 # -PngDir <folder>: writes the same drawing as EasyPixel-<size>.png there instead; the .ico is left alone.
 param([string]$PngDir)
@@ -20,11 +21,12 @@ $pencil = @(
     '.DD.....',
     'K.......'
 )
+# all greens: EasyEngine's (24,185,138) for the body, lighter for the eraser and the lead, darker for the wood
 $colors = @{
-    'W' = [System.Drawing.Color]::FromArgb(255, 255, 255, 255)
-    'P' = [System.Drawing.Color]::FromArgb(255, 255, 140, 150)
-    'D' = [System.Drawing.Color]::FromArgb(255, 245, 210, 150)
-    'K' = [System.Drawing.Color]::FromArgb(255, 40, 60, 50)
+    'W' = [System.Drawing.Color]::FromArgb(255, 24, 185, 138)
+    'P' = [System.Drawing.Color]::FromArgb(255, 110, 231, 183)
+    'D' = [System.Drawing.Color]::FromArgb(255, 15, 118, 88)
+    'K' = [System.Drawing.Color]::FromArgb(255, 110, 231, 183)
 }
 
 function Rounded([single]$x, [single]$y, [single]$w, [single]$h, [single]$r) {
@@ -40,13 +42,11 @@ function Draw-Png([int]$s) {
     $bmp = New-Object System.Drawing.Bitmap $s, $s
     $g = [System.Drawing.Graphics]::FromImage($bmp)
     $g.Clear([System.Drawing.Color]::Transparent)
-    # green rounded tile (the family's accent, #4ADE80, a touch darker at the bottom)
+    # dark rounded tile, the same as EasyEngine's icon
     $g.SmoothingMode = 'AntiAlias'
     $m = [single]([Math]::Max(0, $s * 0.02)); $w = [single]($s - 2 * $m)
     $tile = Rounded $m $m $w $w ([single]($s * 0.22))
-    $rect = New-Object System.Drawing.RectangleF $m, $m, $w, $w
-    $grad = New-Object System.Drawing.Drawing2D.LinearGradientBrush $rect, ([System.Drawing.Color]::FromArgb(255, 74, 222, 128)), ([System.Drawing.Color]::FromArgb(255, 34, 170, 90)), 90
-    $g.FillPath($grad, $tile)
+    $g.FillPath((New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 28, 28, 34))), $tile)
     # the pencil, whole pixels so it stays crisp at every size
     $g.SmoothingMode = 'None'; $g.PixelOffsetMode = 'Half'
     $cell = [Math]::Max(1, [Math]::Floor($s * 0.68 / 8))
