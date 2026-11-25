@@ -65,8 +65,12 @@ public partial class App : Application
                 return;
             }
             var window = new MainWindow();
-            var file = desktop.Args?.FirstOrDefault(a => !a.StartsWith('-'));
-            if (file != null) window.Opened += async (_, _) => await window.OpenPathAsync(file);
+            var files = desktop.Args?.Where(a => !a.StartsWith('-')).ToList() ?? new();
+            if (files.Count > 0) window.Opened += async (_, _) => { foreach (var f in files) await window.OpenPathAsync(f); };
+            // later starts with files hand them over here (Program.Main): open them as tabs and come to the front
+            var stopListening = new CancellationTokenSource();
+            window.Closed += (_, _) => stopListening.Cancel();
+            SingleInstance.Listen(paths => Avalonia.Threading.Dispatcher.UIThread.Post(async () => await window.OpenHandedFilesAsync(paths)), stopListening.Token);
             window.Opened += (_, _) => _ = window.CheckForUpdatesAsync();
             desktop.MainWindow = window;
         }

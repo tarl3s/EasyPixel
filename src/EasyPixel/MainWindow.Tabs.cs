@@ -56,6 +56,14 @@ public partial class MainWindow
         return _tabs.FirstOrDefault(t => t.Path != null && string.Equals(t.Path, full, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>Files another EasyPixel start handed over (a double-click on an .epx): each in a tab, then this window to the front.</summary>
+    internal async Task OpenHandedFilesAsync(IReadOnlyList<string> paths)
+    {
+        if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+        Activate();
+        foreach (var p in paths) await OpenPathAsync(p);
+    }
+
     internal void SwitchTab(EditorSession s)
     {
         if (s == Session || !_tabs.Contains(s)) return;

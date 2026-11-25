@@ -6,8 +6,13 @@ namespace EasyPixel;
 internal static class Program
 {
     [STAThread]
-    public static void Main(string[] args) =>
+    public static void Main(string[] args)
+    {
+        // Files given to a second start (a double-click on an .epx) go to the EasyPixel already open, as tabs.
+        var files = args.Where(a => !a.StartsWith('-')).ToList();
+        if (files.Count > 0 && SingleInstance.TrySend(files)) return;
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+    }
 
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<App>().UsePlatformDetect().With(Fonts()).LogToTrace();
