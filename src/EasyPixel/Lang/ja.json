@@ -571,5 +571,10 @@
   "Close sprite": "スプライトを閉じる",
   "Close this sprite": "このスプライトを閉じる",
   "Next / previous sprite tab": "次 / 前のスプライトタブ",
-  "Opened {0} files": "{0} 個のファイルを開きました"
+  "Opened {0} files": "{0} 個のファイルを開きました",
+  "Blur": "ぼかし",
+  "Jumble": "ジャンブル",
+  "Strength (%)": "強さ (%)",
+  "Each stroke softens a little more": "なぞるたびに少しずつやわらかくなります",
+  "Rub to mix the pixels (no new colours)": "こするとピクセルが混ざります（新しい色は増えません）"
 }

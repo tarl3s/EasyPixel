@@ -4,7 +4,7 @@ using EasyPixel.Core.Raster;
 namespace EasyPixel.Tools;
 
 /// <summary>
-/// Tools that paint under the pointer as it drags: pencil, eraser, shading, lighten/darken, dither brush, spray.
+/// Tools that paint under the pointer as it drags: pencil, eraser, shading, lighten/darken, dither brush, spray, jumble, blur.
 /// Each drag is one stroke (one undo step); moves are joined by straight lines so fast drags leave no gaps.
 /// </summary>
 public sealed class FreehandTool : Tool
@@ -104,8 +104,36 @@ public sealed class FreehandTool : Tool
                         }
                     break;
                 }
+            case ToolKind.Jumble:
+                // every step stirs again, as in LibreSprite: the longer you rub, the more mixed
+                foreach (var (x, y) in pts)
+                    foreach (var (mx, my) in Mirrors(x, y, sym))
+                        Brush.ForEach(mx, my, t.Brush, (px, py) => PixelEffects.JumbleAt(sink, px, py, t.JumbleAmount, _random));
+                break;
+            case ToolKind.Blur:
+                foreach (var (x, y) in pts)
+                    foreach (var (mx, my) in Mirrors(x, y, sym)) BlurFootprint(c, st, sink, mx, my);
+                break;
         }
         st.EndStep(sink, restored);
+    }
+
+    /// <summary>
+    /// Blurs every pixel under the brush not blurred yet in this stroke, from the picture as it was when the stroke
+    /// began (so dragging doesn't smear one way). Indexed sprites take the nearest palette colour.
+    /// </summary>
+    private void BlurFootprint(ToolContext c, Stroke st, PixelSink sink, int x, int y)
+    {
+        var doc = c.Session.Doc;
+        var img = st.Image;
+        Rgba? Read(int px, int py) =>
+            (uint)px < (uint)img.Width && (uint)py < (uint)img.Height ? Rgba.FromPacked(doc.ToPacked(st.Original(px, py))) : null;
+        Brush.ForEach(x, y, c.Tools.Brush, (px, py) =>
+        {
+            if (!sink.CanWrite(px, py) || !_shaded.Add(py * img.Width + px)) return;
+            var blurred = PixelEffects.BlurAt(Read, px, py, c.Tools.BlurAmount);
+            sink.Set(px, py, blurred.A == 0 ? doc.TransparentPixel : doc.ColorToPixel(blurred));
+        });
     }
 
     /// <summary>

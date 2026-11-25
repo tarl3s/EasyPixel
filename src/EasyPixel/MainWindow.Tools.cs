@@ -21,6 +21,7 @@ public partial class MainWindow
         (ToolKind.Line, "╱"), (ToolKind.Rectangle, "▭"), (ToolKind.Ellipse, "◯"), (ToolKind.Spray, "⁘"),
         (ToolKind.Shading, "◐"), (ToolKind.LightenDarken, "☼"), (ToolKind.Dither, "▦"), (ToolKind.Move, "✥"),
         (ToolKind.RectSelect, "⬚"), (ToolKind.EllipseSelect, "◌"), (ToolKind.Lasso, "➰"), (ToolKind.MagicWand, "✧"),
+        (ToolKind.Jumble, "⁂"), (ToolKind.Blur, "≈"),
     };
 
     private readonly Dictionary<ToolKind, ToggleButton> _toolButtons = new();
@@ -81,7 +82,7 @@ public partial class MainWindow
         bar.Add(new TextBlock { Text = L.T(Tools.Get(k).Name), FontWeight = FontWeight.SemiBold, VerticalAlignment = VerticalAlignment.Center });
 
         bool brush = k is ToolKind.Pencil or ToolKind.Eraser or ToolKind.Line or ToolKind.Rectangle or ToolKind.Ellipse
-            or ToolKind.Shading or ToolKind.LightenDarken or ToolKind.Dither;
+            or ToolKind.Shading or ToolKind.LightenDarken or ToolKind.Dither or ToolKind.Jumble or ToolKind.Blur;
         if (brush)
         {
             var size = new NumericUpDown { Value = Tools.Brush.Size, Minimum = 1, Maximum = 64, Increment = 1, FormatString = "0", Width = 110 };
@@ -113,6 +114,15 @@ public partial class MainWindow
             var radius = new NumericUpDown { Value = Tools.SprayRadius, Minimum = 1, Maximum = 64, Increment = 1, FormatString = "0", Width = 110 };
             radius.ValueChanged += (_, e) => Tools.SprayRadius = (int)(e.NewValue ?? 6);
             bar.Add(Labeled(L.T("Radius"), radius));
+        }
+        if (k is ToolKind.Jumble or ToolKind.Blur)
+        {
+            bool jumble = k == ToolKind.Jumble;
+            var amount = new NumericUpDown { Value = jumble ? Tools.JumbleAmount : Tools.BlurAmount, Minimum = 1, Maximum = 100, Increment = 5, FormatString = "0", Width = 110 };
+            amount.ValueChanged += (_, e) => { int v = (int)(e.NewValue ?? 50); if (jumble) Tools.JumbleAmount = v; else Tools.BlurAmount = v; };
+            bar.Add(Labeled(L.T("Strength (%)"), amount));
+            bar.Add(Hint(jumble ? L.T("Rub to mix the pixels (no new colours)")
+                                : L.T("Each stroke softens a little more")));
         }
         if (k is ToolKind.Shading or ToolKind.LightenDarken)
             bar.Add(Hint(L.T("Left click lightens, right click darkens")));

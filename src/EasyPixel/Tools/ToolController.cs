@@ -7,7 +7,7 @@ public enum ToolKind
 {
     Pencil, Eraser, Bucket, Line, Rectangle, Ellipse,
     RectSelect, EllipseSelect, Lasso, MagicWand, Move, Eyedropper,
-    Shading, LightenDarken, Dither, Spray,
+    Shading, LightenDarken, Dither, Spray, Jumble, Blur,
 }
 
 /// <summary>The current tool and every drawing setting the tools share: colours, brush, mirrors, dither, fill options.</summary>
@@ -23,6 +23,7 @@ public sealed class ToolController
             new FreehandTool(ToolKind.Pencil, "Pencil"), new FreehandTool(ToolKind.Eraser, "Eraser"),
             new FreehandTool(ToolKind.Shading, "Shading"), new FreehandTool(ToolKind.LightenDarken, "Lighten / darken"),
             new FreehandTool(ToolKind.Dither, "Dither brush"), new FreehandTool(ToolKind.Spray, "Spray"),
+            new FreehandTool(ToolKind.Jumble, "Jumble"), new FreehandTool(ToolKind.Blur, "Blur"),
             new BucketTool(), new ShapeTool(ToolKind.Line, "Line"), new ShapeTool(ToolKind.Rectangle, "Rectangle"),
             new ShapeTool(ToolKind.Ellipse, "Ellipse"), new SelectTool(ToolKind.RectSelect), new SelectTool(ToolKind.EllipseSelect),
             new SelectTool(ToolKind.Lasso), new MagicWandTool(), new MoveTool(), new EyedropperTool(),
@@ -77,6 +78,10 @@ public sealed class ToolController
     /// <summary>Radius of the spray in pixels and dots per step.</summary>
     public int SprayRadius { get; set; } = 6;
     public int SprayDensity { get; set; } = 6;
+    /// <summary>Jumble: the chance (percent) each pixel under the brush swaps with a neighbour, per step.</summary>
+    public int JumbleAmount { get; set; } = 50;
+    /// <summary>Blur: how far (percent) each pixel moves toward its neighbours' average, per stroke.</summary>
+    public int BlurAmount { get; set; } = 50;
 
     /// <summary>Shading ramp for RGBA sprites without a palette (indexed sprites shade along their palette).</summary>
     public Palette DefaultRamp { get; } = GreyRamp();
@@ -90,5 +95,6 @@ public sealed class ToolController
 
     /// <summary>Tools whose clicks Alt turns into an eyedropper (the drawing ones).</summary>
     public static bool IsPaintTool(ToolKind k) => k is ToolKind.Pencil or ToolKind.Eraser or ToolKind.Bucket or ToolKind.Line
-        or ToolKind.Rectangle or ToolKind.Ellipse or ToolKind.Shading or ToolKind.LightenDarken or ToolKind.Dither or ToolKind.Spray;
+        or ToolKind.Rectangle or ToolKind.Ellipse or ToolKind.Shading or ToolKind.LightenDarken or ToolKind.Dither or ToolKind.Spray
+        or ToolKind.Jumble or ToolKind.Blur;
 }

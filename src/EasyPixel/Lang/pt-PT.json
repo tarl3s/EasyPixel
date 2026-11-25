@@ -571,5 +571,10 @@
   "Close sprite": "Fechar sprite",
   "Close this sprite": "Fechar este sprite",
   "Next / previous sprite tab": "Separador de sprite seguinte / anterior",
-  "Opened {0} files": "{0} ficheiros abertos"
+  "Opened {0} files": "{0} ficheiros abertos",
+  "Blur": "Desfocar",
+  "Jumble": "Baralhar",
+  "Strength (%)": "Força (%)",
+  "Each stroke softens a little more": "Cada traço suaviza um pouco mais",
+  "Rub to mix the pixels (no new colours)": "Esfregue para misturar os píxeis (sem cores novas)"
 }

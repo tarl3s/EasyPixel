@@ -571,5 +571,10 @@
   "Close sprite": "關閉精靈",
   "Close this sprite": "關閉此精靈",
   "Next / previous sprite tab": "下一個 / 上一個精靈分頁",
-  "Opened {0} files": "已開啟 {0} 個檔案"
+  "Opened {0} files": "已開啟 {0} 個檔案",
+  "Blur": "模糊",
+  "Jumble": "打亂",
+  "Strength (%)": "強度 (%)",
+  "Each stroke softens a little more": "每一筆都會更柔和一點",
+  "Rub to mix the pixels (no new colours)": "塗抹以打亂像素（不新增顏色）"
 }

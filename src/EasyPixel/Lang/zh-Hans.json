@@ -571,5 +571,10 @@
   "Close sprite": "关闭精灵",
   "Close this sprite": "关闭此精灵",
   "Next / previous sprite tab": "下一个 / 上一个精灵标签页",
-  "Opened {0} files": "已打开 {0} 个文件"
+  "Opened {0} files": "已打开 {0} 个文件",
+  "Blur": "模糊",
+  "Jumble": "打乱",
+  "Strength (%)": "强度 (%)",
+  "Each stroke softens a little more": "每一笔都会更柔和一点",
+  "Rub to mix the pixels (no new colours)": "涂抹以打乱像素（不添加新颜色）"
 }
